@@ -1,15 +1,131 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta charset="UTF-8">
-        <title>Scala.js demo</title>
+        <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+        <link rel="icon" href="favicon.ico" />
+
+        <title>Voronoi cells on a sphere - maze generator</title>
+        <meta name="description" content="Voronoi cells on a sphere - maze generator">
+        <meta name="viewport" content="width=device-width">
+
+        <link rel="stylesheet" href="css/app.css">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.0/themes/dot-luv/jquery-ui.min.css">
+        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="http://code.jquery.com/ui/1.11.0/jquery-ui.min.js"></script>
+
     </head>
     <body>
-        <!-- Include Scala.js compiled code -->
-        <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
-        <!-- Run tutorial.webapp.TutorialApp -->
-        <script type="text/javascript">
-              demo.webapp.TutoMain().main();
-        </script>
-    </body>
+    <div id="dialog" title="Voronoi cells on a sphere - maze generator">
+        <p>Click and drag to interact.</p>
+        <p>Scroll / pinch to zoom.</p>
+        <p>Double click / tap to hide UI.</p>
+    </div>
+    <div id="gui" class="gui-container">
+        <div>
+            <button id="screenshot">screenshot</button>
+            <button id="fullscreen">fullscreen</button>
+            <button id="showHelp">?</button>
+        </div>
+        <div>
+            <br/>
+            <input type="checkbox" id="flat"><label id="flatLabel" for="flat">Flat tessellation</label>
+        </div>
+        <div>
+            <br/>
+            <input type="checkbox" id="reverseDepth"><label id="reverseDepthLabel" for="reverseDepth">Reverse depth</label>
+        </div>
+        <div>
+            <br/>
+            <input type="number" min="0" max="1" step="any" id="depthExaggeration"><label id="depthExaggerationLabel" for="depthExaggeration">Depth exaggeration</label>
+        </div>
+        <div>
+            <br/>
+            <input type="number" min="0" step="any" id="explosion"><label id="explosionLabel" for="explosion">Explosion factor</label>
+        </div>
+    </div>
+    <div id="main"></div>
+
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.js"></script>
+    <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
+    <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
+    <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+uniform vec4 u_color;
+uniform vec4 u_borderColor;
+uniform float u_borderWidth;
+uniform float u_depthMode;
+
+varying float v_centerFlag;
+varying float v_mazeDepth;
+
+float edgeFactor(const float thickness, const float centerFlag)
+{
+    return smoothstep(0.0, fwidth(centerFlag)*thickness, centerFlag);
+}
+
+vec4 shade(const float depth) {
+    if (depth < 0.33) {
+        return vec4(0.01 + 3.0 * (0.33 - depth), 0.01 + 3.0 * depth, 0.01, 1.0);
+    } else if (depth < 0.66) {
+        return vec4(0.01, 0.01 + 3.0 * (0.33 - (depth-0.33)), 0.01 + 3.0 * (depth-0.33), 1.0);
+    } else {
+        return vec4(0.01 + 3.0 * (depth-0.66), 0.01, 0.01 + 3.0 * (0.33 - (depth-0.66)), 1.0);
+    }
+}
+
+void main()
+{
+    float f = edgeFactor(u_borderWidth, v_centerFlag);
+    vec4 baseColor = u_color;
+    if (u_depthMode > 0.0) {
+        baseColor = shade(v_mazeDepth);
+    } else if (u_depthMode < 0.0) {
+        baseColor = shade(v_mazeDepth);
+    }
+    gl_FragColor = vec4 (
+        mix(
+            u_borderColor,
+            baseColor,
+            f).rgb,
+        1.0
+    );
+}
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+attribute float a_centerFlag;
+attribute vec3 a_normal;
+attribute float a_mazeDepth;
+
+uniform mat4 u_mvpMat;
+uniform float u_time;
+uniform float u_depthMode;
+uniform float u_depthScale;
+uniform float u_explodedFactor;
+
+varying float v_centerFlag;
+varying float v_mazeDepth;
+
+void main()
+{
+    float d = 0.0;
+    if (u_depthMode > 0.0) {
+        d = a_mazeDepth * u_depthScale;
+    } else if (u_depthMode < 0.0) {
+        d = - a_mazeDepth * u_depthScale;
+    }
+    gl_Position = u_mvpMat * vec4((1.0+d) * (position + (u_explodedFactor * a_normal)), 1.0);
+    v_centerFlag = a_centerFlag;
+    v_mazeDepth = a_mazeDepth;
+}
+    </script>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js"></script>
+    <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+    <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
+    <script type="text/javascript" src="js/threeApp.js"></script>
+</body>
 </html>
