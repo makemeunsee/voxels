@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>The Scala.js Tutorial</title>
+    </head>
+    <body>
+        <!-- Include Scala.js compiled code -->
+        <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
+        <!-- Run tutorial.webapp.TutorialApp -->
+        <script type="text/javascript">demo.webapp.TutoMain().main();
+var a = demo.webapp.TutoMain().naiveRotMat(0,0);
+console.log(a);
+var b = demo.webapp.TutoMain().viewMatOf(0,0,1);
+console.log(b);
+var c = demo.webapp.TutoMain().orthoMatrixFromScreen(800,600,1.75);
+console.log(c);
+console.log("end");
+</script>
+    </body>
+</html>
