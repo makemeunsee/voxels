@@ -188,51 +188,12 @@ function appMain() {
         cutPositions[2*i+1] = cut[1];
     }
 
-    var cubePlanet = [
-       [ 1,1,1
-       , -1,1,1
-       , -1,1,-1
-       , 1,1,-1
-       , -1,-1,-1
-       , 1,-1,-1
-       , 1,-1,1
-       , -1,-1,1
-       , 0,1,0
-       , 0,-1,0
-       , 1,0,0
-       , -1,0,0
-       , 0,0,1
-       , 0,0,-1
-       ],
-       [ Math.sqrt(3)/3,Math.sqrt(3)/3,Math.sqrt(3)/3
-       , -Math.sqrt(3)/3,Math.sqrt(3)/3,Math.sqrt(3)/3
-       , -Math.sqrt(3)/3,Math.sqrt(3)/3,-Math.sqrt(3)/3
-       , Math.sqrt(3)/3,Math.sqrt(3)/3,-Math.sqrt(3)/3
-       , -Math.sqrt(3)/3,-Math.sqrt(3)/3,-Math.sqrt(3)/3
-       , Math.sqrt(3)/3,-Math.sqrt(3)/3,-Math.sqrt(3)/3
-       , Math.sqrt(3)/3,-Math.sqrt(3)/3,Math.sqrt(3)/3
-       , -Math.sqrt(3)/3,-Math.sqrt(3)/3,Math.sqrt(3)/3
-       , 0,1,0
-       , 0,-1,0
-       , 1,0,0
-       , -1,0,0
-       , 0,0,1
-       , 0,0,-1
-       ],
-       [0,0,0,0,0,0,0,0,1,1,1,1,1,1],
-       [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-       [8,0,3,8,3,2,8,2,1,8,1,0
-       ,9,4,5,9,5,6,9,6,7,9,7,4
-       ,10,0,6,10,6,5,10,5,3,10,3,0
-       ,11,1,2,11,2,4,11,4,7,11,7,1
-       ,12,0,1,12,1,7,12,7,6,12,6,0
-       ,13,2,3,13,3,5,13,5,4,13,4,2]
-    ];
+    var cubePlanet = demo.webapp.TutoMain().getVoxel( 4 );
 
-    var id = getURLParameter( "polyId" ) || 3;
-    console.log( "polyId:\t", id );
-    var overlapThreshold = getURLParameter( "overlapThreshold" ) || 100;
-    console.log( "overlapThreshold:\t", overlapThreshold );
+//    var id = getURLParameter( "polyId" ) || 3;
+//    console.log( "polyId:\t", id );
+//    var overlapThreshold = getURLParameter( "overlapThreshold" ) || 100;
+//    console.log( "overlapThreshold:\t", overlapThreshold );
     var model = modelFromRaw ( cubePlanet );
 
     var zoomMax = 16;
@@ -358,7 +319,7 @@ function appMain() {
             var deltaX = event.touches[0].clientX - mx;
             var deltaY = event.touches[0].clientY - my;
 
-            modelMat = arrToMat( demo.webapp.TutoMain().naiveRotMat( deltaX * 0.005, deltaY * 0.005 ) ).multiply( modelMat );
+            modelMat = arrToMat( demo.webapp.TutoMain().naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) ).multiply( modelMat );
             updateMVPs();
 
             mx = event.touches[0].clientX;

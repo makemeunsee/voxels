@@ -3,39 +3,13 @@ package demo.webapp
 /**
  * Created by markus on 16/02/2015.
  */
+
+import geometry.Vec3
+import voxels._
+
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 import scala.scalajs.js.Array
-
-case class Vec3( x: Double, y: Double, z: Double) {
-  def apply( i: Int ) = i match {
-    case 0 => x
-    case 1 => y
-    case 2 => z
-  }
-
-  def update( i: Int, v: Double ) = i match {
-    case 0 => copy( x = v )
-    case 1 => copy( y = v )
-    case 2 => copy( z = v )
-  }
-
-  def norm = math.sqrt( x*x + y*y + z*z )
-
-  def normalize = {
-    val n = norm
-    Vec3( x / n, y / n, z / n )
-  }
-
-  def minus( v: Vec3 ) = Vec3( x - v.x, y - v.y, z - v.z )
-  def plus( v: Vec3 ) = Vec3( x + v.x, y + v.y, z + v.z )
-  def dot( v: Vec3 ) = x*v.x + y*v.y + z*v.z
-  def cross( v: Vec3 ) =
-    Vec3( y*v.z - v.y*z,
-          z*v.x - v.z*x,
-          x*v.y - v.x*y )
-
-}
 
 object TutoMain extends JSApp {
   def main(): Unit = {
@@ -116,6 +90,32 @@ object TutoMain extends JSApp {
     val left = -right
     val bottom = -top
     orthoMatrix( left, right, bottom, top, near, far )
+  }
+
+  val voxels = Map( 0 -> Cube
+                  , 1 -> Tetrahedron
+                  , 2 -> Octahedron
+                  , 3 -> Dodecahedron
+                  , 4 -> Icosahedron
+                  )
+
+  @JSExport
+  def getVoxel( i: Int ): Array[Array[Double]] = {
+    val voxel = voxels.getOrElse( i, Cube )
+    def aod: Array[Double] = Array()
+    val ( vs, ns, cs, ds, is ) = voxel.faces.foldLeft( ( aod, aod, aod, aod, aod ) ) { case ( ( vertices, normals, centerFlags, depths, indices ), f ) =>
+      val count = f.vertices.length
+      val Vec3( nx, ny, nz ) = f.normal
+      val Vec3( cx, cy, cz ) = f.center
+      val offset = ( vertices.length / 3 ).toDouble
+      val newVertices = vertices ++ f.rawVertices ++ Array( cx, cy, cz )
+      val newNormals = normals ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
+      val newCenterFlags = centerFlags ++ ( 0 until count ).map( _ => 0d ) :+ 1d
+      val newDepths = depths ++ ( 0 to count ).map( _ => 0d )
+      val newIndices = indices ++ ( 0 until count ).flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
+      ( newVertices, newNormals, newCenterFlags, newDepths, newIndices )
+    }
+    Array( vs, ns, cs, ds, is )
   }
 
 }
