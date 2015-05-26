@@ -105,6 +105,8 @@ DummyCamera.prototype = Object.create( THREE.Camera.prototype );
 
 function appMain() {
 
+    var scalaObj = demo.webapp.TutoMain();
+
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
 
@@ -191,7 +193,8 @@ function appMain() {
     }
     var voxelId = 0;
     function changeVoxel( c ) {
-        voxelId = ( voxelId + c + 5 ) % 5;
+        var count = scalaObj.voxelTypeCount;
+        voxelId = ( voxelId + c + count ) % count;
         loadVoxel( voxelId );
     }
 
@@ -220,7 +223,7 @@ function appMain() {
     var camDist = 1;
 
     var projMat = new THREE.Matrix4();
-    var viewMat = arrToMat( demo.webapp.TutoMain().viewMatOf( camTheta, camPhi, camDist ) );
+    var viewMat = arrToMat( scalaObj.viewMatOf( camTheta, camPhi, camDist ) );
     var modelMat = new THREE.Matrix4();
     modelMat.elements[0] = Math.sqrt(2) / 2;
     modelMat.elements[2] = Math.sqrt(2) / 2;
@@ -240,7 +243,7 @@ function appMain() {
     }
 
     var updateProjection = function(screenWidth, screenHeight) {
-        projMat = arrToMat( demo.webapp.TutoMain().orthoMatrixFromScreen( screenWidth, screenHeight, 1.75 ) );
+        projMat = arrToMat( scalaObj.orthoMatrixFromScreen( screenWidth, screenHeight, 1.75 ) );
         updateMVPs();
     };
 
@@ -252,7 +255,7 @@ function appMain() {
         if ( currentMesh && scene ) {
             scene.remove( currentMesh );
         }
-        currentMesh = makeMesh( modelFromRaw ( demo.webapp.TutoMain().getVoxel( id ) ) );
+        currentMesh = makeMesh( modelFromRaw ( scalaObj.getVoxel( id ) ) );
         scene.add( currentMesh );
     }
 
@@ -340,7 +343,7 @@ function appMain() {
             var deltaX = event.touches[0].clientX - mx;
             var deltaY = event.touches[0].clientY - my;
 
-            modelMat = arrToMat( demo.webapp.TutoMain().naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) ).multiply( modelMat );
+            modelMat = arrToMat( scalaObj.naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) ).multiply( modelMat );
             updateMVPs();
 
             mx = event.touches[0].clientX;

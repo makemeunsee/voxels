@@ -93,10 +93,13 @@ object TutoMain extends JSApp {
   }
 
   @JSExport
+  val voxelTypeCount = standards.size
+
+  @JSExport
   def getVoxel( i: Int ): Array[Array[Double]] = {
     val voxel = Voxel( standards.getOrElse( i, Cube ) )
     def aod: Array[Double] = Array()
-    val ( vs, ns, cs, ds, is ) = voxel.faces.foldLeft( ( aod, aod, aod, aod, aod ) ) { case ( ( vertices, normals, centerFlags, depths, indices ), f ) =>
+    val ( vs, ns, cs, ds, is ) = voxel.faces.foldLeft( aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, depths, indices ), f ) =>
       val count = f.vertices.length
       val Vec3( nx, ny, nz ) = f.normal
       val Vec3( cx, cy, cz ) = f.center
