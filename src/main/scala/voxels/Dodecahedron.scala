@@ -7,7 +7,7 @@ import voxels.Voxel._
 /**
  * Created by markus on 26/05/15.
  */
-object Dodecahedron extends Voxel {
+object Dodecahedron extends VoxelStandard {
   val faceCount = 12
   val verticesCount = 20
 
@@ -33,17 +33,17 @@ object Dodecahedron extends Voxel {
     Vec3 ( -gold, 0, 1/gold ) ::
     Vec3 ( -gold, 0, -1/gold ) :: Nil
 
-  val faces =
-    Face( List( vertices( 12 ), vertices( 0 ), vertices( 16 ), vertices( 17 ), vertices( 1 ) ) ) :: 
-    Face( List( vertices( 0 ), vertices( 8 ), vertices( 10 ), vertices( 2 ), vertices( 16 ) ) ) ::  
-    Face( List( vertices( 14 ), vertices( 12 ), vertices( 1 ), vertices( 9 ), vertices( 5 ) ) ) ::  
-    Face( List( vertices( 14 ), vertices( 5 ), vertices( 19 ), vertices( 18 ), vertices( 4 ) ) ) :: 
-    Face( List( vertices( 18 ), vertices( 19 ), vertices( 7 ), vertices( 15 ), vertices( 6 ) ) ) :: 
-    Face( List( vertices( 7 ), vertices( 11 ), vertices( 3 ), vertices( 13 ), vertices( 15 ) ) ) :: 
-    Face( List( vertices( 6 ), vertices( 15 ), vertices( 13 ), vertices( 2 ), vertices( 10 ) ) ) :: 
-    Face( List( vertices( 2 ), vertices( 13 ), vertices( 3 ), vertices( 17 ), vertices( 16 ) ) ) :: 
-    Face( List( vertices( 7 ), vertices( 19 ), vertices( 5 ), vertices( 9 ), vertices( 11 ) ) ) ::  
-    Face( List( vertices( 0 ), vertices( 12 ), vertices( 14 ), vertices( 4 ), vertices( 8 ) ) ) ::  
-    Face( List( vertices( 8 ), vertices( 4 ), vertices( 18 ), vertices( 6 ), vertices( 10 ) ) ) ::  
-    Face( List( vertices( 1 ), vertices( 17 ), vertices( 3 ), vertices( 11 ), vertices( 9 ) ) ) :: Nil
+  val facesStructure =
+    List( 12, 0, 16, 17, 1 ) ::
+    List( 0, 8, 10, 2, 16 ) ::
+    List( 14, 12, 1, 9, 5 ) ::
+    List( 14, 5, 19, 18, 4 ) ::
+    List( 18, 19, 7, 15, 6 ) ::
+    List( 7, 11, 3, 13, 15 ) ::
+    List( 6, 15, 13, 2, 10 ) ::
+    List( 2, 13, 3, 17, 16 ) ::
+    List( 7, 19, 5, 9, 11 ) ::
+    List( 0, 12, 14, 4, 8 ) ::
+    List( 8, 4, 18, 6, 10 ) ::
+    List( 1, 17, 3, 11, 9 ) :: Nil
 }

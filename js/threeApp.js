@@ -179,22 +179,35 @@ function appMain() {
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
 
-    var cuts = getURLParameter("cells") || 0;
-    console.log( "cells:\t", cuts );
-    var cutPositions = new Array(2*cuts);
-    for ( var i = 0; i < cuts; i++ ) {
-        var cut = rndSpherePosition();
-        cutPositions[2*i] = cut[0];
-        cutPositions[2*i+1] = cut[1];
+    $("#previous").unbind("click");
+    $("#previous").click(prevVoxel);
+    $("#next").unbind("click");
+    $("#next").click(nextVoxel);
+    function prevVoxel() {
+        changeVoxel( -1 );
+    }
+    function nextVoxel() {
+        changeVoxel( 1 );
+    }
+    var voxelId = 0;
+    function changeVoxel( c ) {
+        voxelId = ( voxelId + c + 5 ) % 5;
+        loadVoxel( voxelId );
     }
 
-    var cubePlanet = demo.webapp.TutoMain().getVoxel( 4 );
+//    var cuts = getURLParameter("cells") || 0;
+//    console.log( "cells:\t", cuts );
+//    var cutPositions = new Array(2*cuts);
+//    for ( var i = 0; i < cuts; i++ ) {
+//        var cut = rndSpherePosition();
+//        cutPositions[2*i] = cut[0];
+//        cutPositions[2*i+1] = cut[1];
+//    }
 
 //    var id = getURLParameter( "polyId" ) || 3;
 //    console.log( "polyId:\t", id );
 //    var overlapThreshold = getURLParameter( "overlapThreshold" ) || 100;
 //    console.log( "overlapThreshold:\t", overlapThreshold );
-    var model = modelFromRaw ( cubePlanet );
 
     var zoomMax = 16;
     var zoomMin = 0.0625;
@@ -233,7 +246,15 @@ function appMain() {
 
     updateProjection(window.innerWidth, window.innerHeight);
 
-    var currentMesh =  makeMesh( model );
+    var currentMesh;
+
+    function loadVoxel(id) {
+        if ( currentMesh && scene ) {
+            scene.remove( currentMesh );
+        }
+        currentMesh = makeMesh( modelFromRaw ( demo.webapp.TutoMain().getVoxel( id ) ) );
+        scene.add( currentMesh );
+    }
 
     var mainContainer = document.getElementById( 'main' );
 
@@ -251,7 +272,7 @@ function appMain() {
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
 
-    scene.add( currentMesh );
+    loadVoxel( voxelId );
 
     function leftButton(evt) {
         var button = evt.which || evt.button;

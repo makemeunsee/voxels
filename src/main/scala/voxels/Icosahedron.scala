@@ -7,7 +7,7 @@ import voxels.Voxel.{Face, Vertex}
 /**
  * Created by markus on 26/05/15.
  */
-object Icosahedron extends Voxel {
+object Icosahedron extends VoxelStandard {
   val faceCount = 20
   val verticesCount = 12
 
@@ -25,25 +25,25 @@ object Icosahedron extends Voxel {
     Vec3 ( -gold, 0, -1 ) ::
     Vec3 ( -gold, 0, 1 ) :: Nil
 
-  val faces =
-    Face( List( vertices( 0 ), vertices( 1 ), vertices( 8 ) ) ) ::
-    Face( List( vertices( 0 ), vertices( 11 ), vertices( 1 ) ) ) ::
-    Face( List( vertices( 2 ), vertices( 3 ), vertices( 9 ) ) ) ::
-    Face( List( vertices( 2 ), vertices( 10 ), vertices( 3 ) ) ) ::
-    Face( List( vertices( 4 ), vertices( 5 ), vertices( 0 ) ) ) ::
-    Face( List( vertices( 4 ), vertices( 3 ), vertices( 5 ) ) ) ::
-    Face( List( vertices( 6 ), vertices( 7 ), vertices( 1 ) ) ) ::
-    Face( List( vertices( 6 ), vertices( 2 ), vertices( 7 ) ) ) ::
-    Face( List( vertices( 8 ), vertices( 9 ), vertices( 4 ) ) ) ::
-    Face( List( vertices( 8 ), vertices( 7 ), vertices( 9 ) ) ) ::
-    Face( List( vertices( 10 ), vertices( 11 ), vertices( 5 ) ) ) ::
-    Face( List( vertices( 10 ), vertices( 6 ), vertices( 11 ) ) ) ::
-    Face( List( vertices( 0 ), vertices( 8 ), vertices( 4 ) ) ) ::
-    Face( List( vertices( 0 ), vertices( 5 ), vertices( 11 ) ) ) ::
-    Face( List( vertices( 1 ), vertices( 7 ), vertices( 8 ) ) ) ::
-    Face( List( vertices( 1 ), vertices( 11 ), vertices( 6 ) ) ) ::
-    Face( List( vertices( 2 ), vertices( 9 ), vertices( 7 ) ) ) ::
-    Face( List( vertices( 2 ), vertices( 6 ), vertices( 10 ) ) ) ::
-    Face( List( vertices( 3 ), vertices( 4 ), vertices( 9 ) ) ) ::
-    Face( List( vertices( 3 ), vertices( 10 ), vertices( 5 ) ) ) :: Nil
+  val facesStructure =
+    List( 0, 1, 8 ) ::
+    List( 0, 11, 1 ) ::
+    List( 2, 3, 9 ) ::
+    List( 2, 10, 3 ) ::
+    List( 4, 5, 0 ) ::
+    List( 4, 3, 5 ) ::
+    List( 6, 7, 1 ) ::
+    List( 6, 2, 7 ) ::
+    List( 8, 9, 4 ) ::
+    List( 8, 7, 9 ) ::
+    List( 10, 11, 5 ) ::
+    List( 10, 6, 11 ) ::
+    List( 0, 8, 4 ) ::
+    List( 0, 5, 11 ) ::
+    List( 1, 7, 8 ) ::
+    List( 1, 11, 6 ) ::
+    List( 2, 9, 7 ) ::
+    List( 2, 6, 10 ) ::
+    List( 3, 4, 9 ) ::
+    List( 3, 10, 5 ) :: Nil
 }

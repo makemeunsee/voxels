@@ -92,16 +92,9 @@ object TutoMain extends JSApp {
     orthoMatrix( left, right, bottom, top, near, far )
   }
 
-  val voxels = Map( 0 -> Cube
-                  , 1 -> Tetrahedron
-                  , 2 -> Octahedron
-                  , 3 -> Dodecahedron
-                  , 4 -> Icosahedron
-                  )
-
   @JSExport
   def getVoxel( i: Int ): Array[Array[Double]] = {
-    val voxel = voxels.getOrElse( i, Cube )
+    val voxel = Voxel( standards.getOrElse( i, Cube ) )
     def aod: Array[Double] = Array()
     val ( vs, ns, cs, ds, is ) = voxel.faces.foldLeft( ( aod, aod, aod, aod, aod ) ) { case ( ( vertices, normals, centerFlags, depths, indices ), f ) =>
       val count = f.vertices.length

@@ -24,6 +24,7 @@ case class Vec3( x: Double, y: Double, z: Double) {
   }
 
   def minus( v: Vec3 ) = Vec3( x - v.x, y - v.y, z - v.z )
+  def - = minus _
   def plus( v: Vec3 ) = Vec3( x + v.x, y + v.y, z + v.z )
   def + = plus _
   def times( scalar: Double ) = Vec3( x*scalar, y*scalar, z*scalar )

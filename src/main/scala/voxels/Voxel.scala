@@ -8,6 +8,7 @@ import geometry.Vec3
 
 object Voxel {
   type Vertex = Vec3
+
   case class Face(vertices: List[Vertex]) {
     lazy val center = vertices.reduce( _+ _) / vertices.length
     lazy val normal = center.normalize
@@ -17,9 +18,19 @@ object Voxel {
 
 import Voxel._
 
-trait Voxel {
+trait VoxelStandard {
   def faceCount: Int
   def verticesCount: Int
   def vertices: List[Vertex]
-  def faces: List[Face]
+  def facesStructure: List[List[Int]]
+  def scale = {
+    val vertsIds = facesStructure.head
+    ( vertices( vertsIds.head ) - vertices( vertsIds.tail.head ) ).norm
+  }
+}
+
+case class Voxel( standard: VoxelStandard ) {
+  val faces = standard.facesStructure map { l =>
+    Face( l map { i => standard.vertices( i ) / standard.scale } )
+  }
 }

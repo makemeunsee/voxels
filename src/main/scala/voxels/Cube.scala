@@ -7,7 +7,7 @@ import voxels.Voxel.Vertex
 /**
  * Created by markus on 23/05/15.
  */
-object Cube extends Voxel {
+object Cube extends VoxelStandard {
   val faceCount = 6
   val verticesCount = 8
 
@@ -21,11 +21,11 @@ object Cube extends Voxel {
     Vec3( 1,-1,1 ) ::
     Vec3( -1,-1,1 ) :: Nil
 
-  val faces =
-    Face( List( vertices( 0 ), vertices( 3 ), vertices( 2 ), vertices( 1 ) ) ) ::
-    Face( List( vertices( 4 ), vertices( 5 ), vertices( 6 ), vertices( 7 ) ) ) ::
-    Face( List( vertices( 0 ), vertices( 6 ), vertices( 5 ), vertices( 3 ) ) ) ::
-    Face( List( vertices( 1 ), vertices( 2 ), vertices( 4 ), vertices( 7 ) ) ) ::
-    Face( List( vertices( 0 ), vertices( 1 ), vertices( 7 ), vertices( 6 ) ) ) ::
-    Face( List( vertices( 2 ), vertices( 3 ), vertices( 5 ), vertices( 4 ) ) ) :: Nil
+  val facesStructure =
+    List( 0, 3, 2, 1 ) ::
+    List( 4, 5, 6, 7 ) ::
+    List( 0, 6, 5, 3 ) ::
+    List( 1, 2, 4, 7 ) ::
+    List( 0, 1, 7, 6 ) ::
+    List( 2, 3, 5, 4 ) :: Nil
 }
