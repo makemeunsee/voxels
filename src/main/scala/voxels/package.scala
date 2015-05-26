@@ -9,6 +9,10 @@ package object voxels {
                      , 3 -> Dodecahedron
                      , 4 -> Icosahedron
                      , 5 -> TruncatedTetrahedron
-                     , 6 -> TruncatedOctahedron
+                     , 6 -> TruncatedCube
+                     , 7 -> TruncatedOctahedron
+                     , 8 -> Cuboctahedron
+                     , 9 -> RhombicDodecahedron
+                     // , 10 -> ElongatedDodecahedron
                      )
 }
