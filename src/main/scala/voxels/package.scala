@@ -3,16 +3,17 @@
  */
 package object voxels {
   // add: prisms, pyramids (triangle, square, pentagon based), more?
-  val standards = Map( 0 -> Tetrahedron
-                     , 1 -> Cube
-                     , 2 -> Octahedron
-                     , 3 -> Dodecahedron
-                     , 4 -> Icosahedron
-                     , 5 -> TruncatedTetrahedron
-                     , 6 -> TruncatedCube
-                     , 7 -> TruncatedOctahedron
-                     , 8 -> Cuboctahedron
-                     , 9 -> RhombicDodecahedron
-                     // , 10 -> ElongatedDodecahedron
-                     )
+  val standards = List( Tetrahedron,
+                        Cube,
+                        Octahedron,
+                        Dodecahedron,
+                        Icosahedron,
+                        TruncatedTetrahedron,
+                        TruncatedCube,
+                        TruncatedOctahedron,
+                        Cuboctahedron,
+                        RhombicDodecahedron,
+                        // ElongatedDodecahedron
+                        TrigonalTrapezohedron
+                        ).zipWithIndex.map { case ( v, i ) => ( i, v ) }.toMap
 }
