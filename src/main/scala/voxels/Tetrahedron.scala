@@ -7,8 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object Tetrahedron extends VoxelStandard {
-  val faceCount = 4
-  val verticesCount = 4
 
   val vertices: List[Vertex] =
     Vec3( 1,1,1 ) ::

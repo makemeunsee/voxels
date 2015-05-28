@@ -8,8 +8,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object Dodecahedron extends VoxelStandard {
-  val faceCount = 12
-  val verticesCount = 20
 
   val vertices: List[Vertex] =
     Vec3 ( 1, 1, 1 ) ::

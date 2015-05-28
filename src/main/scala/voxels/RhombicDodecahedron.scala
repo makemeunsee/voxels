@@ -7,8 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object RhombicDodecahedron extends VoxelStandard {
-  val faceCount = 12
-  val verticesCount = 14
 
   override val scale = 1d
 

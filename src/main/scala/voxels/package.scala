@@ -11,6 +11,7 @@ package object voxels {
                         TruncatedTetrahedron,
                         TruncatedCube,
                         TruncatedOctahedron,
+                        TruncatedIcosahedron,
                         Cuboctahedron,
                         RhombicDodecahedron,
                         // ElongatedDodecahedron // incompatible rhombi,

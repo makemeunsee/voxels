@@ -8,8 +8,6 @@ import voxels.Voxel.Vertex
  * Created by markus on 23/05/15.
  */
 object Cube extends VoxelStandard {
-  val faceCount = 6
-  val verticesCount = 8
 
   val vertices: List[Vertex] =
     Vec3( 1,1,1 ) ::

@@ -7,8 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object Octahedron extends VoxelStandard {
-  val faceCount = 8
-  val verticesCount = 6
 
   val vertices: List[Vertex] =
     Vec3( 0,1,0 ) ::

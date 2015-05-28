@@ -7,9 +7,6 @@ import voxels.Voxel.Vertex
  * Created by markus on 23/05/15.
  */
 object Rhombicuboctahedron extends VoxelStandard {
-  val faceCount = 26
-  val verticesCount = 24
-
   override val scale = 1d
 
   private val a = math.sqrt( 2 ) / 2

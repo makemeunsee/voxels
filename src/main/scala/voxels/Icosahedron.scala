@@ -8,8 +8,6 @@ import voxels.Voxel.{Face, Vertex}
  * Created by markus on 26/05/15.
  */
 object Icosahedron extends VoxelStandard {
-  val faceCount = 20
-  val verticesCount = 12
 
   val vertices: List[Vertex] =
     Vec3 ( 0, 1, gold ) ::

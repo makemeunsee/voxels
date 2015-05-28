@@ -7,8 +7,6 @@ import voxels.Voxel.Vertex
  * Created by markus on 23/05/15.
  */
 object Cuboctahedron extends VoxelStandard {
-  val faceCount = 14
-  val verticesCount = 12
 
   override val scale = 1d
 

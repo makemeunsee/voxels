@@ -7,9 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object TruncatedOctahedron extends VoxelStandard {
-  val faceCount = 14
-  val verticesCount = 24
-
   val vertices: List[Vertex] =
     Vec3( 0, 0.5, 1 ) ::
     Vec3( -0.5, 0, 1 ) ::

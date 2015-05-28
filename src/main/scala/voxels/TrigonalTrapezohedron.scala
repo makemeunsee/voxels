@@ -7,8 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object TrigonalTrapezohedron extends VoxelStandard {
-  val faceCount = 6
-  val verticesCount = 8
 
   override val scale = 1d
 

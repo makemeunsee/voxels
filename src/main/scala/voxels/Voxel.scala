@@ -19,8 +19,8 @@ object Voxel {
 import Voxel._
 
 trait VoxelStandard {
-  def faceCount: Int
-  def verticesCount: Int
+  def faceCount = facesStructure.size
+  def verticesCount = vertices.size
   def vertices: List[Vertex]
   def facesStructure: List[List[Int]]
   def scale = {

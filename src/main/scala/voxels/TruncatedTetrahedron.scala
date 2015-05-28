@@ -4,8 +4,6 @@ package voxels
  * Created by markus on 26/05/15.
  */
 object TruncatedTetrahedron extends VoxelStandard {
-  val faceCount = 8
-  val verticesCount = 12
   override val scale = 1d
 
   private def computeVertices = {

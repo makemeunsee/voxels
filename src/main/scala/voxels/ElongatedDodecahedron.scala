@@ -7,8 +7,6 @@ import voxels.Voxel._
  * Created by markus on 26/05/15.
  */
 object ElongatedDodecahedron extends VoxelStandard {
-  val faceCount = 12
-  val verticesCount = 18
 
   override val scale = 1d
 
