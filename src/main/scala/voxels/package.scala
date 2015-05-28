@@ -13,7 +13,8 @@ package object voxels {
                         TruncatedOctahedron,
                         Cuboctahedron,
                         RhombicDodecahedron,
-                        // ElongatedDodecahedron
-                        TrigonalTrapezohedron
+                        // ElongatedDodecahedron // incompatible rhombi,
+                        TrigonalTrapezohedron,
+                        Rhombicuboctahedron
                         ).zipWithIndex.map { case ( v, i ) => ( i, v ) }.toMap
 }
