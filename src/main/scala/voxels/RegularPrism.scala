@@ -26,7 +26,7 @@ case class RegularPrism( sides: Int ) extends VoxelStandard {
     ( 1 until l by 2 ).reverse.toList ::
     Nil ++
     ( 0 until l / 2 ).map { i =>
-      List(2 * i, 2 * i + 1, ( 2 * i + 3 ) % l, ( 2 * i + 2 ) % l )
+      List( 2 * i, 2 * i + 1, ( 2 * i + 3 ) % l, ( 2 * i + 2 ) % l )
     }
   }
 }
