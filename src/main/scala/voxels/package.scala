@@ -2,7 +2,6 @@
  * Created by markus on 26/05/15.
  */
 package object voxels {
-  // add: prisms, pyramids (triangle, square, pentagon based), more?
   val standards = (
     Tetrahedron ::
     Cube ::
@@ -20,6 +19,6 @@ package object voxels {
     Rhombicuboctahedron ::
     RhombicPrism ::
     Nil ++
-    List( 3, 4, 5, 6, 8 ).map( RegularPrism )
+    List( 3, 5, 6, 8 ).map( RegularPrism )
   ).zipWithIndex.map { case ( v, i ) => ( i, v ) }.toMap
 }
