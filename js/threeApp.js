@@ -39,6 +39,10 @@ function makeMesh( model ) {
              type: 'v3',
              value: []
         },
+        a_pickColor: {
+             type: 'v3',
+             value: []
+        },
         a_centerFlag: {
             type: 'f',
             value: []
@@ -57,8 +61,17 @@ function makeMesh( model ) {
         side: THREE.DoubleSide
     });
 
+    var pickShaderMaterial = new THREE.ShaderMaterial({
+        attributes:     attributes,
+        uniforms:       customUniforms,
+        vertexShader:   document.getElementById('shader-pick-vs').innerHTML,
+        fragmentShader: document.getElementById('shader-pick-fs').innerHTML,
+        side: THREE.DoubleSide
+    });
+
     var positions = new Float32Array( model.vertice.length );
     var normals = new Float32Array( model.vertice.length );
+    var pickColors = new Float32Array( model.vertice.length );
     var centerFlag = new Float32Array( model.vertice.length / 3 );
     var mazeDepth = new Float32Array( model.vertice.length / 3 );
     for (var i = 0; i < model.vertice.length / 3; i++) {
@@ -70,6 +83,10 @@ function makeMesh( model ) {
         normals [ 3*i+2 ] = model.normals[ 3*i+2 ];
         centerFlag[ i ] = model.centers[ i ];
         mazeDepth[ i ] = model.mazeData[ i ];
+        var pickColor = Math.floor(model.pickColors[ i ]);
+        pickColors[ 3*i ] = (pickColor & 0xFF0000) / 256 / 256 / 255;
+        pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
+        pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
     }
     var indices = new Uint16Array( model.indice.length );
     for (var i = 0; i < model.indice.length ; i++) {
@@ -80,9 +97,10 @@ function makeMesh( model ) {
     geometry.addAttribute( 'a_mazeDepth', new THREE.BufferAttribute( mazeDepth, 1 ) );
     geometry.addAttribute( 'a_centerFlag', new THREE.BufferAttribute( centerFlag, 1 ) );
     geometry.addAttribute( 'a_normal', new THREE.BufferAttribute( normals, 3 ) );
+    geometry.addAttribute( 'a_pickColor', new THREE.BufferAttribute( pickColors, 3 ) );
     geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 
-    return new THREE.Mesh( geometry, shaderMaterial );
+    return [ new THREE.Mesh( geometry, shaderMaterial ), new THREE.Mesh( geometry, pickShaderMaterial ) ];
 }
 
 function modelFromRaw( model ) {
@@ -90,8 +108,9 @@ function modelFromRaw( model ) {
         "vertice": model[0],
         "normals": model[1],
         "centers": model[2],
-        "mazeData": model[3],
-        "indice": model[4],
+        "pickColors": model[3],
+        "mazeData": model[4],
+        "indice": model[5],
     };
 }
 
@@ -249,14 +268,18 @@ function appMain() {
 
     updateProjection(window.innerWidth, window.innerHeight);
 
-    var currentMesh;
+    var currentMeshes;
 
     function loadVoxel(id) {
-        if ( currentMesh && scene ) {
-            scene.remove( currentMesh );
+        if ( currentMeshes && scene ) {
+            scene.remove( currentMeshes[0] );
         }
-        currentMesh = makeMesh( modelFromRaw ( scalaObj.getVoxel( id ) ) );
-        scene.add( currentMesh );
+        if ( currentMeshes && pickScene ) {
+            pickScene.remove( currentMeshes[1] );
+        }
+        currentMeshes = makeMesh( modelFromRaw ( scalaObj.getVoxel( id ) ) );
+        scene.add( currentMeshes[0] );
+        pickScene.add( currentMeshes[1] );
     }
 
     var mainContainer = document.getElementById( 'main' );
@@ -270,7 +293,11 @@ function appMain() {
     });
 
     var scene = new THREE.Scene();
+    var pickScene = new THREE.Scene();
     var renderer = new THREE.WebGLRenderer( { preserveDrawingBuffer: true } );
+
+    var pixels = new Uint8Array(3);
+
     var canvas = renderer.domElement;
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
@@ -295,6 +322,8 @@ function appMain() {
         }
     }
 
+    var clicking = false;
+
     // only react to left clicks
     function onTouchStart(event) {
         // dont handle multi touch
@@ -314,6 +343,7 @@ function appMain() {
               tapped = null;
               toggleUI()
             }
+            clicking = true;
         }
     }
 
@@ -328,6 +358,7 @@ function appMain() {
         canvas.removeEventListener( "touchend", onTouchEnd, false );
         canvas.removeEventListener( "mousemove", onMouseMove, false );
         canvas.removeEventListener( "touchmove", onTouchMove, false );
+        clicking = false;
     }
 
     function onMouseMove(event) {
@@ -430,20 +461,29 @@ function appMain() {
 //        var now = Date.now();
 //        var dt = now - then;
 
-        if ( depthMaze && reverseDepth ) {
-            currentMesh.material.uniforms.u_depthMode.value = -1.0;
-        } else if ( depthMaze && !reverseDepth ) {
-            currentMesh.material.uniforms.u_depthMode.value = 1.0;
-        } else {
-            currentMesh.material.uniforms.u_depthMode.value = 0.0;
+        for (var i = 0; i < 2; i++) {
+            if ( depthMaze && reverseDepth ) {
+                currentMeshes[i].material.uniforms.u_depthMode.value = -1.0;
+            } else if ( depthMaze && !reverseDepth ) {
+                currentMeshes[i].material.uniforms.u_depthMode.value = 1.0;
+            } else {
+                currentMeshes[i].material.uniforms.u_depthMode.value = 0.0;
+            }
+            currentMeshes[i].material.uniforms.u_explodedFactor.value = explosion;
+            currentMeshes[i].material.uniforms.u_depthScale.value = depthExagg;
+            currentMeshes[i].material.uniforms.u_time.value = simTime;
+            currentMeshes[i].material.uniforms.u_borderWidth.value = 1.0;
+            currentMeshes[i].material.uniforms.u_mvpMat.value = mvp;
+            currentMeshes[i].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
+            currentMeshes[i].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
         }
-        currentMesh.material.uniforms.u_explodedFactor.value = explosion;
-        currentMesh.material.uniforms.u_depthScale.value = depthExagg;
-        currentMesh.material.uniforms.u_time.value = simTime;
-        currentMesh.material.uniforms.u_borderWidth.value = 1.0;
-        currentMesh.material.uniforms.u_mvpMat.value = mvp;
-        currentMesh.material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
-        currentMesh.material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
+
+        if ( clicking ) {
+            renderer.render(pickScene, dummyCam);
+            var gl = renderer.getContext();
+            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
+            console.log(pixels);
+        }
 
         renderer.render(scene, dummyCam);
 

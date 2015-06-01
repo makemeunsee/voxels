@@ -125,6 +125,55 @@ void main()
     v_mazeDepth = a_mazeDepth;
 }
     </script>
+    <script id="shader-pick-fs" type="x-shader/x-fragment">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+varying vec3 v_color;
+
+void main()
+{
+    gl_FragColor = vec4 ( v_color, 1.0 );
+}
+    </script>
+    <script id="shader-pick-vs" type="x-shader/x-vertex">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+attribute vec3 a_normal;
+attribute vec3 a_pickColor;
+attribute float a_mazeDepth;
+
+uniform mat4 u_mvpMat;
+uniform float u_time;
+uniform float u_depthMode;
+uniform float u_depthScale;
+uniform float u_explodedFactor;
+
+varying vec3 v_color;
+
+vec3 unpackColor(float f) {
+    vec3 color;
+    color.b = floor(f / 256.0 / 256.0);
+    color.g = floor((f - color.b * 256.0 * 256.0) / 256.0);
+    color.r = floor(f - color.b * 256.0 * 256.0 - color.g * 256.0);
+    // now we have a vec3 with the 3 components in range [0..256]. Let's normalize it!
+    return color / 256.0;
+}
+
+void main()
+{
+    float d = 0.0;
+    if (u_depthMode > 0.0) {
+        d = a_mazeDepth * u_depthScale;
+    } else if (u_depthMode < 0.0) {
+        d = - a_mazeDepth * u_depthScale;
+    }
+    gl_Position = u_mvpMat * vec4((1.0+d) * (position + (u_explodedFactor * a_normal)), 1.0);
+    // v_color = unpackColor(a_pickColor);
+    v_color = a_pickColor;
+}
+    </script>
     <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js"></script>
     <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
     <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
