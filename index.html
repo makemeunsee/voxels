@@ -28,22 +28,6 @@
             <button id="fullscreen">fullscreen</button>
             <button id="showHelp">?</button>
         </div>
-        <div>
-            <br/>
-            <input type="checkbox" id="flat"><label id="flatLabel" for="flat">Flat tessellation</label>
-        </div>
-        <div>
-            <br/>
-            <input type="checkbox" id="reverseDepth"><label id="reverseDepthLabel" for="reverseDepth">Reverse depth</label>
-        </div>
-        <div>
-            <br/>
-            <input type="number" min="0" max="1" step="any" id="depthExaggeration"><label id="depthExaggerationLabel" for="depthExaggeration">Depth exaggeration</label>
-        </div>
-        <div>
-            <br/>
-            <input type="number" min="0" step="any" id="explosion"><label id="explosionLabel" for="explosion">Explosion factor</label>
-        </div>
     </div>
     <div id="main"></div>
 
@@ -57,39 +41,21 @@
 uniform vec4 u_color;
 uniform vec4 u_borderColor;
 uniform float u_borderWidth;
-uniform float u_depthMode;
 
 varying float v_centerFlag;
-varying float v_mazeDepth;
 
 float edgeFactor(const float thickness, const float centerFlag)
 {
     return smoothstep(0.0, fwidth(centerFlag)*thickness, centerFlag);
 }
 
-vec4 shade(const float depth) {
-    if (depth < 0.33) {
-        return vec4(0.01 + 3.0 * (0.33 - depth), 0.01 + 3.0 * depth, 0.01, 1.0);
-    } else if (depth < 0.66) {
-        return vec4(0.01, 0.01 + 3.0 * (0.33 - (depth-0.33)), 0.01 + 3.0 * (depth-0.33), 1.0);
-    } else {
-        return vec4(0.01 + 3.0 * (depth-0.66), 0.01, 0.01 + 3.0 * (0.33 - (depth-0.66)), 1.0);
-    }
-}
-
 void main()
 {
     float f = edgeFactor(u_borderWidth, v_centerFlag);
-    vec4 baseColor = u_color;
-    if (u_depthMode > 0.0) {
-        baseColor = shade(v_mazeDepth);
-    } else if (u_depthMode < 0.0) {
-        baseColor = shade(v_mazeDepth);
-    }
     gl_FragColor = vec4 (
         mix(
             u_borderColor,
-            baseColor,
+            u_color,
             f).rgb,
         1.0
     );
@@ -101,28 +67,16 @@ void main()
 
 attribute float a_centerFlag;
 attribute vec3 a_normal;
-attribute float a_mazeDepth;
 
 uniform mat4 u_mvpMat;
 uniform float u_time;
-uniform float u_depthMode;
-uniform float u_depthScale;
-uniform float u_explodedFactor;
 
 varying float v_centerFlag;
-varying float v_mazeDepth;
 
 void main()
 {
-    float d = 0.0;
-    if (u_depthMode > 0.0) {
-        d = a_mazeDepth * u_depthScale;
-    } else if (u_depthMode < 0.0) {
-        d = - a_mazeDepth * u_depthScale;
-    }
-    gl_Position = u_mvpMat * vec4((1.0+d) * (position + (u_explodedFactor * a_normal)), 1.0);
+    gl_Position = u_mvpMat * vec4(position, 1.0);
     v_centerFlag = a_centerFlag;
-    v_mazeDepth = a_mazeDepth;
 }
     </script>
     <script id="shader-pick-fs" type="x-shader/x-fragment">#ifdef GL_ES
@@ -142,13 +96,9 @@ void main()
 
 attribute vec3 a_normal;
 attribute vec3 a_pickColor;
-attribute float a_mazeDepth;
 
 uniform mat4 u_mvpMat;
 uniform float u_time;
-uniform float u_depthMode;
-uniform float u_depthScale;
-uniform float u_explodedFactor;
 
 varying vec3 v_color;
 
@@ -163,13 +113,7 @@ vec3 unpackColor(float f) {
 
 void main()
 {
-    float d = 0.0;
-    if (u_depthMode > 0.0) {
-        d = a_mazeDepth * u_depthScale;
-    } else if (u_depthMode < 0.0) {
-        d = - a_mazeDepth * u_depthScale;
-    }
-    gl_Position = u_mvpMat * vec4((1.0+d) * (position + (u_explodedFactor * a_normal)), 1.0);
+    gl_Position = u_mvpMat * vec4(position, 1.0);
     // v_color = unpackColor(a_pickColor);
     v_color = a_pickColor;
 }

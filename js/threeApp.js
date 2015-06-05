@@ -21,9 +21,6 @@ function arrToMat( arr ) {
 function makeMesh( model ) {
     var customUniforms = {
         u_time: { type: "1f", value: 0 },
-        u_depthMode: { type: "1f", value: 0 },
-        u_depthScale: { type: "1f", value: 0 },
-        u_explodedFactor: { type: "1f", value: 0 },
         u_borderWidth: { type: "1f", value: 0 },
         u_mvpMat: { type: "m4", value: new THREE.Matrix4() },
         u_color: { type: "v4", value: new THREE.Vector4( 1, 1, 1, 1 ) },
@@ -44,10 +41,6 @@ function makeMesh( model ) {
              value: []
         },
         a_centerFlag: {
-            type: 'f',
-            value: []
-        },
-        a_mazeDepth: {
             type: 'f',
             value: []
         }
@@ -73,7 +66,6 @@ function makeMesh( model ) {
     var normals = new Float32Array( model.vertice.length );
     var pickColors = new Float32Array( model.vertice.length );
     var centerFlag = new Float32Array( model.vertice.length / 3 );
-    var mazeDepth = new Float32Array( model.vertice.length / 3 );
     for (var i = 0; i < model.vertice.length / 3; i++) {
         positions [ 3*i ] = model.vertice[ 3*i ];
         normals [ 3*i ] = model.normals[ 3*i ];
@@ -82,7 +74,6 @@ function makeMesh( model ) {
         positions [ 3*i+2 ] = model.vertice[ 3*i+2 ];
         normals [ 3*i+2 ] = model.normals[ 3*i+2 ];
         centerFlag[ i ] = model.centers[ i ];
-        mazeDepth[ i ] = model.mazeData[ i ];
         var pickColor = Math.floor(model.pickColors[ i ]);
         pickColors[ 3*i ] = (pickColor & 0xFF0000) / 256 / 256 / 255;
         pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
@@ -94,7 +85,6 @@ function makeMesh( model ) {
     }
 
     geometry.addAttribute( 'index', new THREE.BufferAttribute( indices, 1 ) );
-    geometry.addAttribute( 'a_mazeDepth', new THREE.BufferAttribute( mazeDepth, 1 ) );
     geometry.addAttribute( 'a_centerFlag', new THREE.BufferAttribute( centerFlag, 1 ) );
     geometry.addAttribute( 'a_normal', new THREE.BufferAttribute( normals, 3 ) );
     geometry.addAttribute( 'a_pickColor', new THREE.BufferAttribute( pickColors, 3 ) );
@@ -109,8 +99,7 @@ function modelFromRaw( model ) {
         "normals": model[1],
         "centers": model[2],
         "pickColors": model[3],
-        "mazeData": model[4],
-        "indice": model[5],
+        "indice": model[4],
     };
 }
 
@@ -128,12 +117,6 @@ function appMain() {
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
-
-    function rndSpherePosition() {
-        var u = Math.random();
-        var v = Math.random();
-        return [ 2*Math.PI*u, Math.acos( 2*v - 1 ) ];
-    }
 
     // help dialog
     $(function() {
@@ -157,22 +140,6 @@ function appMain() {
       $( "button" ).button();
     });
 
-    var depthMaze = true;
-    function flatFct() {
-        depthMaze = !depthMaze;
-    }
-    $("#flat").unbind("click");
-    $("#flat").click(flatFct);
-    $("#flat").attr("checked", false);
-
-    var reverseDepth = false;
-    function reverseDepthFct() {
-        reverseDepth = !reverseDepth;
-    }
-    $("#reverseDepth").unbind("click");
-    $("#reverseDepth").click(reverseDepthFct);
-    $("#reverseDepth").attr("checked", false);
-
     function showHelp() {
         if ( $( "#dialog" ).dialog( "isOpen" ) )
             $( "#dialog" ).dialog( "close" );
@@ -181,9 +148,6 @@ function appMain() {
     }
     $("#showHelp").unbind("click");
     $("#showHelp").click(showHelp);
-
-    var depthExagg = 0.5;
-    var explosion = 0.0;
 
     function screenshot() {
         var w = window.open('', '');
@@ -323,7 +287,7 @@ function appMain() {
         }
     }
 
-    var clicking = false;
+    var clicked = false;
 
     // only react to left clicks
     function onTouchStart(event) {
@@ -344,7 +308,6 @@ function appMain() {
               tapped = null;
               toggleUI()
             }
-            clicking = true;
         }
     }
 
@@ -359,7 +322,7 @@ function appMain() {
         canvas.removeEventListener( "touchend", onTouchEnd, false );
         canvas.removeEventListener( "mousemove", onMouseMove, false );
         canvas.removeEventListener( "touchmove", onTouchMove, false );
-        clicking = false;
+        clicked = true;
     }
 
     function onMouseMove(event) {
@@ -463,15 +426,6 @@ function appMain() {
 //        var dt = now - then;
 
         for (var i = 0; i < 2; i++) {
-            if ( depthMaze && reverseDepth ) {
-                currentMeshes[i].material.uniforms.u_depthMode.value = -1.0;
-            } else if ( depthMaze && !reverseDepth ) {
-                currentMeshes[i].material.uniforms.u_depthMode.value = 1.0;
-            } else {
-                currentMeshes[i].material.uniforms.u_depthMode.value = 0.0;
-            }
-            currentMeshes[i].material.uniforms.u_explodedFactor.value = explosion;
-            currentMeshes[i].material.uniforms.u_depthScale.value = depthExagg;
             currentMeshes[i].material.uniforms.u_time.value = simTime;
             currentMeshes[i].material.uniforms.u_borderWidth.value = 1.0;
             currentMeshes[i].material.uniforms.u_mvpMat.value = mvp;
@@ -479,12 +433,13 @@ function appMain() {
             currentMeshes[i].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
         }
 
-        if ( clicking ) {
+        if ( clicked ) {
             renderer.render(pickScene, dummyCam);
             var gl = renderer.getContext();
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
             console.log(pixels);
             console.log(scalaObj.getFaceType(pixels));
+            clicked = false;
         }
 
         renderer.render(scene, dummyCam);

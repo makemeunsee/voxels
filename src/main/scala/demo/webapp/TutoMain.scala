@@ -104,7 +104,7 @@ object TutoMain extends JSApp {
     def faceIdToColorCode( i: Int ) = ( i+1 ) << 17
     colorToFaceDict = voxel.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
     def aod: Array[Double] = Array()
-    val ( vs, ns, cs, pcs, ds, is ) = voxel.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, depths, indices ), ( f, fId ) ) =>
+    val ( vs, ns, cs, pcs, is ) = voxel.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, indices ), ( f, fId ) ) =>
       val count = f.vertices.length
       val Vec3( nx, ny, nz ) = f.normal
       val Vec3( cx, cy, cz ) = f.center
@@ -113,11 +113,10 @@ object TutoMain extends JSApp {
       val newNormals = normals ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
       val newCenterFlags = centerFlags ++ ( 0 until count ).map( _ => 0d ) :+ 1d
       val newPickColors = pickColors ++ ( 0 to count ).map( _ => faceIdToColorCode( fId ).toDouble )
-      val newDepths = depths ++ ( 0 to count ).map( _ => 0d )
       val newIndices = indices ++ ( 0 until count ).flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
-      ( newVertices, newNormals, newCenterFlags, newPickColors, newDepths, newIndices )
+      ( newVertices, newNormals, newCenterFlags, newPickColors, newIndices )
     }
-    Array( vs, ns, cs, pcs, ds, is )
+    Array( vs, ns, cs, pcs, is )
   }
 
   @JSExport
