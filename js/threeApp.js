@@ -277,7 +277,7 @@ function appMain() {
         if ( currentMeshes && pickScene ) {
             pickScene.remove( currentMeshes[1] );
         }
-        currentMeshes = makeMesh( modelFromRaw ( scalaObj.getVoxel( id ) ) );
+        currentMeshes = makeMesh( modelFromRaw ( scalaObj.loadVoxel( id ) ) );
         document.title = scalaObj.getVoxelName( id );
         scene.add( currentMeshes[0] );
         pickScene.add( currentMeshes[1] );
@@ -484,6 +484,7 @@ function appMain() {
             var gl = renderer.getContext();
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
             console.log(pixels);
+            console.log(scalaObj.getFaceType(pixels));
         }
 
         renderer.render(scene, dummyCam);

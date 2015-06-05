@@ -95,9 +95,14 @@ object TutoMain extends JSApp {
   @JSExport
   val voxelTypeCount = standards.size
 
+  private var voxel = Voxel( Cube )
+  private var colorToFaceDict = Map.empty[Int, Int]
+
   @JSExport
-  def getVoxel( i: Int ): Array[Array[Double]] = {
-    val voxel = Voxel( standards.getOrElse( i, Cube ) )
+  def loadVoxel( i: Int ): Array[Array[Double]] = {
+    voxel = Voxel( standards.getOrElse( i, Cube ) )
+    def faceIdToColorCode( i: Int ) = ( i+1 ) << 17
+    colorToFaceDict = voxel.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
     def aod: Array[Double] = Array()
     val ( vs, ns, cs, pcs, ds, is ) = voxel.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, depths, indices ), ( f, fId ) ) =>
       val count = f.vertices.length
@@ -107,12 +112,20 @@ object TutoMain extends JSApp {
       val newVertices = vertices ++ f.rawVertices ++ Array( cx, cy, cz )
       val newNormals = normals ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
       val newCenterFlags = centerFlags ++ ( 0 until count ).map( _ => 0d ) :+ 1d
-      val newPickColors = pickColors ++ ( 0 to count ).map( _ => ( (fId+1) << 17 ).toDouble )
+      val newPickColors = pickColors ++ ( 0 to count ).map( _ => faceIdToColorCode( fId ).toDouble )
       val newDepths = depths ++ ( 0 to count ).map( _ => 0d )
       val newIndices = indices ++ ( 0 until count ).flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
       ( newVertices, newNormals, newCenterFlags, newPickColors, newDepths, newIndices )
     }
     Array( vs, ns, cs, pcs, ds, is )
+  }
+
+  @JSExport
+  def getFaceType( color: Array[Int] ): String = {
+    assert( color.length == 3 )
+    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
+    val fId = colorToFaceDict.get( colorCode )
+    fId.fold( "" )( i => voxel.faces( i ).faceType.toString )
   }
 
   @JSExport
