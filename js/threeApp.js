@@ -278,6 +278,7 @@ function appMain() {
             pickScene.remove( currentMeshes[1] );
         }
         currentMeshes = makeMesh( modelFromRaw ( scalaObj.getVoxel( id ) ) );
+        document.title = scalaObj.getVoxelName( id );
         scene.add( currentMeshes[0] );
         pickScene.add( currentMeshes[1] );
     }

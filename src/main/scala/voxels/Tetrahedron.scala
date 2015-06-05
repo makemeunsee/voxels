@@ -15,8 +15,10 @@ object Tetrahedron extends VoxelStandard {
     Vec3( -1,-1,1 ) :: Nil
 
   val facesStructure =
-    List( 0 , 1 , 3 ) ::
-    List( 0 , 2 , 1 ) ::
-    List( 0 , 3 , 2 ) ::
-    List( 1 , 2 , 3 ) :: Nil
+    List(
+      List( 0 , 1 , 3 ),
+      List( 0 , 2 , 1 ),
+      List( 0 , 3 , 2 ),
+      List( 1 , 2 , 3 )
+    ).map( ( _, RegularPolygon( 3 ) ) )
 }

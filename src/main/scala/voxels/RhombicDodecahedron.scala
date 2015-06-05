@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.{Vec3, gold}
+import geometry.Vec3
 import voxels.Voxel._
 
 /**
@@ -30,17 +30,18 @@ object RhombicDodecahedron extends VoxelStandard {
     Vec3 ( 0, 0, -b ) :: Nil
 
   val facesStructure =
-    List( 0, 10, 4, 12 ) ::
-    List( 0, 12, 2, 8 ) ::
-    List( 2, 12, 6, 11 ) ::
-    List( 4, 9, 6, 12 ) ::
-    List( 0, 8, 1, 10 ) ::
-    List( 4, 10, 5, 9 ) ::
-    List( 6, 9, 7, 11 ) ::
-    List( 2, 11, 3, 8 ) ::
-    List( 1, 13, 5, 10 ) ::
-    List( 1, 8, 3, 13 ) ::
-    List( 3, 11, 7, 13 ) ::
-    List( 5, 13, 7, 9 ) ::
-    Nil
+    List(
+      List( 0, 10, 4, 12 ),
+      List( 0, 12, 2, 8 ),
+      List( 2, 12, 6, 11 ),
+      List( 4, 9, 6, 12 ),
+      List( 0, 8, 1, 10 ),
+      List( 4, 10, 5, 9 ),
+      List( 6, 9, 7, 11 ),
+      List( 2, 11, 3, 8 ),
+      List( 1, 13, 5, 10 ),
+      List( 1, 8, 3, 13 ),
+      List( 3, 11, 7, 13 ),
+      List( 5, 13, 7, 9 )
+    ).map( ( _, StdRhombus ) )
 }

@@ -1,6 +1,7 @@
 package voxels
 
 import geometry.Vec3
+import voxels.Voxel.RegularPolygon
 
 /**
  * Created by markus on 29/05/2015.
@@ -22,12 +23,14 @@ case class RegularPrism( sides: Int ) extends VoxelStandard {
 
   val facesStructure = {
     val l = vertices.size
-    ( 0 until l by 2 ).toList ::
-    ( 1 until l by 2 ).reverse.toList ::
+    ( ( 0 until l by 2 ).toList, RegularPolygon( l / 2 ) ) ::
+    ( ( 1 until l by 2 ).reverse.toList, RegularPolygon( l / 2 ) ) ::
     Nil ++
     ( 0 until l / 2 ).map { i =>
-      List( 2 * i, 2 * i + 1, ( 2 * i + 3 ) % l, ( 2 * i + 2 ) % l )
+      ( List( 2 * i, 2 * i + 1, ( 2 * i + 3 ) % l, ( 2 * i + 2 ) % l ), RegularPolygon( 4 ) )
     }
   }
+
+  override def name = s"Regular prism, $sides sides"
 }
 

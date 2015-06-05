@@ -1,6 +1,7 @@
 package voxels
 
 import geometry.Vec3
+import voxels.Voxel.{RegularPolygon, StdRhombus}
 
 /**
  * Created by markus on 29/05/2015.
@@ -23,12 +24,13 @@ object RhombicPrism extends VoxelStandard {
     Nil
 
   val facesStructure =
-    List( 0, 1, 2, 3 ) ::
-    List( 7, 6, 5, 4 ) ::
-    List( 0, 4, 5, 1) ::
-    List( 1, 5, 6, 2) ::
-    List( 2, 6, 7, 3) ::
-    List( 3, 7, 4, 0) ::
-    Nil
+    List(
+      ( List( 0, 1, 2, 3 ), StdRhombus ),
+      ( List( 7, 6, 5, 4 ), StdRhombus ),
+      ( List( 0, 4, 5, 1), RegularPolygon( 4 ) ),
+      ( List( 1, 5, 6, 2), RegularPolygon( 4 ) ),
+      ( List( 2, 6, 7, 3), RegularPolygon( 4 ) ),
+      ( List( 3, 7, 4, 0), RegularPolygon( 4 ) )
+    )
 }
 

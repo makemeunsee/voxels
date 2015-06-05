@@ -115,4 +115,7 @@ object TutoMain extends JSApp {
     Array( vs, ns, cs, pcs, ds, is )
   }
 
+  @JSExport
+  def getVoxelName( i: Int ): String = Voxel( standards.getOrElse( i, Cube ) ).standard.name
+
 }

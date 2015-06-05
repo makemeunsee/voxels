@@ -25,11 +25,12 @@ object TrigonalTrapezohedron extends VoxelStandard {
     Nil
 
   val facesStructure =
-    List( 0, 3, 5, 2 ) ::
-    List( 0, 1, 6, 3 ) ::
-    List( 0, 2, 4, 1 ) ::
-    List( 2, 5, 7, 4 ) ::
-    List( 1, 4, 7, 6 ) ::
-    List( 3, 6, 7, 5 ) ::
-    Nil
+    List(
+      List( 0, 3, 5, 2 ),
+      List( 0, 1, 6, 3 ),
+      List( 0, 2, 4, 1 ),
+      List( 2, 5, 7, 4 ),
+      List( 1, 4, 7, 6 ),
+      List( 3, 6, 7, 5 )
+    ).map( ( _, StdRhombus ) )
 }

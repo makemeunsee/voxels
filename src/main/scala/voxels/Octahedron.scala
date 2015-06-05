@@ -17,13 +17,15 @@ object Octahedron extends VoxelStandard {
     Vec3( 0,-1,0 ) :: Nil
 
   val facesStructure =
-    List( 0, 2, 1 ) ::
-    List( 0, 3, 2 ) ::
-    List( 0, 4, 3 ) ::
-    List( 0, 1, 4 ) ::
-    List( 5, 1, 2 ) ::
-    List( 5, 2, 3 ) ::
-    List( 5, 3, 4 ) ::
-    List( 5, 4, 1 ) :: Nil
+    List(
+      List( 0, 2, 1 ),
+      List( 0, 3, 2 ),
+      List( 0, 4, 3 ),
+      List( 0, 1, 4 ),
+      List( 5, 1, 2 ),
+      List( 5, 2, 3 ),
+      List( 5, 3, 4 ),
+      List( 5, 4, 1 )
+    ).map( ( _, RegularPolygon( 3 ) ) )
 
 }
