@@ -42,5 +42,5 @@ object Cuboctahedron extends VoxelStandard {
       List( 8, 5, 9, 4 ),
       List( 1, 6, 2, 5 ),
       List( 6, 11, 7, 10 )
-    ).map( l => ( l, RegularPolygon( l.length, 1 ) ) )
+    ).map( l => ( l, RegularPolygon( l.length ), 1 ) )
 }

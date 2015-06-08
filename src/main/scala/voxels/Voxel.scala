@@ -9,23 +9,22 @@ import geometry.{Matrix4, Vec3}
 object Voxel {
   type Vertex = Vec3
 
-  case class Face( vertices: List[Vertex], faceType: FaceType ) {
+  case class Face( vertices: List[Vertex], faceType: FaceType, rotationInvariance: Int ) {
     assert( vertices.length > 2 )
     def center = vertices.reduce( _ + _ ) / vertices.length
     def normal = ( vertices( 2 ) - vertices( 1 ) cross ( vertices( 0 ) - vertices( 1 ) ) ).normalize
     def rawVertices = vertices.flatMap{ case Vec3( x, y, z ) => x :: y :: z :: Nil }
+    // how many successive rotation steps become an identity transformation (for the voxel)
   }
 
   sealed trait FaceType {
     // 2*Pi/rotations = rotation steps that leave the face unchanged
     def rotations: Int
-    // how many successive rotation steps become an identity transformation (for the voxel)
-    def rotationInvariance: Int
   }
-  case class RegularPolygon( sides: Int, rotationInvariance: Int ) extends FaceType {
+  case class RegularPolygon( sides: Int ) extends FaceType {
     def rotations = sides
   }
-  case class StdRhombus( rotationInvariance: Int ) extends FaceType {
+  case object StdRhombus extends FaceType {
     def rotations = 2
   }
 }
@@ -37,7 +36,7 @@ trait VoxelStandard {
   def faceCount = facesStructure.size
   def verticesCount = vertices.size
   def vertices: List[Vertex]
-  def facesStructure: List[( List[Int], FaceType )]
+  def facesStructure: List[( List[Int], FaceType, Int )]
   def scale = {
     val vertsIds = facesStructure.head
     ( vertices( vertsIds._1.head ) - vertices( vertsIds._1.tail.head ) ).norm
@@ -45,7 +44,7 @@ trait VoxelStandard {
 }
 
 case class Voxel( standard: VoxelStandard, transformation: Matrix4 ) {
-  val faces = standard.facesStructure map { case ( l, t ) =>
-    Face( l map { i => transformation( standard.vertices( i ) / standard.scale ) }, t )
+  val faces = standard.facesStructure map { case ( l, t, rotInv ) =>
+    Face( l map { i => transformation( standard.vertices( i ) / standard.scale ) }, t, rotInv )
   }
 }

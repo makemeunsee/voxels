@@ -65,5 +65,5 @@ object Rhombicuboctahedron extends VoxelStandard {
       ( List( 3, 4, 7, 6 ), 2 ),
       ( List( 15, 18, 19, 16 ), 2 ),
       ( List( 12, 13, 22, 21 ), 2 )
-    ).map { case ( l, i ) => ( l, RegularPolygon( l.length, i ) ) }
+    ).map { case ( l, i ) => ( l, RegularPolygon( l.length ), i ) }
 }

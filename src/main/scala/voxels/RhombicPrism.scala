@@ -25,12 +25,12 @@ object RhombicPrism extends VoxelStandard {
 
   val facesStructure =
     List(
-      ( List( 0, 1, 2, 3 ), StdRhombus( 1 ) ),
-      ( List( 7, 6, 5, 4 ), StdRhombus( 1 ) ),
-      ( List( 0, 4, 5, 1), RegularPolygon( 4, 4 ) ),
-      ( List( 1, 5, 6, 2), RegularPolygon( 4, 4 ) ),
-      ( List( 2, 6, 7, 3), RegularPolygon( 4, 4 ) ),
-      ( List( 3, 7, 4, 0), RegularPolygon( 4, 4 ) )
+      ( List( 0, 1, 2, 3 ), StdRhombus, 1 ),
+      ( List( 7, 6, 5, 4 ), StdRhombus, 1 ),
+      ( List( 0, 4, 5, 1), RegularPolygon( 4 ), 4 ),
+      ( List( 1, 5, 6, 2), RegularPolygon( 4 ), 4 ),
+      ( List( 2, 6, 7, 3), RegularPolygon( 4 ), 4 ),
+      ( List( 3, 7, 4, 0), RegularPolygon( 4 ), 4 )
     )
 }
 

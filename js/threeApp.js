@@ -439,6 +439,7 @@ function appMain() {
             var gl = renderer.getContext();
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
             console.log(scalaObj.getFaceType(pixels));
+            console.log(scalaObj.listDockingOptions(pixels));
             var newHighlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
             if ( newHighlighted == highlighted && newHighlighted != 0 ) {
                 console.log("rotating!");

@@ -110,7 +110,28 @@ object TutoMain extends JSApp {
     assert( color.length == 3 )
     val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
     val fId = colorToFaceDict.get( colorCode )
-    fId.fold( "" )( i => s"$i, ${voxel.faces( i ).faceType}" )
+    fId.fold( "" )( i => s"$i, ${voxel.faces( i ).faceType}, ${voxel.faces( i ).rotationInvariance}" )
+  }
+
+  @JSExport
+  def listDockingOptions( color: Array[Int] ): String = {
+    assert( color.length == 3 )
+    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
+    colorToFaceDict.get( colorCode ) match {
+      case None =>
+        "Nothing here!"
+      case Some( fId ) =>
+        val faceType = voxel.faces( fId ).faceType
+        val options = standards.map { case ( _, std ) =>
+          ( std
+          , std.facesStructure
+            .zipWithIndex
+            .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
+            .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
+          )
+        }.filter( _._2.nonEmpty )
+        options.toString
+    }
   }
 
   @JSExport

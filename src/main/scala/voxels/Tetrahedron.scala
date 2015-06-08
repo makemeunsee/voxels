@@ -20,5 +20,5 @@ object Tetrahedron extends VoxelStandard {
       List( 0 , 2 , 1 ),
       List( 0 , 3 , 2 ),
       List( 1 , 2 , 3 )
-    ).map( ( _, RegularPolygon( 3, 1 ) ) )
+    ).map( ( _, RegularPolygon( 3 ), 1 ) )
 }

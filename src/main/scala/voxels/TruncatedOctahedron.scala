@@ -51,7 +51,7 @@ object TruncatedOctahedron extends VoxelStandard {
       List( 4, 5, 10, 11, 19, 16 ).reverse
     ).map { list =>
       val l = list.length
-      ( list, RegularPolygon( l, if ( l == 6 ) 2 else 1 ) )
+      ( list, RegularPolygon( l ), if ( l == 6 ) 2 else 1 )
     }
 
 }

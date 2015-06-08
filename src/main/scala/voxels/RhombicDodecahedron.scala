@@ -43,5 +43,5 @@ object RhombicDodecahedron extends VoxelStandard {
       List( 1, 8, 3, 13 ),
       List( 3, 11, 7, 13 ),
       List( 5, 13, 7, 9 )
-    ).map( ( _, StdRhombus( 1 ) ) )
+    ).map( ( _, StdRhombus, 1 ) )
 }
