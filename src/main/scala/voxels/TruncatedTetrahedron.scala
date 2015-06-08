@@ -23,8 +23,8 @@ object TruncatedTetrahedron extends VoxelStandard {
       List( 5, 4, 7, 8, 11, 10 ),
       List( 2, 0, 3, 5, 10, 9 ),
       List( 0, 2, 1 ),
-      List( 3, 5, 4 ),
+      List( 3, 4, 5 ),
       List( 6, 8, 7 ),
-      List( 9, 11, 10 )
+      List( 9, 10, 11 )
     ).map( l => ( l, RegularPolygon( l.length ) ) )
 }
