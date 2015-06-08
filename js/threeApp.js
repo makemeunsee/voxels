@@ -128,6 +128,7 @@ function appMain() {
         });
     });
     $( "#dialog" ).dialog( "close" );
+    $( "#menu" ).hide();
 
     function toggleUI() {
         console.log("toggling ui");
@@ -183,6 +184,38 @@ function appMain() {
         voxelId = ( voxelId + c + count ) % count;
         loadStdVoxel( voxelId );
         highlighted = 0;
+        loadDockingOptions(null);
+    }
+
+    function loadDockingOptions( options ) {
+        var menu = $( "#menu" );
+        menu.empty();
+        var hasSome = false;
+        for (var prop in options) {
+            if (options.hasOwnProperty(prop)) {
+                hasSome = true;
+                menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>')
+                $( "li" ).hover(
+                    function() {
+                        $( this ).addClass( "active" );
+                    },
+                    function() {
+                        $( this ).removeClass( "active" );
+                    }
+                );
+                $( "#li-"+prop ).click(
+                    function(evt) {
+                        console.log(evt.currentTarget.id);
+                        // TODO: dock!
+                    }
+                );
+            }
+        }
+        if (hasSome) {
+            menu.show();
+        } else {
+            menu.hide();
+        }
     }
 
 //    var cuts = getURLParameter("cells") || 0;
@@ -314,7 +347,7 @@ function appMain() {
             } else {    //tapped within 300ms of last tap. double tap
               clearTimeout(tapped); //stop single tap callback
               tapped = null;
-              toggleUI()
+              toggleUI();
             }
         }
     }
@@ -442,7 +475,9 @@ function appMain() {
             console.log(pixels);
             highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
             console.log(scalaObj.selectFace(highlighted));
-            console.log(scalaObj.showDockingOptions(highlighted));
+            var options = scalaObj.showDockingOptions(highlighted);
+            console.log(options);
+            loadDockingOptions(options);
             clicked = false;
         }
 

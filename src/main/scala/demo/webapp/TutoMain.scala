@@ -130,7 +130,6 @@ object TutoMain extends JSApp {
     .map { case ( ( vId, fId, rotStep ), i ) =>
       val std = standards( vId )
       val face = std.facesStructure( fId )
-      val faceType = face._2
       val rotInv = face._3
       ( i.toString
       , s"${std.name}, $fId, 2*Pi*$rotStep/$rotInv"
