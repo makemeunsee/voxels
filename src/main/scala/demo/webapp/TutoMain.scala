@@ -12,7 +12,7 @@ import scala.scalajs.js.JSConverters._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-import scala.scalajs.js.Array
+import scala.scalajs.js.{Array, Dictionary}
 
 object TutoMain extends JSApp {
   def main(): Unit = {
@@ -79,10 +79,15 @@ object TutoMain extends JSApp {
 
   private var voxel = Voxel( Cube, Matrix4.unit )
   private var colorToFaceDict = Map.empty[Int, Int]
+  private var selectedFace: Int = -1
+  // ( voxelStd id, face id, rotation step )
+  private var dockingOptions = Seq.empty[(Int,Int,Int)]
 
   @JSExport
   def loadVoxel( i: Int ): Array[Array[Double]] = {
     voxel = Voxel( standards.getOrElse( i, Cube ), Matrix4.unit )
+    selectedFace = -1
+    dockingOptions = Seq.empty
     voxelToRaw( voxel )
   }
 
@@ -90,43 +95,64 @@ object TutoMain extends JSApp {
     def faceIdToColorCode( i: Int ) = ( i+1 ) << 17
     colorToFaceDict = v.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
     def aod: Array[Double] = Array()
-    val ( vs, ns, cs, pcs, is ) = v.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, indices ), ( f, fId ) ) =>
-      val count = f.vertices.length
-      val Vec3( nx, ny, nz ) = f.normal
-      val Vec3( cx, cy, cz ) = f.center
-      val offset = ( vertices.length / 3 ).toDouble
-      val newVertices = vertices ++ f.rawVertices ++ Array( cx, cy, cz )
-      val newNormals = normals ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
-      val newCenterFlags = centerFlags ++ ( 0 until count ).map( _ => 0d ) :+ 1d
-      val newPickColors = pickColors ++ ( 0 to count ).map( _ => faceIdToColorCode( fId ).toDouble )
-      val newIndices = indices ++ ( 0 until count ).flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
-      ( newVertices, newNormals, newCenterFlags, newPickColors, newIndices )
+    val ( vertices, normals, centerFlags, pickColors, indices ) = v.faces
+      .zipWithIndex
+      .foldLeft( aod, aod, aod, aod, aod ) { case ( ( vs, ns, cs, pcs, is ), ( f, fId ) ) =>
+        val count = f.vertices.length
+        val Vec3( nx, ny, nz ) = f.normal
+        val Vec3( cx, cy, cz ) = f.center
+        val offset = ( vs.length / 3 ).toDouble
+        val newVertices = vs ++ f.rawVertices ++ Array( cx, cy, cz )
+        val newNormals = ns ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
+        val newCenterFlags = cs ++ ( 0 until count ).map( _ => 0d ) :+ 1d
+        val newPickColors = pcs ++ ( 0 to count ).map( _ => faceIdToColorCode( fId ).toDouble )
+        val newIndices =
+          is ++
+          ( 0 until count )
+            .flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
+        ( newVertices, newNormals, newCenterFlags, newPickColors, newIndices )
+      }
+    Array( vertices, normals, centerFlags, pickColors, indices )
+  }
+
+  @JSExport
+  def selectFace( colorCode: Int ): String = {
+    dockingOptions = listDockingOptions( colorCode )
+    colorToFaceDict.get( colorCode ) match {
+      case None => ""
+      case Some( fId ) => voxel.faces( fId ).faceType.toString
     }
-    Array( vs, ns, cs, pcs, is )
   }
 
   @JSExport
-  def getFaceType( colorCode: Int ): String = {
-    val fId = colorToFaceDict.get( colorCode )
-    fId.fold( "" )( i => s"$i, ${voxel.faces( i ).faceType}, ${voxel.faces( i ).rotationInvariance}" )
-  }
+  def showDockingOptions(): Dictionary[String] = dockingOptions
+    .zipWithIndex
+    .map { case ( ( vId, fId, rotStep ), i ) =>
+      val std = standards( vId )
+      val face = std.facesStructure( fId )
+      val faceType = face._2
+      val rotInv = face._3
+      ( i.toString
+      , s"${std.name}, $fId, 2*Pi*$rotStep/$rotInv"
+      )
+    }
+    .toMap
+    .toJSDictionary
 
-  @JSExport
-  def listDockingOptions( colorCode: Int ): String = {
+  private def listDockingOptions( colorCode: Int ): Seq[(Int,Int,Int)] = {
     colorToFaceDict.get( colorCode ) match {
       case None =>
-        "Nothing here!"
+        List.empty
       case Some( fId ) =>
         val faceType = voxel.faces( fId ).faceType
-        val options = standards.map { case ( _, std ) =>
-          ( std
-          , std.facesStructure
-            .zipWithIndex
-            .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
-            .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
-          )
-        }.filter( _._2.nonEmpty )
-        options.toString
+        standards
+          .flatMap { case ( vId, std ) =>
+            std.facesStructure
+              .zipWithIndex
+              .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
+              .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
+              .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( vId, o_fId, rotStep ) ) }
+          }.toSeq
     }
   }
 

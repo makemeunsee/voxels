@@ -441,8 +441,8 @@ function appMain() {
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             console.log(pixels);
             highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
-            console.log(scalaObj.getFaceType(highlighted));
-            console.log(scalaObj.listDockingOptions(highlighted));
+            console.log(scalaObj.selectFace(highlighted));
+            console.log(scalaObj.showDockingOptions(highlighted));
             clicked = false;
         }
 
