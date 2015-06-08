@@ -9,12 +9,12 @@ import geometry.{Matrix4, Vec3}
 object Voxel {
   type Vertex = Vec3
 
+  // rotationInvariance = how many successive rotation steps (see FaceType) become an identity transformation (for the whole voxel)
   case class Face( vertices: List[Vertex], faceType: FaceType, rotationInvariance: Int ) {
     assert( vertices.length > 2 )
     def center = vertices.reduce( _ + _ ) / vertices.length
     def normal = ( vertices( 2 ) - vertices( 1 ) cross ( vertices( 0 ) - vertices( 1 ) ) ).normalize
     def rawVertices = vertices.flatMap{ case Vec3( x, y, z ) => x :: y :: z :: Nil }
-    // how many successive rotation steps become an identity transformation (for the voxel)
   }
 
   sealed trait FaceType {
