@@ -14,7 +14,7 @@ object Voxel {
     def center = vertices.reduce( _ + _ ) / vertices.length
     def normal = ( vertices( 2 ) - vertices( 1 ) cross ( vertices( 0 ) - vertices( 1 ) ) ).normalize
     def rawVertices = vertices.flatMap{ case Vec3( x, y, z ) => x :: y :: z :: Nil }
-    // rotation with angle ( 2 Pi / vertices.length ), with axis ( normal ), about ( center )
+    // rotation with angle ( 2 Pi / vertices.length ), with axis ( normal )
     def conjugationMatrix: Matrix4 = {
       val n = normal
       Matrix4.rotationMatrix( 2*math.Pi / vertices.length, n.x, n.y, n.z )

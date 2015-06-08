@@ -124,7 +124,7 @@ object TutoMain extends JSApp {
       case None =>
         voxelToRaw( voxel )
       case Some( fId ) =>
-        voxel = voxel.copy( transformation = voxel.transformation * voxel.faces( fId ).conjugationMatrix )
+        voxel = voxel.copy( transformation = voxel.faces( fId ).conjugationMatrix * voxel.transformation )
         voxelToRaw( voxel )
     }
   }
