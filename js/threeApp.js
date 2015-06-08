@@ -24,7 +24,8 @@ function makeMesh( model ) {
         u_borderWidth: { type: "1f", value: 0 },
         u_mvpMat: { type: "m4", value: new THREE.Matrix4() },
         u_color: { type: "v4", value: new THREE.Vector4( 1, 1, 1, 1 ) },
-        u_borderColor: { type: "v4", value: new THREE.Vector4( 0, 0, 0, 1 ) }
+        u_borderColor: { type: "v4", value: new THREE.Vector4( 0, 0, 0, 1 ) },
+        u_highlightFlag: { type: "1f", value: 0 }
     };
 
     var geometry = new THREE.BufferGeometry();
@@ -33,12 +34,12 @@ function makeMesh( model ) {
     // currently 2 colors are given as vertex attributes
     var attributes = {
         a_normal: {
-             type: 'v3',
-             value: []
+            type: 'v3',
+            value: []
         },
         a_pickColor: {
-             type: 'v3',
-             value: []
+            type: 'f',
+            value: []
         },
         a_centerFlag: {
             type: 'f',
@@ -64,7 +65,7 @@ function makeMesh( model ) {
 
     var positions = new Float32Array( model.vertice.length );
     var normals = new Float32Array( model.vertice.length );
-    var pickColors = new Float32Array( model.vertice.length );
+    var pickColors = new Float32Array( model.vertice.length / 3);
     var centerFlag = new Float32Array( model.vertice.length / 3 );
     for (var i = 0; i < model.vertice.length / 3; i++) {
         positions [ 3*i ] = model.vertice[ 3*i ];
@@ -74,10 +75,10 @@ function makeMesh( model ) {
         positions [ 3*i+2 ] = model.vertice[ 3*i+2 ];
         normals [ 3*i+2 ] = model.normals[ 3*i+2 ];
         centerFlag[ i ] = model.centers[ i ];
-        var pickColor = Math.floor(model.pickColors[ i ]);
-        pickColors[ 3*i ] = (pickColor & 0xFF0000) / 256 / 256 / 255;
-        pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
-        pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
+        pickColors[ i ] = Math.floor(model.pickColors[ i ])
+        //(pickColor & 0xFF0000) / 256 / 256 / 255;
+        //pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
+        //pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
     }
     var indices = new Uint16Array( model.indice.length );
     for (var i = 0; i < model.indice.length ; i++) {
@@ -87,7 +88,7 @@ function makeMesh( model ) {
     geometry.addAttribute( 'index', new THREE.BufferAttribute( indices, 1 ) );
     geometry.addAttribute( 'a_centerFlag', new THREE.BufferAttribute( centerFlag, 1 ) );
     geometry.addAttribute( 'a_normal', new THREE.BufferAttribute( normals, 3 ) );
-    geometry.addAttribute( 'a_pickColor', new THREE.BufferAttribute( pickColors, 3 ) );
+    geometry.addAttribute( 'a_pickColor', new THREE.BufferAttribute( pickColors, 1 ) );
     geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 
     return [ new THREE.Mesh( geometry, shaderMaterial ), new THREE.Mesh( geometry, pickShaderMaterial ) ];
@@ -175,10 +176,12 @@ function appMain() {
         changeVoxel( 1 );
     }
     var voxelId = 0;
+    var highlighted = 0;
     function changeVoxel( c ) {
         var count = scalaObj.voxelTypeCount;
         voxelId = ( voxelId + c + count ) % count;
-        loadVoxel( voxelId );
+        loadStdVoxel( voxelId );
+        highlighted = 0;
     }
 
 //    var cuts = getURLParameter("cells") || 0;
@@ -234,15 +237,18 @@ function appMain() {
 
     var currentMeshes;
 
-    function loadVoxel(id) {
+    function loadStdVoxel( id ) {
+        loadRaw( scalaObj.loadVoxel( id ) );
+    }
+    function loadRaw( raw ) {
         if ( currentMeshes && scene ) {
             scene.remove( currentMeshes[0] );
         }
         if ( currentMeshes && pickScene ) {
             pickScene.remove( currentMeshes[1] );
         }
-        currentMeshes = makeMesh( modelFromRaw ( scalaObj.loadVoxel( id ) ) );
-        document.title = scalaObj.getVoxelName( id );
+        currentMeshes = makeMesh( modelFromRaw ( raw ) );
+        document.title = scalaObj.getVoxelName();
         scene.add( currentMeshes[0] );
         pickScene.add( currentMeshes[1] );
     }
@@ -267,7 +273,7 @@ function appMain() {
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
 
-    loadVoxel( voxelId );
+    loadStdVoxel( voxelId );
 
     function leftButton(evt) {
         var button = evt.which || evt.button;
@@ -288,6 +294,7 @@ function appMain() {
     }
 
     var clicked = false;
+    var dragging = false;
 
     // only react to left clicks
     function onTouchStart(event) {
@@ -322,7 +329,8 @@ function appMain() {
         canvas.removeEventListener( "touchend", onTouchEnd, false );
         canvas.removeEventListener( "mousemove", onMouseMove, false );
         canvas.removeEventListener( "touchmove", onTouchMove, false );
-        clicked = true;
+        clicked = !dragging;
+        dragging = false;
     }
 
     function onMouseMove(event) {
@@ -334,6 +342,7 @@ function appMain() {
     function onTouchMove(event) {
         // dont handle multi touch
         if (event.touches.length === 1) {
+            dragging = true;
             event.preventDefault();
             var deltaX = event.touches[0].clientX - mx;
             var deltaY = event.touches[0].clientY - my;
@@ -425,21 +434,28 @@ function appMain() {
 //        var now = Date.now();
 //        var dt = now - then;
 
+        if ( clicked ) {
+            renderer.render(pickScene, dummyCam);
+            var gl = renderer.getContext();
+            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
+            console.log(scalaObj.getFaceType(pixels));
+            var newHighlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+            if ( newHighlighted == highlighted && newHighlighted != 0 ) {
+                console.log("rotating!");
+                loadRaw( scalaObj.rotateAroundFace(pixels) );
+            }
+            highlighted = newHighlighted;
+            clicked = false;
+        }
+
+        currentMeshes[0].material.uniforms.u_highlightFlag.value = highlighted;
+
         for (var i = 0; i < 2; i++) {
             currentMeshes[i].material.uniforms.u_time.value = simTime;
             currentMeshes[i].material.uniforms.u_borderWidth.value = 1.0;
             currentMeshes[i].material.uniforms.u_mvpMat.value = mvp;
             currentMeshes[i].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
             currentMeshes[i].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
-        }
-
-        if ( clicked ) {
-            renderer.render(pickScene, dummyCam);
-            var gl = renderer.getContext();
-            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
-            console.log(pixels);
-            console.log(scalaObj.getFaceType(pixels));
-            clicked = false;
         }
 
         renderer.render(scene, dummyCam);

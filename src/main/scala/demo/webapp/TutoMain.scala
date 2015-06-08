@@ -4,8 +4,11 @@ package demo.webapp
  * Created by markus on 16/02/2015.
  */
 
-import geometry.Vec3
+import geometry.{Matrix4, Vec3}
+import geometry.Matrix4.rotationMatrix
 import voxels._
+
+import scala.scalajs.js.JSConverters._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -16,30 +19,9 @@ object TutoMain extends JSApp {
     println("start")
   }
 
-  def rotMat( angle: Double, vX: Double, vY: Double, vZ: Double ): Array[Array[Double]] = {
-    val n = math.sqrt( vX*vX + vY*vY + vZ*vZ )
-    val nX = vX / n
-    val nY = vY / n
-    val nZ = vZ / n
-    val cosA = math.cos( angle )
-    val sinA = math.sin( angle )
-    Array( Array( cosA + nX*nX*(1-cosA),    nX*nY*(1-cosA) - nZ*sinA, nX*nZ*(1-cosA) + nY*sinA, 0 )
-         , Array( nX*nY*(1-cosA) + nZ*sinA, cosA + nY*nY*(1-cosA),    nY*nZ*(1-cosA) - nX*sinA, 0 )
-         , Array( nX*nZ*(1-cosA) - nY*sinA, nY*nZ*(1-cosA) + nX*sinA, cosA + nZ*nZ*(1-cosA),    0 )
-         , Array( 0,                        0,                        0,                        1 ))
-  }
-
-  def multMat( m0: Array[Array[Double]], m1: Array[Array[Double]] ): Array[Array[Double]] = {
-    val r: Array[Array[Double]] = Array( Array(0,0,0,0), Array(0,0,0,0), Array(0,0,0,0), Array(0,0,0,0) )
-    for ( i <- 0 to 3; j <- 0 to 3 )
-      for ( k <- 0 to 3 )
-        r( i ).update( j, r ( i )( j ) + m0( i )( k ) * m1( k )( j ) )
-    r
-  }
-
   @JSExport
   def naiveRotMat(theta: Double, phi: Double): Array[Array[Double]] = {
-    multMat ( rotMat( theta, 0, 1, 0 ), rotMat( phi, 1, 0, 0 ) )
+    ( rotationMatrix( theta, 0, 1, 0 ) * rotationMatrix( phi, 1, 0, 0 ) ).toSeqs.map( _.toJSArray ).toJSArray
   }
 
   def latLongPosition(theta: Double, phi: Double, distance: Double): Vec3 = {
@@ -95,16 +77,20 @@ object TutoMain extends JSApp {
   @JSExport
   val voxelTypeCount = standards.size
 
-  private var voxel = Voxel( Cube )
+  private var voxel = Voxel( Cube, Matrix4.unit )
   private var colorToFaceDict = Map.empty[Int, Int]
 
   @JSExport
   def loadVoxel( i: Int ): Array[Array[Double]] = {
-    voxel = Voxel( standards.getOrElse( i, Cube ) )
+    voxel = Voxel( standards.getOrElse( i, Cube ), Matrix4.unit )
+    voxelToRaw( voxel )
+  }
+
+  private def voxelToRaw( v: Voxel ): Array[Array[Double]] = {
     def faceIdToColorCode( i: Int ) = ( i+1 ) << 17
-    colorToFaceDict = voxel.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
+    colorToFaceDict = v.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
     def aod: Array[Double] = Array()
-    val ( vs, ns, cs, pcs, is ) = voxel.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, indices ), ( f, fId ) ) =>
+    val ( vs, ns, cs, pcs, is ) = v.faces.zipWithIndex.foldLeft( aod, aod, aod, aod, aod ) { case ( ( vertices, normals, centerFlags, pickColors, indices ), ( f, fId ) ) =>
       val count = f.vertices.length
       val Vec3( nx, ny, nz ) = f.normal
       val Vec3( cx, cy, cz ) = f.center
@@ -128,6 +114,18 @@ object TutoMain extends JSApp {
   }
 
   @JSExport
-  def getVoxelName( i: Int ): String = Voxel( standards.getOrElse( i, Cube ) ).standard.name
+  def getVoxelName(): String = voxel.standard.name
 
+  @JSExport
+  def rotateAroundFace( color: Array[Int] ): Array[Array[Double]] = {
+    assert( color.length == 3 )
+    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
+    colorToFaceDict.get( colorCode ) match {
+      case None =>
+        voxelToRaw( voxel )
+      case Some( fId ) =>
+        voxel = voxel.copy( transformation = voxel.transformation * voxel.faces( fId ).conjugationMatrix )
+        voxelToRaw( voxel )
+    }
+  }
 }

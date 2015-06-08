@@ -28,8 +28,8 @@ case class Vec3( x: Double, y: Double, z: Double) {
   def plus( v: Vec3 ) = Vec3( x + v.x, y + v.y, z + v.z )
   def + = plus _
   def times( scalar: Double ) = Vec3( x*scalar, y*scalar, z*scalar )
-  def dividedBy( scalar: Double) = times( 1d/scalar )
   def * = times _
+  def dividedBy( scalar: Double) = times( 1d/scalar )
   def / = dividedBy _
   def dot( v: Vec3 ) = x*v.x + y*v.y + z*v.z
   def cross( v: Vec3 ) =
