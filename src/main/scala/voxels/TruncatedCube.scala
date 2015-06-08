@@ -54,5 +54,8 @@ object TruncatedCube extends VoxelStandard {
       List( 2, 1, 8, 12, 17, 18, 13, 9 ),
       List( 4, 3, 9, 13, 19, 20, 14, 10 ),
       List( 6, 5, 10, 14, 21, 22, 15, 11 )
-    ).map( l => ( l.reverse, RegularPolygon( l.length ) ) )
+    ).map { list =>
+      val l = list.length
+      ( list.reverse, RegularPolygon( l, if ( l == 8 ) 2 else 1 ) )
+    }
 }

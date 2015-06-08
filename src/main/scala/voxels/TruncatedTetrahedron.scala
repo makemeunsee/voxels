@@ -26,5 +26,8 @@ object TruncatedTetrahedron extends VoxelStandard {
       List( 3, 4, 5 ),
       List( 6, 8, 7 ),
       List( 9, 10, 11 )
-    ).map( l => ( l, RegularPolygon( l.length ) ) )
+    ).map { list =>
+      val l = list.length
+      ( list, RegularPolygon( l, if ( l == 6 ) 2 else 1 ) )
+    }
 }

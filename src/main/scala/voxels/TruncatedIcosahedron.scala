@@ -35,6 +35,9 @@ object TruncatedIcosahedron extends VoxelStandard {
         i::edges( i )::edges( edges( i ) )::edges( edges( edges( i ) ) )::edges( edges( edges( edges( i ) ) ) )::Nil
       }
       .map( _.reverse )
-    ( hexas ++ pentas ).map( l => ( l, RegularPolygon( l.length ) ) )
+    ( hexas ++ pentas ).map { list =>
+      val l = list.length
+      ( list, RegularPolygon( l, if ( l == 6 ) 2 else 1 ) )
+    }
   }
 }

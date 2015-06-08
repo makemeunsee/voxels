@@ -14,16 +14,20 @@ object Voxel {
     def center = vertices.reduce( _ + _ ) / vertices.length
     def normal = ( vertices( 2 ) - vertices( 1 ) cross ( vertices( 0 ) - vertices( 1 ) ) ).normalize
     def rawVertices = vertices.flatMap{ case Vec3( x, y, z ) => x :: y :: z :: Nil }
-    // rotation with angle ( 2 Pi / vertices.length ), with axis ( normal )
-    def conjugationMatrix: Matrix4 = {
-      val n = normal
-      Matrix4.rotationMatrix( 2*math.Pi / vertices.length, n.x, n.y, n.z )
-    }
   }
 
-  sealed trait FaceType
-  case class RegularPolygon( sides: Int ) extends FaceType
-  case object StdRhombus extends FaceType
+  sealed trait FaceType {
+    // 2*Pi/rotations = rotation steps that leave the face unchanged
+    def rotations: Int
+    // how many successive rotation steps become an identity transformation (for the voxel)
+    def rotationInvariance: Int
+  }
+  case class RegularPolygon( sides: Int, rotationInvariance: Int ) extends FaceType {
+    def rotations = sides
+  }
+  case class StdRhombus( rotationInvariance: Int ) extends FaceType {
+    def rotations = 2
+  }
 }
 
 import Voxel._

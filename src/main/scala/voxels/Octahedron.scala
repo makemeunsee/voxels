@@ -26,6 +26,6 @@ object Octahedron extends VoxelStandard {
       List( 5, 2, 3 ),
       List( 5, 3, 4 ),
       List( 5, 4, 1 )
-    ).map( ( _, RegularPolygon( 3 ) ) )
+    ).map( ( _, RegularPolygon( 3, 1 ) ) )
 
 }

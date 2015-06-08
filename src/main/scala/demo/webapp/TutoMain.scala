@@ -110,7 +110,7 @@ object TutoMain extends JSApp {
     assert( color.length == 3 )
     val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
     val fId = colorToFaceDict.get( colorCode )
-    fId.fold( "" )( i => voxel.faces( i ).faceType.toString )
+    fId.fold( "" )( i => s"$i, ${voxel.faces( i ).faceType}" )
   }
 
   @JSExport
@@ -124,7 +124,7 @@ object TutoMain extends JSApp {
       case None =>
         voxelToRaw( voxel )
       case Some( fId ) =>
-        voxel = voxel.copy( transformation = voxel.faces( fId ).conjugationMatrix * voxel.transformation )
+        // voxel = voxel.copy( transformation = voxel.faces( fId ).conjugationMatrix * voxel.transformation )
         voxelToRaw( voxel )
     }
   }
