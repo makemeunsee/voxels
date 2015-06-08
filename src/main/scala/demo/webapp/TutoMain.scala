@@ -106,17 +106,13 @@ object TutoMain extends JSApp {
   }
 
   @JSExport
-  def getFaceType( color: Array[Int] ): String = {
-    assert( color.length == 3 )
-    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
+  def getFaceType( colorCode: Int ): String = {
     val fId = colorToFaceDict.get( colorCode )
     fId.fold( "" )( i => s"$i, ${voxel.faces( i ).faceType}, ${voxel.faces( i ).rotationInvariance}" )
   }
 
   @JSExport
-  def listDockingOptions( color: Array[Int] ): String = {
-    assert( color.length == 3 )
-    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
+  def listDockingOptions( colorCode: Int ): String = {
     colorToFaceDict.get( colorCode ) match {
       case None =>
         "Nothing here!"
@@ -136,17 +132,4 @@ object TutoMain extends JSApp {
 
   @JSExport
   def getVoxelName(): String = voxel.standard.name
-
-  @JSExport
-  def rotateAroundFace( color: Array[Int] ): Array[Array[Double]] = {
-    assert( color.length == 3 )
-    val colorCode = ( color( 0 ) << 16 ) + ( color( 1 ) << 8 ) + color( 2 )
-    colorToFaceDict.get( colorCode ) match {
-      case None =>
-        voxelToRaw( voxel )
-      case Some( fId ) =>
-        // voxel = voxel.copy( transformation = voxel.faces( fId ).conjugationMatrix * voxel.transformation )
-        voxelToRaw( voxel )
-    }
-  }
 }

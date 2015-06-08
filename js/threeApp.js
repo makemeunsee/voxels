@@ -75,10 +75,11 @@ function makeMesh( model ) {
         positions [ 3*i+2 ] = model.vertice[ 3*i+2 ];
         normals [ 3*i+2 ] = model.normals[ 3*i+2 ];
         centerFlag[ i ] = model.centers[ i ];
-        pickColors[ i ] = Math.floor(model.pickColors[ i ])
-        //(pickColor & 0xFF0000) / 256 / 256 / 255;
-        //pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
-        //pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
+        pickColors[ i ] = Math.floor(model.pickColors[ i ]);
+//        var pickColor = Math.floor(model.pickColors[ i ]);
+//        pickColors[ 3*i ] = (pickColor & 0xFF0000) / 256 / 256 / 255;
+//        pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
+//        pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
     }
     var indices = new Uint16Array( model.indice.length );
     for (var i = 0; i < model.indice.length ; i++) {
@@ -267,7 +268,7 @@ function appMain() {
     var pickScene = new THREE.Scene();
     var renderer = new THREE.WebGLRenderer( { preserveDrawingBuffer: true } );
 
-    var pixels = new Uint8Array(3);
+    var pixels = new Uint8Array(4);
 
     var canvas = renderer.domElement;
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -437,15 +438,11 @@ function appMain() {
         if ( clicked ) {
             renderer.render(pickScene, dummyCam);
             var gl = renderer.getContext();
-            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGB, gl.UNSIGNED_BYTE, pixels);
-            console.log(scalaObj.getFaceType(pixels));
-            console.log(scalaObj.listDockingOptions(pixels));
-            var newHighlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
-            if ( newHighlighted == highlighted && newHighlighted != 0 ) {
-                console.log("rotating!");
-                loadRaw( scalaObj.rotateAroundFace(pixels) );
-            }
-            highlighted = newHighlighted;
+            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            console.log(pixels);
+            highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+            console.log(scalaObj.getFaceType(highlighted));
+            console.log(scalaObj.listDockingOptions(highlighted));
             clicked = false;
         }
 
