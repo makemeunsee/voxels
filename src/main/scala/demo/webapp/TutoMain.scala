@@ -5,7 +5,7 @@ package demo.webapp
  */
 
 import geometry.{Matrix4, Vec3}
-import geometry.Matrix4.rotationMatrix
+import geometry.Matrix4.{rotationMatrix, translationMatrix}
 import voxels._
 
 import scala.scalajs.js.JSConverters._
@@ -78,6 +78,7 @@ object TutoMain extends JSApp {
   val voxelTypeCount = standards.size
 
   private var voxels = Seq( Voxel( Cube, Matrix4.unit ) )
+  private var selectedVoxel: Int = -1
   private var selectedFace: Int = -1
   // ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[(Int,Int,Int)]
@@ -85,8 +86,7 @@ object TutoMain extends JSApp {
   @JSExport
   def loadVoxel( i: Int ): Array[Array[Double]] = {
     voxels = Seq( Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
-    selectedFace = -1
-    dockingOptions = Seq.empty
+    clearSelection()
     voxelToRaw( voxels( 0 ), 0 )
   }
 
@@ -123,6 +123,8 @@ object TutoMain extends JSApp {
   def selectFace( colorCode: Int ): String = {
     val ( vId, fId ) = revertColorCode( colorCode )
     dockingOptions = listDockingOptions( vId, fId )
+    selectedVoxel = vId
+    selectedFace = fId
     voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( "" )( _.faceType.toString )
   }
 
@@ -157,8 +159,17 @@ object TutoMain extends JSApp {
   @JSExport
   def dockVoxel( dockingID: Int, rememberSelection: Boolean ): Array[Array[Double]] = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
-    val vId = dockingOptions( dockingID )._1
-    val newVoxel = Voxel( standards.getOrElse( vId, Cube ), Matrix4.unit )
+    val newVId = dockingOptions( dockingID )._1
+    val fId = dockingOptions( dockingID )._2
+
+    val newVoxelStd = standards.getOrElse( newVId, Cube )
+    val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
+
+    val to = voxels( selectedVoxel ).faces( selectedFace ).center
+    val from = newVoxelUntransformed.faces( fId ).center
+
+    val tM = translationMatrix( to - from )
+    val newVoxel = Voxel( newVoxelStd, tM )
     if( !rememberSelection ) {
       clearSelection()
     }
@@ -176,6 +187,7 @@ object TutoMain extends JSApp {
 
   @JSExport
   def clearSelection(): Unit = {
+    selectedVoxel = -1
     selectedFace = -1
     dockingOptions = Seq.empty
   }
