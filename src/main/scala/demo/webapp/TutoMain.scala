@@ -131,10 +131,8 @@ object TutoMain extends JSApp {
   @JSExport
   def showDockingOptions(): Dictionary[String] = dockingOptions
     .zipWithIndex
-    .map { case ( ( stdId, fId, rotStep ), i ) =>
+    .map { case ( ( stdId, _, _ ), i ) =>
       val std = standards( stdId )
-      val face = std.facesStructure( fId )
-      val rotInv = face._3
       ( i.toString
       , s"${std.name}"
       )
@@ -149,9 +147,9 @@ object TutoMain extends JSApp {
         .flatMap { case ( stdId, std ) =>
         std.facesStructure
           .zipWithIndex
-          .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
-          .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
-          .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( stdId, o_fId, rotStep ) ) }
+          .groupBy { case ( ( _, ft, rotPace ), _ ) => ( ft, rotPace ) }
+          .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._1.length, v.head._1._3 ) }
+          .flatMap { case ( o_fId, rotSteps, rotPace ) => ( 0 until rotSteps by rotPace ).map( rot => ( stdId, o_fId, rot ) ) }
       }.toSeq
     }
   }
@@ -160,9 +158,10 @@ object TutoMain extends JSApp {
   def dockVoxel( dockingID: Int, rememberSelection: Boolean ): Array[Array[Double]] = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
 
+    println(dockingOptions(dockingID))
     val newVId = dockingOptions( dockingID )._1
     val fId = dockingOptions( dockingID )._2
-    val rotStep = dockingOptions( dockingID )._3
+    val rot = dockingOptions( dockingID )._3
 
     val newVoxelStd = standards.getOrElse( newVId, Cube )
     val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
@@ -184,15 +183,15 @@ object TutoMain extends JSApp {
     val from = sourceFace1.center
     val preSpinTranslation = translationMatrix( from.negate )
     val postSpinTranslation = translationMatrix( from )
-    val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize, ( targetFace.vertices.head - to ).normalize
+    val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize
+                                     , ( targetFace.vertices.head - to ).normalize
                                      , Some( targetN ) )
     // spin shift (rotation variations)
-    val bonusSpinRotation = rotationMatrix( rotStep*2*math.Pi/sourceFace.rotationInvariance, nx, ny, nz )
+    val bonusSpinRotation = rotationMatrix( rot*2*math.Pi/sourceFace.vertices.length, nx, ny, nz )
 
     // translation so docking faces actually touch each other
     val tM = translationMatrix( to - from )
 
-    // postSpinTranslation * spinRotation * preSpinTranslation *
     val newVoxel = Voxel( newVoxelStd, tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM  )
 
     voxels = voxels :+ newVoxel
