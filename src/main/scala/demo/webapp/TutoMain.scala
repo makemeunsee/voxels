@@ -155,14 +155,29 @@ object TutoMain extends JSApp {
   }
 
   @JSExport
-  def dockVoxel( dockingID: Int ): Array[Array[Double]] = {
+  def dockVoxel( dockingID: Int, rememberSelection: Boolean ): Array[Array[Double]] = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
     val vId = dockingOptions( dockingID )._1
     val newVoxel = Voxel( standards.getOrElse( vId, Cube ), Matrix4.unit )
-    selectedFace = -1
-    dockingOptions = Seq.empty
+    if( !rememberSelection ) {
+      clearSelection()
+    }
     voxels = voxels :+ newVoxel
     voxelToRaw( newVoxel, voxels.length-1 )
+  }
+
+  @JSExport
+  def undockLastVoxel( rememberSelection: Boolean ): Unit = {
+    if( !rememberSelection ) {
+      clearSelection()
+    }
+    voxels = voxels.take( voxels.length-1 )
+  }
+
+  @JSExport
+  def clearSelection(): Unit = {
+    selectedFace = -1
+    dockingOptions = Seq.empty
   }
 
   @JSExport

@@ -195,27 +195,36 @@ function appMain() {
             if (options.hasOwnProperty(prop)) {
                 hasSome = true;
                 menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>')
-                $( "li" ).hover(
-                    function() {
-                        $( this ).addClass( "active" );
-                    },
-                    function() {
-                        $( this ).removeClass( "active" );
-                    }
-                );
-                $( "#li-"+prop ).click(
-                    function(evt) {
-                        var dockId = parseInt(evt.currentTarget.id.substring(3));
-                        var l = currentMeshes.length;
-                        currentMeshes.push(makeMesh(modelFromRaw(scalaObj.dockVoxel(dockId))));
-                        scene.add( currentMeshes[l][0] );
-                        pickScene.add( currentMeshes[l][1] );
-                        highlighted = 0;
-                        loadDockingOptions(null);
-                    }
-                );
             }
         }
+
+        $( "li" ).hover(
+            function(evt) {
+                $( this ).addClass( "active" );
+                var dockId = parseInt(evt.currentTarget.id.substring(3));
+                var l = currentMeshes.length;
+                currentMeshes.push(makeMesh(modelFromRaw(scalaObj.dockVoxel(dockId, true))));
+                scene.add( currentMeshes[l][0] );
+                pickScene.add( currentMeshes[l][1] );
+            },
+            function(evt) {
+                $( this ).removeClass( "active" );
+                var dockId = parseInt(evt.currentTarget.id.substring(3));
+                scalaObj.undockLastVoxel(true);
+                var rmMeshes = currentMeshes.pop();
+                scene.remove( rmMeshes[0] );
+                pickScene.remove( rmMeshes[1] );
+            }
+        );
+        $( "li" ).click(
+            function(evt) {
+                // docking actually happened during hover
+                scalaObj.clearSelection();
+                highlighted = 0;
+                loadDockingOptions(null);
+            }
+        );
+
         if (hasSome) {
             menu.show();
         } else {
