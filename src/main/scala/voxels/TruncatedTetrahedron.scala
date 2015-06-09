@@ -6,8 +6,6 @@ import voxels.Voxel.RegularPolygon
  * Created by markus on 26/05/15.
  */
 object TruncatedTetrahedron extends VoxelStandard {
-  override val scale = 1d
-
   private def computeVertices = {
     val tetraVerts = Tetrahedron.vertices map ( _*1.5 )
     for( v0 <- tetraVerts;
