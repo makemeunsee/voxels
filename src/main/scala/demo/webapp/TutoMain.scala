@@ -136,7 +136,7 @@ object TutoMain extends JSApp {
       val face = std.facesStructure( fId )
       val rotInv = face._3
       ( i.toString
-      , s"${voxels.length} - ${std.name}, $fId, 2*Pi*$rotStep/$rotInv"
+      , s"${std.name}"
       )
     }
     .toMap
@@ -186,8 +186,8 @@ object TutoMain extends JSApp {
     val postSpinTranslation = translationMatrix( from )
     val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize, ( targetFace.vertices.head - to ).normalize
                                      , Some( targetN ) )
-    // spin shift
-    val bonusSpinRotation = rotationMatrix( rotStep*2*math.Pi/sourceFace.vertices.length, nx, ny, nz )
+    // spin shift (rotation variations)
+    val bonusSpinRotation = rotationMatrix( rotStep*2*math.Pi/sourceFace.rotationInvariance, nx, ny, nz )
 
     // translation so docking faces actually touch each other
     val tM = translationMatrix( to - from )

@@ -31,17 +31,17 @@ object RhombicDodecahedron extends VoxelStandard {
 
   val facesStructure =
     List(
-      List( 0, 10, 4, 12 ),
-      List( 0, 12, 2, 8 ),
-      List( 2, 12, 6, 11 ),
-      List( 4, 9, 6, 12 ),
-      List( 0, 8, 1, 10 ),
-      List( 4, 10, 5, 9 ),
-      List( 6, 9, 7, 11 ),
-      List( 2, 11, 3, 8 ),
-      List( 1, 13, 5, 10 ),
-      List( 1, 8, 3, 13 ),
-      List( 3, 11, 7, 13 ),
-      List( 5, 13, 7, 9 )
+      List( 10, 4, 12, 0 ),
+      List( 12, 2, 8, 0 ),
+      List( 12, 6, 11, 2 ),
+      List( 12, 4, 9, 6 ),
+      List( 10, 0, 8, 1 ),
+      List( 10, 5, 9, 4 ),
+      List( 11, 6, 9, 7 ),
+      List( 11, 3, 8, 2 ),
+      List( 10, 1, 13, 5 ),
+      List( 13, 1, 8, 3 ),
+      List( 11, 7, 13, 3 ),
+      List( 13, 7, 9, 5 )
     ).map( ( _, StdRhombus, 1 ) )
 }

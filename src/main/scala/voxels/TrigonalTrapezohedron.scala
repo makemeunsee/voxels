@@ -19,18 +19,18 @@ object TrigonalTrapezohedron extends VoxelStandard {
     Vec3( a,-1d/3,-b ) ::
     Vec3( -a,-1d/3,-b ) ::
     Vec3( a,1d/3,b ) ::
-    Vec3( 0,-2d/3,b ) ::
     Vec3( -a,1d/3,b ) ::
+    Vec3( 0,-2d/3,b ) ::
     Vec3( 0,0,3*b ) ::
     Nil
 
   val facesStructure =
     List(
-      List( 0, 3, 5, 2 ),
-      List( 0, 1, 6, 3 ),
-      List( 0, 2, 4, 1 ),
-      List( 2, 5, 7, 4 ),
-      List( 1, 4, 7, 6 ),
-      List( 3, 6, 7, 5 )
+      List( 3, 6, 2, 0 ),
+      List( 1, 5, 3, 0 ),
+      List( 2, 4, 1, 0 ),
+      List( 4, 2, 6, 7 ),
+      List( 5, 1, 4, 7 ),
+      List( 6, 3, 5, 7 )
     ).map( l => ( l.reverse, StdRhombus, 2 ) )
 }
