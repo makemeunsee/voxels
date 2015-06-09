@@ -162,28 +162,38 @@ object TutoMain extends JSApp {
 
     val newVId = dockingOptions( dockingID )._1
     val fId = dockingOptions( dockingID )._2
+    val rotStep = dockingOptions( dockingID )._3
+
     val newVoxelStd = standards.getOrElse( newVId, Cube )
     val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
     val sourceFace = newVoxelUntransformed.faces( fId )
     val targetFace = voxels( selectedVoxel ).faces( selectedFace )
 
     // rotation so docking faces actually face each other
-    val targetN = targetFace.normal.negate
+    val targetN@Vec3( nx, ny, nz ) = targetFace.normal
     val sourceN = sourceFace.normal
-    val rM = rotationMatrix( sourceN, targetN )
+    val rM = rotationMatrix( sourceN, targetN.negate )
 
     // rotated voxel
     val newVoxelRotated = Voxel( newVoxelStd, rM )
     val sourceFace1 = newVoxelRotated.faces( fId )
 
-    // translation so docking faces actually touch each other
     val to = targetFace.center
+
+    // spin so docking faces actually fit each other
     val from = sourceFace1.center
+    val preSpinTranslation = translationMatrix( from.negate )
+    val postSpinTranslation = translationMatrix( from )
+    val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize, ( targetFace.vertices.head - to ).normalize
+                                     , Some( targetN ) )
+    // spin shift
+    val bonusSpinRotation = rotationMatrix( rotStep*2*math.Pi/sourceFace.vertices.length, nx, ny, nz )
+
+    // translation so docking faces actually touch each other
     val tM = translationMatrix( to - from )
 
-    // TODO: spin so docking faces actually fit each other
-
-    val newVoxel = Voxel( newVoxelStd, tM * rM  )
+    // postSpinTranslation * spinRotation * preSpinTranslation *
+    val newVoxel = Voxel( newVoxelStd, tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM  )
 
     voxels = voxels :+ newVoxel
 

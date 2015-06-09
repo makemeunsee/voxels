@@ -4,6 +4,11 @@ package geometry
  * Created by markus on 08/06/15.
  */
 object Matrix4 {
+
+  val tolerance: Double = 0.00001d
+
+  private def underTolerance( d: Double ) = d <= tolerance && d >= -tolerance
+
   def rotationMatrix( angle: Double, vX: Double, vY: Double, vZ: Double ): Matrix4 = {
     val n = math.sqrt( vX*vX + vY*vY + vZ*vZ )
     val nX = vX / n
@@ -17,7 +22,7 @@ object Matrix4 {
            , 0,                        0,                        0,                        1 )
   }
 
-  def rotationMatrix( from: Vec3, to: Vec3 ): Matrix4 = {
+  def rotationMatrix( from: Vec3, to: Vec3, fallbackAxis: Option[Vec3] = None ): Matrix4 = {
     val v = from cross to
     val s = v.norm
     val c = from dot to
@@ -26,11 +31,11 @@ object Matrix4 {
              , v.z,  0,    -v.x, 0
              , -v.y, v.x,  0,    0
              , 0,    0,    0,    0 )
-    if( s == 0 )
-      if( c > 0 )
+    if( underTolerance( s ) )
+      if( c >= 0 )
         unit
       else {
-        val Vec3( rx, ry, rz ) = ( from cross from.copy(if ( from.x != 0) 2 * from.x else from.x + 1 ) ).normalize
+        val Vec3( rx, ry, rz ) = fallbackAxis.getOrElse( from cross from.copy(if ( from.x != 0) 2 * from.x else from.x + 1 ) ).normalize
         rotationMatrix(math.Pi, rx, ry, rz )
       }
     else
