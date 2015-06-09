@@ -42,6 +42,7 @@ canvas {
 #menu {
     float: left;
     border: 1px solid #AAA;
+    margin: 0.5rem;
 }
 
 li.active {
