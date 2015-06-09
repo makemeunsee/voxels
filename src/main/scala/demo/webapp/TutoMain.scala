@@ -77,23 +77,27 @@ object TutoMain extends JSApp {
   @JSExport
   val voxelTypeCount = standards.size
 
-  private var voxel = Voxel( Cube, Matrix4.unit )
-  private var colorToFaceDict = Map.empty[Int, Int]
+  private var voxels = Seq( Voxel( Cube, Matrix4.unit ) )
   private var selectedFace: Int = -1
   // ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[(Int,Int,Int)]
 
   @JSExport
   def loadVoxel( i: Int ): Array[Array[Double]] = {
-    voxel = Voxel( standards.getOrElse( i, Cube ), Matrix4.unit )
+    voxels = Seq( Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     selectedFace = -1
     dockingOptions = Seq.empty
-    voxelToRaw( voxel )
+    voxelToRaw( voxels( 0 ), 0 )
   }
 
-  private def voxelToRaw( v: Voxel ): Array[Array[Double]] = {
-    def faceIdToColorCode( i: Int ) = ( i+1 ) << 17
-    colorToFaceDict = v.faces.indices.map( i => ( faceIdToColorCode( i ), i ) ).toMap
+  private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
+  private def revertColorCode( colorCode: Int ): (Int, Int) = {
+    val faceId = colorCode >>> 17
+    val voxelId = colorCode - ( faceId << 17 ) - 1
+    ( voxelId, faceId )
+  }
+
+  private def voxelToRaw( v: Voxel, vId: Int ): Array[Array[Double]] = {
     def aod: Array[Double] = Array()
     val ( vertices, normals, centerFlags, pickColors, indices ) = v.faces
       .zipWithIndex
@@ -105,7 +109,7 @@ object TutoMain extends JSApp {
         val newVertices = vs ++ f.rawVertices ++ Array( cx, cy, cz )
         val newNormals = ns ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
         val newCenterFlags = cs ++ ( 0 until count ).map( _ => 0d ) :+ 1d
-        val newPickColors = pcs ++ ( 0 to count ).map( _ => faceIdToColorCode( fId ).toDouble )
+        val newPickColors = pcs ++ ( 0 to count ).map( _ => colorCode( vId, fId ).toDouble )
         val newIndices =
           is ++
           ( 0 until count )
@@ -117,11 +121,9 @@ object TutoMain extends JSApp {
 
   @JSExport
   def selectFace( colorCode: Int ): String = {
-    dockingOptions = listDockingOptions( colorCode )
-    colorToFaceDict.get( colorCode ) match {
-      case None => ""
-      case Some( fId ) => voxel.faces( fId ).faceType.toString
-    }
+    val ( vId, fId ) = revertColorCode( colorCode )
+    dockingOptions = listDockingOptions( vId, fId )
+    voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( "" )( _.faceType.toString )
   }
 
   @JSExport
@@ -138,23 +140,31 @@ object TutoMain extends JSApp {
     .toMap
     .toJSDictionary
 
-  private def listDockingOptions( colorCode: Int ): Seq[(Int,Int,Int)] = {
-    colorToFaceDict.get( colorCode ) match {
-      case None =>
-        List.empty
-      case Some( fId ) =>
-        val faceType = voxel.faces( fId ).faceType
-        standards
-          .flatMap { case ( vId, std ) =>
-            std.facesStructure
-              .zipWithIndex
-              .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
-              .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
-              .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( vId, o_fId, rotStep ) ) }
-          }.toSeq
+  private def listDockingOptions( vId: Int, fId: Int ): Seq[(Int,Int,Int)] = {
+    voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
+      val faceType = f.faceType
+      standards
+        .flatMap { case ( vId, std ) =>
+        std.facesStructure
+          .zipWithIndex
+          .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
+          .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
+          .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( vId, o_fId, rotStep ) ) }
+      }.toSeq
     }
   }
 
   @JSExport
-  def getVoxelName(): String = voxel.standard.name
+  def dockVoxel( dockingID: Int ): Array[Array[Double]] = {
+    assert( dockingID >= 0 && dockingID < dockingOptions.length )
+    val vId = dockingOptions( dockingID )._1
+    val newVoxel = Voxel( standards.getOrElse( vId, Cube ), Matrix4.unit )
+    selectedFace = -1
+    dockingOptions = Seq.empty
+    voxels = voxels :+ newVoxel
+    voxelToRaw( newVoxel, voxels.length-1 )
+  }
+
+  @JSExport
+  def getVoxelName( id: Int ): String = standards.lift( id ).fold( "" )( _.name )
 }

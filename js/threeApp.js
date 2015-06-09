@@ -205,8 +205,13 @@ function appMain() {
                 );
                 $( "#li-"+prop ).click(
                     function(evt) {
-                        console.log(evt.currentTarget.id);
-                        // TODO: dock!
+                        var dockId = parseInt(evt.currentTarget.id.substring(3));
+                        var l = currentMeshes.length;
+                        currentMeshes.push(makeMesh(modelFromRaw(scalaObj.dockVoxel(dockId))));
+                        scene.add( currentMeshes[l][0] );
+                        pickScene.add( currentMeshes[l][1] );
+                        highlighted = 0;
+                        loadDockingOptions(null);
                     }
                 );
             }
@@ -269,22 +274,20 @@ function appMain() {
 
     updateProjection(window.innerWidth, window.innerHeight);
 
-    var currentMeshes;
+    var currentMeshes = [];
 
     function loadStdVoxel( id ) {
         loadRaw( scalaObj.loadVoxel( id ) );
+        document.title = scalaObj.getVoxelName( id );
     }
     function loadRaw( raw ) {
-        if ( currentMeshes && scene ) {
-            scene.remove( currentMeshes[0] );
+        for (var i = 0; i < currentMeshes.length; i++) {
+            scene.remove( currentMeshes[i][0] );
+            pickScene.remove( currentMeshes[i][1] );
         }
-        if ( currentMeshes && pickScene ) {
-            pickScene.remove( currentMeshes[1] );
-        }
-        currentMeshes = makeMesh( modelFromRaw ( raw ) );
-        document.title = scalaObj.getVoxelName();
-        scene.add( currentMeshes[0] );
-        pickScene.add( currentMeshes[1] );
+        currentMeshes = [ makeMesh( modelFromRaw ( raw ) ) ];
+        scene.add( currentMeshes[0][0] );
+        pickScene.add( currentMeshes[0][1] );
     }
 
     var mainContainer = document.getElementById( 'main' );
@@ -481,14 +484,16 @@ function appMain() {
             clicked = false;
         }
 
-        currentMeshes[0].material.uniforms.u_highlightFlag.value = highlighted;
+        for (var i = 0; i < currentMeshes.length; i++) {
+            currentMeshes[i][0].material.uniforms.u_highlightFlag.value = highlighted;
 
-        for (var i = 0; i < 2; i++) {
-            currentMeshes[i].material.uniforms.u_time.value = simTime;
-            currentMeshes[i].material.uniforms.u_borderWidth.value = 1.0;
-            currentMeshes[i].material.uniforms.u_mvpMat.value = mvp;
-            currentMeshes[i].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
-            currentMeshes[i].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
+            for (var j = 0; j < 2; j++) {
+                currentMeshes[i][j].material.uniforms.u_time.value = simTime;
+                currentMeshes[i][j].material.uniforms.u_borderWidth.value = 1.0;
+                currentMeshes[i][j].material.uniforms.u_mvpMat.value = mvp;
+                currentMeshes[i][j].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
+                currentMeshes[i][j].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
+            }
         }
 
         renderer.render(scene, dummyCam);
