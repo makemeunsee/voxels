@@ -204,7 +204,9 @@ function appMain() {
                 var dockId = parseInt(evt.currentTarget.id.substring(3));
                 var l = currentMeshes.length;
                 currentMeshes.push(makeMesh(modelFromRaw(scalaObj.dockVoxel(dockId, true))));
+                currentMeshes[l][0].frustumCulled = false;
                 scene.add( currentMeshes[l][0] );
+                currentMeshes[l][1].frustumCulled = false;
                 pickScene.add( currentMeshes[l][1] );
             },
             function(evt) {
@@ -295,7 +297,9 @@ function appMain() {
             pickScene.remove( currentMeshes[i][1] );
         }
         currentMeshes = [ makeMesh( modelFromRaw ( raw ) ) ];
+        currentMeshes[0][0].frustumCulled = false;
         scene.add( currentMeshes[0][0] );
+        currentMeshes[0][1].frustumCulled = false;
         pickScene.add( currentMeshes[0][1] );
     }
 
