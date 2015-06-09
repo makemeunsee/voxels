@@ -17,6 +17,25 @@ object Matrix4 {
            , 0,                        0,                        0,                        1 )
   }
 
+  def rotationMatrix( from: Vec3, to: Vec3 ): Matrix4 = {
+    val v = from cross to
+    val s = v.norm
+    val c = from dot to
+    if( s == 0 )
+      if( c >= 0 )
+        unit
+      else
+        Matrix4(-1,0,0,0,0,-1,0,0,0,0,-1,0,0,0,0,1)
+    else {
+      val vM =
+        Matrix4( 0,    -v.z, v.y,  0
+          , v.z,  0,    -v.x, 0
+          , -v.y, v.x,  0,    0
+          , 0,    0,    0,    0 )
+      unit + vM + ( ( vM * vM ) scalarTimes ( ( 1-c ) / s / s ) )
+    }
+  }
+
   def translationMatrix( v: Vec3 ): Matrix4 = {
     Matrix4( 1, 0, 0, v.x
            , 0, 1, 0, v.y
@@ -28,9 +47,9 @@ object Matrix4 {
 }
 
 case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
-                  , a10: Double, a11: Double, a12: Double, a13: Double
-                  , a20: Double, a21: Double, a22: Double, a23: Double
-                  , a30: Double, a31: Double, a32: Double, a33: Double ) {
+                   , a10: Double, a11: Double, a12: Double, a13: Double
+                   , a20: Double, a21: Double, a22: Double, a23: Double
+                   , a30: Double, a31: Double, a32: Double, a33: Double ) {
   def toSeqs =
     Seq( Seq( a00, a01, a02, a03 )
        , Seq( a10, a11, a12, a13 )
@@ -65,6 +84,20 @@ case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
   )
 
   def * = times _
+
+  def plus( m: Matrix4 ): Matrix4 =
+    Matrix4( a00 + m.a00, a01 + m.a01, a02 + m.a02, a03 + m.a03
+           , a10 + m.a10, a11 + m.a11, a12 + m.a12, a13 + m.a13
+           , a20 + m.a20, a21 + m.a21, a22 + m.a22, a23 + m.a23
+           , a30 + m.a30, a31 + m.a31, a32 + m.a32, a33 + m.a33 )
+
+  def + = plus _
+
+  def scalarTimes( a: Double ): Matrix4 =
+    Matrix4( a00 * a, a01 * a, a02 * a, a03 * a
+           , a10 * a, a11 * a, a12 * a, a13 * a
+           , a20 * a, a21 * a, a22 * a, a23 * a
+           , a30 * a, a31 * a, a32 * a, a33 * a )
 
   def apply( v: Vec3 ): Vec3 = apply( Vec4( v ) ).toVec3
 

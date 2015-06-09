@@ -159,21 +159,38 @@ object TutoMain extends JSApp {
   @JSExport
   def dockVoxel( dockingID: Int, rememberSelection: Boolean ): Array[Array[Double]] = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
+
     val newVId = dockingOptions( dockingID )._1
     val fId = dockingOptions( dockingID )._2
-
     val newVoxelStd = standards.getOrElse( newVId, Cube )
     val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
+    val sourceFace = newVoxelUntransformed.faces( fId )
+    val targetFace = voxels( selectedVoxel ).faces( selectedFace )
 
-    val to = voxels( selectedVoxel ).faces( selectedFace ).center
-    val from = newVoxelUntransformed.faces( fId ).center
+    // rotation so docking faces actually face each other
+    val targetN = targetFace.normal.negate
+    val sourceN = sourceFace.normal
+    val rM = rotationMatrix( sourceN, targetN )
 
+    // rotated voxel
+    val newVoxelRotated = Voxel( newVoxelStd, rM )
+    val sourceFace1 = newVoxelRotated.faces( fId )
+
+    // translation so docking faces actually touch each other
+    val to = targetFace.center
+    val from = sourceFace1.center
     val tM = translationMatrix( to - from )
-    val newVoxel = Voxel( newVoxelStd, tM )
+
+    // TODO: spin so docking faces actually fit each other
+
+    val newVoxel = Voxel( newVoxelStd, tM * rM  )
+
+    voxels = voxels :+ newVoxel
+
     if( !rememberSelection ) {
       clearSelection()
     }
-    voxels = voxels :+ newVoxel
+
     voxelToRaw( newVoxel, voxels.length-1 )
   }
 

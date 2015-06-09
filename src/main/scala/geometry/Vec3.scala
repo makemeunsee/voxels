@@ -37,4 +37,6 @@ case class Vec3( x: Double, y: Double, z: Double) {
       z*v.x - v.z*x,
       x*v.y - v.x*y )
 
+  def negate: Vec3 = Vec3( -x, -y, -z )
+
 }
