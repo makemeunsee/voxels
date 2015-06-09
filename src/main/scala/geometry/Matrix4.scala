@@ -21,19 +21,20 @@ object Matrix4 {
     val v = from cross to
     val s = v.norm
     val c = from dot to
+    val vM =
+      Matrix4( 0,    -v.z, v.y,  0
+             , v.z,  0,    -v.x, 0
+             , -v.y, v.x,  0,    0
+             , 0,    0,    0,    0 )
     if( s == 0 )
-      if( c >= 0 )
+      if( c > 0 )
         unit
-      else
-        Matrix4(-1,0,0,0,0,-1,0,0,0,0,-1,0,0,0,0,1)
-    else {
-      val vM =
-        Matrix4( 0,    -v.z, v.y,  0
-          , v.z,  0,    -v.x, 0
-          , -v.y, v.x,  0,    0
-          , 0,    0,    0,    0 )
+      else {
+        val Vec3( rx, ry, rz ) = ( from cross from.copy(if ( from.x != 0) 2 * from.x else from.x + 1 ) ).normalize
+        rotationMatrix(math.Pi, rx, ry, rz )
+      }
+    else
       unit + vM + ( ( vM * vM ) scalarTimes ( ( 1-c ) / s / s ) )
-    }
   }
 
   def translationMatrix( v: Vec3 ): Matrix4 = {
@@ -47,9 +48,9 @@ object Matrix4 {
 }
 
 case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
-                   , a10: Double, a11: Double, a12: Double, a13: Double
-                   , a20: Double, a21: Double, a22: Double, a23: Double
-                   , a30: Double, a31: Double, a32: Double, a33: Double ) {
+                  , a10: Double, a11: Double, a12: Double, a13: Double
+                  , a20: Double, a21: Double, a22: Double, a23: Double
+                  , a30: Double, a31: Double, a32: Double, a33: Double ) {
   def toSeqs =
     Seq( Seq( a00, a01, a02, a03 )
        , Seq( a10, a11, a12, a13 )
