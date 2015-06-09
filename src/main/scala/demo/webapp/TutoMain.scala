@@ -87,7 +87,7 @@ object TutoMain extends JSApp {
   def loadVoxel( i: Int ): Array[Array[Double]] = {
     voxels = Seq( Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     clearSelection()
-    voxelToRaw( voxels( 0 ), 0 )
+    voxelToRaw( voxels.head, 0 )
   }
 
   private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
@@ -131,27 +131,27 @@ object TutoMain extends JSApp {
   @JSExport
   def showDockingOptions(): Dictionary[String] = dockingOptions
     .zipWithIndex
-    .map { case ( ( vId, fId, rotStep ), i ) =>
-      val std = standards( vId )
+    .map { case ( ( stdId, fId, rotStep ), i ) =>
+      val std = standards( stdId )
       val face = std.facesStructure( fId )
       val rotInv = face._3
       ( i.toString
-      , s"${std.name}, $fId, 2*Pi*$rotStep/$rotInv"
+      , s"${voxels.length} - ${std.name}, $fId, 2*Pi*$rotStep/$rotInv"
       )
     }
     .toMap
     .toJSDictionary
 
   private def listDockingOptions( vId: Int, fId: Int ): Seq[(Int,Int,Int)] = {
-    voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
+    voxels.lift( vId ).flatMap( _.faces.lift( fId ) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
       val faceType = f.faceType
       standards
-        .flatMap { case ( vId, std ) =>
+        .flatMap { case ( stdId, std ) =>
         std.facesStructure
           .zipWithIndex
           .groupBy { case ( ( _, ft, rotInv ), _ ) => ( ft, rotInv ) }
           .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._3 ) }
-          .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( vId, o_fId, rotStep ) ) }
+          .flatMap { case ( o_fId, rotInv ) => ( 0 until rotInv ).map( rotStep => ( stdId, o_fId, rotStep ) ) }
       }.toSeq
     }
   }
