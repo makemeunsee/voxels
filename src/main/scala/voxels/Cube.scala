@@ -27,5 +27,5 @@ object Cube extends VoxelStandard {
       List( 1, 2, 4, 7 ),
       List( 0, 1, 7, 6 ),
       List( 2, 3, 5, 4 ) )
-    .map( ( _, RegularPolygon( 4 ), 4 ) )
+    .map( ( _, RegularPolygon( 4 ), List( 0 ) ) )
 }

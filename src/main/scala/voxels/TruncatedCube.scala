@@ -56,6 +56,6 @@ object TruncatedCube extends VoxelStandard {
       List( 6, 5, 10, 14, 21, 22, 15, 11 )
     ).map { list =>
       val l = list.length
-      ( list.reverse, RegularPolygon( l ), if ( l == 8 ) 7 else l )
+      ( list.reverse, RegularPolygon( l ), if ( l == 8 ) List( 0, 1 ) else List( 0 ) )
     }
 }

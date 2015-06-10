@@ -32,5 +32,5 @@ object TrigonalTrapezohedron extends VoxelStandard {
       List( 4, 2, 6, 7 ),
       List( 5, 1, 4, 7 ),
       List( 6, 3, 5, 7 )
-    ).map( l => ( l.reverse, StdRhombus, 2 ) )
+    ).map( l => ( l.reverse, StdRhombus, List( 0, 2 ) ) )
 }

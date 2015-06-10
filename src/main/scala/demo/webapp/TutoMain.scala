@@ -140,16 +140,13 @@ object TutoMain extends JSApp {
     .toMap
     .toJSDictionary
 
-  private def listDockingOptions( vId: Int, fId: Int ): Seq[(Int,Int,Int)] = {
-    voxels.lift( vId ).flatMap( _.faces.lift( fId ) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
+  private def listDockingOptions( voxelId: Int, faceId: Int ): Seq[(Int,Int,Int)] = {
+    voxels.lift( voxelId ).flatMap( _.faces.lift( faceId ) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
       val faceType = f.faceType
       standards
         .flatMap { case ( stdId, std ) =>
-        std.facesStructure
-          .zipWithIndex
-          .groupBy { case ( ( _, ft, rotPace ), _ ) => ( ft, rotPace ) }
-          .collect { case ( k, v ) if v.nonEmpty && k._1 == faceType => ( v.head._2, v.head._1._1.length, v.head._1._3 ) }
-          .flatMap { case ( o_fId, rotSteps, rotPace ) => ( 0 until rotSteps by rotPace ).map( rot => ( stdId, o_fId, rot ) ) }
+        std.uniquePositionings
+          .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
       }.toSeq
     }
   }

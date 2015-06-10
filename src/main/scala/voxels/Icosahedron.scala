@@ -45,5 +45,5 @@ object Icosahedron extends VoxelStandard {
       List( 2, 6, 10 ),
       List( 3, 4, 9 ),
       List( 3, 10, 5 )
-    ).map( ( _, RegularPolygon( 3 ), 3 ) )
+    ).map( ( _, RegularPolygon( 3 ), List( 0 ) ) )
 }

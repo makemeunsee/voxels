@@ -9,7 +9,9 @@ import geometry.{Matrix4, Vec3}
 object Voxel {
   type Vertex = Vec3
 
-  case class Face( vertices: List[Vertex], faceType: FaceType, rotationPace: Int ) {
+  case class Face( vertices: List[Vertex]
+                 , faceType: FaceType
+                 ) {
     assert( vertices.length > 2 )
     def center = vertices.reduce( _ + _ ) / vertices.length
     def normal = ( vertices( 2 ) - vertices( 1 ) cross ( vertices( 0 ) - vertices( 1 ) ) ).normalize
@@ -28,15 +30,22 @@ trait VoxelStandard {
   def faceCount = facesStructure.size
   def verticesCount = vertices.size
   def vertices: List[Vertex]
-  def facesStructure: List[( List[Int], FaceType, Int )]
+  def facesStructure: List[( List[Int], FaceType, Seq[Int] )]
   def scale = {
     val vertsIds = facesStructure.head
     ( vertices( vertsIds._1.head ) - vertices( vertsIds._1.tail.head ) ).norm
   }
+  def uniquePositionings: Seq[(Int, FaceType, Int)] = {
+    facesStructure
+      .zipWithIndex
+      .groupBy { case ( ( _, fType, rots ), _ ) => ( fType, rots ) }
+      .collect { case ( ( fType, rots ), l ) if l.nonEmpty => rots.map( r => ( l.head._2, fType, r ) ) }
+      .flatten
+  }.toSeq
 }
 
 case class Voxel( standard: VoxelStandard, transformation: Matrix4 ) {
-  val faces = standard.facesStructure map { case ( l, t, rotPace ) =>
-    Face( l map { i => transformation( standard.vertices( i ) / standard.scale ) }, t, rotPace )
+  val faces = standard.facesStructure map { case ( l, t, _ ) =>
+    Face( l map { i => transformation( standard.vertices( i ) / standard.scale ) }, t )
   }
 }

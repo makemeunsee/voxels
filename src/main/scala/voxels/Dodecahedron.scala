@@ -45,5 +45,5 @@ object Dodecahedron extends VoxelStandard {
       List( 0, 12, 14, 4, 8 ),
       List( 8, 4, 18, 6, 10 ),
       List( 1, 17, 3, 11, 9 )
-    ).map( ( _, RegularPolygon( 5 ), 5 ) )
+    ).map( ( _, RegularPolygon( 5 ), List( 0 ) ) )
 }
