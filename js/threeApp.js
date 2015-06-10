@@ -18,94 +18,6 @@ function arrToMat( arr ) {
     return mat;
 }
 
-function makeMesh( model ) {
-    var customUniforms = {
-        u_time: { type: "1f", value: 0 },
-        u_borderWidth: { type: "1f", value: 0 },
-        u_mvpMat: { type: "m4", value: new THREE.Matrix4() },
-        u_color: { type: "v4", value: new THREE.Vector4( 1, 1, 1, 1 ) },
-        u_borderColor: { type: "v4", value: new THREE.Vector4( 0, 0, 0, 1 ) },
-        u_highlightFlag: { type: "1f", value: 0 }
-    };
-
-    var geometry = new THREE.BufferGeometry();
-
-    // create attributes for each vertex
-    // currently 2 colors are given as vertex attributes
-    var attributes = {
-        a_normal: {
-            type: 'v3',
-            value: []
-        },
-        a_pickColor: {
-            type: 'f',
-            value: []
-        },
-        a_centerFlag: {
-            type: 'f',
-            value: []
-        }
-    };
-
-    var shaderMaterial = new THREE.ShaderMaterial({
-        attributes:     attributes,
-        uniforms:       customUniforms,
-        vertexShader:   document.getElementById('shader-vs').innerHTML,
-        fragmentShader: document.getElementById('shader-fs').innerHTML,
-        side: THREE.DoubleSide
-    });
-
-    var pickShaderMaterial = new THREE.ShaderMaterial({
-        attributes:     attributes,
-        uniforms:       customUniforms,
-        vertexShader:   document.getElementById('shader-pick-vs').innerHTML,
-        fragmentShader: document.getElementById('shader-pick-fs').innerHTML,
-        side: THREE.DoubleSide
-    });
-
-    var positions = new Float32Array( model.vertice.length );
-    var normals = new Float32Array( model.vertice.length );
-    var pickColors = new Float32Array( model.vertice.length / 3);
-    var centerFlag = new Float32Array( model.vertice.length / 3 );
-    for (var i = 0; i < model.vertice.length / 3; i++) {
-        positions [ 3*i ] = model.vertice[ 3*i ];
-        normals [ 3*i ] = model.normals[ 3*i ];
-        positions [ 3*i+1 ] = model.vertice[ 3*i+1 ];
-        normals [ 3*i+1 ] = model.normals[ 3*i+1 ];
-        positions [ 3*i+2 ] = model.vertice[ 3*i+2 ];
-        normals [ 3*i+2 ] = model.normals[ 3*i+2 ];
-        centerFlag[ i ] = model.centers[ i ];
-        pickColors[ i ] = Math.floor(model.pickColors[ i ]);
-//        var pickColor = Math.floor(model.pickColors[ i ]);
-//        pickColors[ 3*i ] = (pickColor & 0xFF0000) / 256 / 256 / 255;
-//        pickColors[ 3*i+1 ] = (pickColor & 0x00FF00) / 256 / 255;
-//        pickColors[ 3*i+2 ] = (pickColor & 0x0000FF) / 255;
-    }
-    var indices = new Uint16Array( model.indice.length );
-    for (var i = 0; i < model.indice.length ; i++) {
-        indices[ i ] = model.indice[ i ];
-    }
-
-    geometry.addAttribute( 'index', new THREE.BufferAttribute( indices, 1 ) );
-    geometry.addAttribute( 'a_centerFlag', new THREE.BufferAttribute( centerFlag, 1 ) );
-    geometry.addAttribute( 'a_normal', new THREE.BufferAttribute( normals, 3 ) );
-    geometry.addAttribute( 'a_pickColor', new THREE.BufferAttribute( pickColors, 1 ) );
-    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-
-    return [ new THREE.Mesh( geometry, shaderMaterial ), new THREE.Mesh( geometry, pickShaderMaterial ) ];
-}
-
-function modelFromRaw( model ) {
-    return {
-        "vertice": model[0],
-        "normals": model[1],
-        "centers": model[2],
-        "pickColors": model[3],
-        "indice": model[4],
-    };
-}
-
-
 DummyCamera = function () {
     THREE.Camera.call( this );
     this.type = 'DummyCamera';
@@ -184,13 +96,14 @@ function appMain() {
         voxelId = ( voxelId + c + count ) % count;
         loadStdVoxel( voxelId );
         highlighted = 0;
-        loadDockingOptions(null);
+        loadDockingOptions(null, "");
     }
 
-    function loadDockingOptions( options ) {
+    function loadDockingOptions( options, selectionInfo ) {
         var menu = $( "#menu" );
         menu.empty();
         var hasSome = false;
+        menu.append('<li id="li-'+prop+'" class="ui-widget-header">'+selectionInfo+'</li>')
         for (var prop in options) {
             if (options.hasOwnProperty(prop)) {
                 hasSome = true;
@@ -198,32 +111,22 @@ function appMain() {
             }
         }
 
-        $( "li" ).hover(
+        $( "li.ui-menu-item" ).hover(
             function(evt) {
                 $( this ).addClass( "active" );
                 var dockId = parseInt(evt.currentTarget.id.substring(3));
-                var l = currentMeshes.length;
-                currentMeshes.push(makeMesh(modelFromRaw(scalaObj.dockVoxel(dockId, true))));
-                currentMeshes[l][0].frustumCulled = false;
-                scene.add( currentMeshes[l][0] );
-                currentMeshes[l][1].frustumCulled = false;
-                pickScene.add( currentMeshes[l][1] );
+                scalaObj.dockVoxel(dockId);
             },
             function(evt) {
                 $( this ).removeClass( "active" );
                 var dockId = parseInt(evt.currentTarget.id.substring(3));
-                scalaObj.undockLastVoxel(true);
-                var rmMeshes = currentMeshes.pop();
-                scene.remove( rmMeshes[0] );
-                pickScene.remove( rmMeshes[1] );
+                scalaObj.undockLastVoxel();
             }
         );
-        $( "li" ).click(
+        $( "li.ui-menu-item" ).click(
             function(evt) {
                 // docking actually happened during hover
-                scalaObj.clearSelection();
-                highlighted = 0;
-                loadDockingOptions(null);
+                clearSelection();
             }
         );
 
@@ -285,23 +188,11 @@ function appMain() {
 
     updateProjection(window.innerWidth, window.innerHeight);
 
-    var currentMeshes = [];
-
     function loadStdVoxel( id ) {
-        loadRaw( scalaObj.loadVoxel( id ) );
+        scalaObj.loadVoxel( id );
         document.title = scalaObj.getVoxelName( id );
     }
-    function loadRaw( raw ) {
-        for (var i = 0; i < currentMeshes.length; i++) {
-            scene.remove( currentMeshes[i][0] );
-            pickScene.remove( currentMeshes[i][1] );
-        }
-        currentMeshes = [ makeMesh( modelFromRaw ( raw ) ) ];
-        currentMeshes[0][0].frustumCulled = false;
-        scene.add( currentMeshes[0][0] );
-        currentMeshes[0][1].frustumCulled = false;
-        pickScene.add( currentMeshes[0][1] );
-    }
+
 
     var mainContainer = document.getElementById( 'main' );
 
@@ -313,12 +204,9 @@ function appMain() {
         zoomFct(ev.scale < 1 ? -1 : 1, 1.04);
     });
 
-    var scene = new THREE.Scene();
-    var pickScene = new THREE.Scene();
-    var renderer = new THREE.WebGLRenderer( { preserveDrawingBuffer: true } );
-
     var pixels = new Uint8Array(4);
 
+    var renderer = scalaObj.renderer;
     var canvas = renderer.domElement;
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
@@ -363,9 +251,19 @@ function appMain() {
             } else {    //tapped within 300ms of last tap. double tap
               clearTimeout(tapped); //stop single tap callback
               tapped = null;
-              toggleUI();
+              doubleClick();
             }
         }
+    }
+
+    function doubleClick() {
+        toggleUI();
+    }
+
+    function clearSelection() {
+        scalaObj.clearSelection();
+        highlighted = 0;
+        loadDockingOptions(null, "");
     }
 
     function onMouseUp(event) {
@@ -423,7 +321,7 @@ function appMain() {
       // Firefox
     canvas.addEventListener( "DOMMouseScroll", onMouseWheel, false );
 
-    canvas.addEventListener( "dblclick", toggleUI, false );
+    canvas.addEventListener( "dblclick", doubleClick, false );
 
     THREEx.WindowResize(renderer, updateProjection);
     THREEx.FullScreen.bindKey({ charCode : 'f'.charCodeAt(0) });
@@ -474,6 +372,7 @@ function appMain() {
     }
 
     var simTime = 0.0;
+    var gl = scalaObj.renderer.getContext();
 
     // The main game loop
     function main() {
@@ -485,31 +384,38 @@ function appMain() {
 //        var dt = now - then;
 
         if ( clicked ) {
-            renderer.render(pickScene, dummyCam);
-            var gl = renderer.getContext();
+
+            // pickRender
+            scalaObj.pickRender();
+
+            // selection
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             console.log(pixels);
             highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
-            console.log(scalaObj.selectFace(highlighted));
+
+            var selection = scalaObj.selectFace(highlighted);
+            console.log(selection);
             var options = scalaObj.showDockingOptions(highlighted);
             console.log(options);
-            loadDockingOptions(options);
+
+            loadDockingOptions(options, selection.text);
             clicked = false;
         }
 
-        for (var i = 0; i < currentMeshes.length; i++) {
-            currentMeshes[i][0].material.uniforms.u_highlightFlag.value = highlighted;
+        // normal render
+        var meshes = scalaObj.currentMeshes();
+        for (var i = 0; i < meshes.length; i++) {
+            meshes[i][0].material.uniforms.u_highlightFlag.value = highlighted;
 
             for (var j = 0; j < 2; j++) {
-                currentMeshes[i][j].material.uniforms.u_time.value = simTime;
-                currentMeshes[i][j].material.uniforms.u_borderWidth.value = 1.0;
-                currentMeshes[i][j].material.uniforms.u_mvpMat.value = mvp;
-                currentMeshes[i][j].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
-                currentMeshes[i][j].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
+                meshes[i][j].material.uniforms.u_time.value = simTime;
+                meshes[i][j].material.uniforms.u_borderWidth.value = 1.0;
+                meshes[i][j].material.uniforms.u_mvpMat.value = mvp;
+                meshes[i][j].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
+                meshes[i][j].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
             }
         }
-
-        renderer.render(scene, dummyCam);
+        scalaObj.render();
 
 //        then = now;
         requestAnimFrame(main);

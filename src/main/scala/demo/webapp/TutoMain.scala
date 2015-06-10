@@ -8,16 +8,40 @@ import geometry.{Matrix4, Vec3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
 import voxels._
 
+import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-
 import scala.scalajs.js.JSApp
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.{JSName, JSExport}
+import scala.scalajs.js.typedarray.{Uint16Array, Float32Array}
 import scala.scalajs.js.{Array, Dictionary}
+
+import org.denigma.threejs._
 
 object TutoMain extends JSApp {
   def main(): Unit = {
     println("start")
   }
+
+  private val dummyCam = new Camera
+  private val scene = new Scene
+  private val pickScene = new Scene
+
+  private object ReadableWebGLRendererParameters extends WebGLRendererParameters {
+    preserveDrawingBuffer = true
+  }
+
+  @JSExport
+  val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
+
+  private var meshes = Map.empty[Int, (Mesh, Mesh)]
+  @JSExport
+  def currentMeshes() = meshes.values.map { case ( m, pm ) => Seq( m, pm ).toJSArray }.toJSArray
+
+  @JSExport
+  def pickRender() = renderer.render( pickScene, dummyCam )
+
+  @JSExport
+  def render() = renderer.render( scene, dummyCam )
 
   @JSExport
   def naiveRotMat(theta: Double, phi: Double): Array[Array[Double]] = {
@@ -74,20 +98,156 @@ object TutoMain extends JSApp {
     orthoMatrix( left, right, bottom, top, near, far )
   }
 
+  @JSName("THREE.BufferGeometry")
+  class MyBufferGeometry extends Geometry {
+    var attributes: js.Array[BufferAttribute] = js.native
+    var drawcalls: js.Any = js.native
+    var offsets: js.Any = js.native
+    def addAttribute(name: String, attribute: BufferAttribute): js.Dynamic = js.native
+    def addAttribute(name: String, array: js.Any, itemSize: Double): js.Dynamic = js.native
+    def getAttribute(name: String): js.Dynamic = js.native
+    def addDrawCall(start: Double, count: Double, index: Double): Unit = js.native
+    def applyMatrix(matrix: Matrix4): Unit = js.native
+    def fromGeometry(geometry: Geometry, settings: js.Any = js.native): BufferGeometry = js.native
+    def computeVertexNormals(): Unit = js.native
+    def computeOffsets(indexBufferSize: Double): Unit = js.native
+    def merge(): Unit = js.native
+    def normalizeNormals(): Unit = js.native
+    def reorderBuffers(indexBuffer: Double, indexMap: js.Array[Double], vertexCount: Double): Unit = js.native
+  }
+
   @JSExport
   val voxelTypeCount = standards.size
 
-  private var voxels = Seq( Voxel( Cube, Matrix4.unit ) )
+  private var freeVoxelIds: Set[Int] = Set.empty
+  private var lastDockedId: Int = -1
+
+  private var voxels: Map[Int, Voxel] = Map( 0 -> Voxel( Cube, Matrix4.unit ) )
   private var selectedVoxel: Int = -1
   private var selectedFace: Int = -1
   // ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[(Int,Int,Int)]
 
+  private def makeMesh( v: Voxel, vId: Int ): ( Mesh, Mesh ) = {
+    val customUniforms = js.Dynamic.literal(
+      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
+      "u_color" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 1, 1, 1, 1 ) ),
+      "u_borderColor" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 0, 0, 0, 1 ) ),
+      "u_highlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+    )
+
+    val geom = new MyBufferGeometry()
+
+    // create attributes for each vertex
+    // currently 2 colors are given as vertex attributes
+    val attrs = js.Dynamic.literal(
+      "a_normal" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array
+      ),
+      "a_pickColor" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array
+      ),
+      "a_centerFlag" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array
+      )
+    )
+
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.attributes = attrs
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader = Shaders.vertexShader
+    shaderMaterial.fragmentShader = Shaders.fragmentShader
+//    shaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
+
+    val pickShaderMaterial = new ShaderMaterial
+    pickShaderMaterial.attributes = attrs
+    pickShaderMaterial.uniforms = customUniforms
+    pickShaderMaterial.vertexShader = Shaders.pickVertexShader
+    pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
+//    pickShaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
+
+    val count = v.faces.map( _.rawVertices.length+3 ).sum
+    val indicesCount = v.faces.map( _.vertices.length*3 ).sum
+
+    val vertices = new Float32Array( count )
+    val normals = new Float32Array( count )
+    val pickColors = new Float32Array( count / 3 )
+    val centerFlags = new Float32Array( count / 3 )
+    val indices = new Uint16Array( indicesCount )
+    var offset = 0
+    var indicesOffset = 0
+    v.faces
+      .zipWithIndex
+      .foreach { case ( f, fId ) =>
+        val Vec3( nx, ny, nz ) = f.normal
+        val Vec3( cx, cy, cz ) = f.center
+        val color = colorCode( vId, fId )
+
+        val triOffset = offset*3
+        val vSize = f.vertices.length
+
+        ( 0 until vSize).foreach { i =>
+          vertices.set( triOffset+3*i,   f.rawVertices( 3*i ).toFloat )
+          vertices.set( triOffset+3*i+1, f.rawVertices( 3*i+1 ).toFloat )
+          vertices.set( triOffset+3*i+2, f.rawVertices( 3*i+2 ).toFloat )
+          normals.set( triOffset+3*i,   nx.toFloat )
+          normals.set( triOffset+3*i+1, ny.toFloat )
+          normals.set( triOffset+3*i+2, nz.toFloat )
+          centerFlags.set( offset+i, 0 )
+          pickColors.set( offset+i, color )
+          indices.set( indicesOffset+3*i,   offset+vSize )
+          indices.set( indicesOffset+3*i+1, offset+i )
+          indices.set( indicesOffset+3*i+2, offset+(i+1)%vSize )
+        }
+        vertices.set( triOffset+3*vSize,   cx.toFloat )
+        vertices.set( triOffset+3*vSize+1, cy.toFloat )
+        vertices.set( triOffset+3*vSize+2, cz.toFloat )
+        normals.set( triOffset+3*vSize,   nx.toFloat )
+        normals.set( triOffset+3*vSize+1, ny.toFloat )
+        normals.set( triOffset+3*vSize+2, nz.toFloat )
+        centerFlags.set( offset+vSize, 1 )
+        pickColors.set( offset+vSize, color )
+
+        offset = offset + vSize + 1
+        indicesOffset = indicesOffset + vSize*3
+      }
+
+    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
+    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
+    geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
+    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
+
+    val mesh = new Mesh
+    mesh.geometry = geom
+    mesh.material = shaderMaterial
+    mesh.frustumCulled = false
+
+    val pickMesh = new Mesh
+    pickMesh.geometry = geom
+    pickMesh.material = pickShaderMaterial
+    pickMesh.frustumCulled = false
+
+    ( mesh, pickMesh )
+  }
+
   @JSExport
-  def loadVoxel( i: Int ): Array[Array[Double]] = {
-    voxels = Seq( Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
+  def loadVoxel( i: Int ): Unit = {
+    voxels = Map( 0 -> Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     clearSelection()
-    voxelToRaw( voxels.head, 0 )
+
+    meshes.foreach { case ( _, ( m, pm ) ) =>
+      scene.remove( m )
+      pickScene.remove( pm )
+    }
+    meshes = voxels.map { case ( k, v ) => ( k, makeMesh( v, k ) ) }
+    scene.add( meshes( 0 )._1 )
+    pickScene.add( meshes( 0 )._2 )
   }
 
   private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
@@ -97,35 +257,18 @@ object TutoMain extends JSApp {
     ( voxelId, faceId )
   }
 
-  private def voxelToRaw( v: Voxel, vId: Int ): Array[Array[Double]] = {
-    def aod: Array[Double] = Array()
-    val ( vertices, normals, centerFlags, pickColors, indices ) = v.faces
-      .zipWithIndex
-      .foldLeft( aod, aod, aod, aod, aod ) { case ( ( vs, ns, cs, pcs, is ), ( f, fId ) ) =>
-        val count = f.vertices.length
-        val Vec3( nx, ny, nz ) = f.normal
-        val Vec3( cx, cy, cz ) = f.center
-        val offset = ( vs.length / 3 ).toDouble
-        val newVertices = vs ++ f.rawVertices ++ Array( cx, cy, cz )
-        val newNormals = ns ++ ( 0 to count ).flatMap( _ => nx :: ny :: nz :: Nil )
-        val newCenterFlags = cs ++ ( 0 until count ).map( _ => 0d ) :+ 1d
-        val newPickColors = pcs ++ ( 0 to count ).map( _ => colorCode( vId, fId ).toDouble )
-        val newIndices =
-          is ++
-          ( 0 until count )
-            .flatMap( i => ( offset + count ) :: ( offset + i ) :: ( offset + (i+1)%count ) :: Nil )
-        ( newVertices, newNormals, newCenterFlags, newPickColors, newIndices )
-      }
-    Array( vertices, normals, centerFlags, pickColors, indices )
-  }
-
   @JSExport
-  def selectFace( colorCode: Int ): String = {
+  def selectFace( colorCode: Int ): Dictionary[String] = {
     val ( vId, fId ) = revertColorCode( colorCode )
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
-    voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( "" )( _.faceType.toString )
+    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( -1, -1, "" )( f => ( vId, fId, s"Voxel: $vId, face: ${f.faceType}" ) )
+    Map( ( "voxelId", selection._1.toString )
+       , ( "faceId", selection._2.toString )
+       , ( "text", selection._3 )
+       )
+      .toJSDictionary
   }
 
   @JSExport
@@ -152,7 +295,7 @@ object TutoMain extends JSApp {
   }
 
   @JSExport
-  def dockVoxel( dockingID: Int, rememberSelection: Boolean ): Array[Array[Double]] = {
+  def dockVoxel( dockingID: Int ): Unit = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
 
     println(dockingOptions(dockingID))
@@ -191,21 +334,26 @@ object TutoMain extends JSApp {
 
     val newVoxel = Voxel( newVoxelStd, tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM  )
 
-    voxels = voxels :+ newVoxel
+    lastDockedId = if ( freeVoxelIds.isEmpty) voxels.size
+                   else { val r = freeVoxelIds.head
+                          freeVoxelIds = freeVoxelIds - r
+                          r }
 
-    if( !rememberSelection ) {
-      clearSelection()
-    }
+    voxels = voxels + ( ( lastDockedId, newVoxel ) )
 
-    voxelToRaw( newVoxel, voxels.length-1 )
+    val newMeshes = makeMesh( newVoxel, lastDockedId )
+    meshes = meshes + ( ( lastDockedId, newMeshes ) )
+    scene.add( newMeshes._1 )
+    pickScene.add( newMeshes._2 )
   }
 
   @JSExport
-  def undockLastVoxel( rememberSelection: Boolean ): Unit = {
-    if( !rememberSelection ) {
-      clearSelection()
-    }
-    voxels = voxels.take( voxels.length-1 )
+  def undockLastVoxel(): Unit = {
+    voxels = voxels - lastDockedId
+    val removedMeshes = meshes( lastDockedId )
+    meshes = meshes - lastDockedId
+    scene.remove( removedMeshes._1 )
+    pickScene.remove( removedMeshes._2 )
   }
 
   @JSExport
@@ -213,6 +361,7 @@ object TutoMain extends JSApp {
     selectedVoxel = -1
     selectedFace = -1
     dockingOptions = Seq.empty
+    lastDockedId = -1
   }
 
   @JSExport
