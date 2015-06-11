@@ -93,7 +93,7 @@ function appMain() {
     $("#centerView").click(centerView);
     $("#centerView").button();
 
-    $( "#leftMenu" ).hide();
+    $( ".leftMenu" ).hide();
 
     function loadDockingOptions( options, selectionInfo, selectedVoxel ) {
         var menu = $( "#menu" );
@@ -127,10 +127,10 @@ function appMain() {
         );
 
         if (hasSome) {
-            $( "#leftMenu" ).show();
+            $( ".leftMenu" ).show();
             $("#centerView").click(centerView(selectedVoxel));
         } else {
-            $( "#leftMenu" ).hide();
+            $( ".leftMenu" ).hide();
         }
     }
 
