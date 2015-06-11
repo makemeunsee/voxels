@@ -122,7 +122,7 @@ object TutoMain extends JSApp {
   private var freeVoxelIds: Set[Int] = Set.empty
   private var lastDockedId: Int = -1
 
-  private var voxels: Map[Int, Voxel] = Map( 0 -> Voxel( Cube, Matrix4.unit ) )
+  private var voxels: Map[Int, Voxel] = Map.empty
   private var selectedVoxel: Int = -1
   private var selectedFace: Int = -1
   // ( voxelStd id, face id, rotation step )
@@ -298,7 +298,6 @@ object TutoMain extends JSApp {
   def dockVoxel( dockingID: Int ): Unit = {
     assert( dockingID >= 0 && dockingID < dockingOptions.length )
 
-    println(dockingOptions(dockingID))
     val newVId = dockingOptions( dockingID )._1
     val fId = dockingOptions( dockingID )._2
     val rot = dockingOptions( dockingID )._3
@@ -354,6 +353,23 @@ object TutoMain extends JSApp {
     meshes = meshes - lastDockedId
     scene.remove( removedMeshes._1 )
     pickScene.remove( removedMeshes._2 )
+    if ( lastDockedId != voxels.size )
+      freeVoxelIds = freeVoxelIds + lastDockedId
+  }
+
+  @JSExport
+  def deleteSelected(): Unit = {
+    if ( voxels.size > 1 ) {
+      voxels.get( selectedVoxel ).foreach { v =>
+        voxels = voxels - selectedVoxel
+        val removedMeshes = meshes( selectedVoxel )
+        meshes = meshes - selectedVoxel
+        scene.remove( removedMeshes._1 )
+        pickScene.remove( removedMeshes._2 )
+        freeVoxelIds = freeVoxelIds + selectedVoxel
+        clearSelection()
+      }
+    }
   }
 
   @JSExport

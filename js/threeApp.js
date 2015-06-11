@@ -257,7 +257,8 @@ function appMain() {
     }
 
     function doubleClick() {
-        toggleUI();
+//        toggleUI();
+        scalaObj.deleteSelected();
     }
 
     function clearSelection() {
@@ -390,13 +391,10 @@ function appMain() {
 
             // selection
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            console.log(pixels);
             highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
 
             var selection = scalaObj.selectFace(highlighted);
-            console.log(selection);
             var options = scalaObj.showDockingOptions(highlighted);
-            console.log(options);
 
             loadDockingOptions(options, selection.text);
             clicked = false;
