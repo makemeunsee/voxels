@@ -40,14 +40,17 @@ canvas {
 }
 
 #menu {
-    float: left;
     border: 1px solid #AAA;
-    margin: 0.5rem;
 }
 
 li.active {
     background: #888;
     color:      #222;
+}
+
+.leftMenu {
+    float: left;
+    margin: 0.5rem;
 }
 
 #gui {

@@ -8,6 +8,7 @@ import geometry.{Matrix4, Vec3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
 import voxels._
 
+import scala.collection.immutable.TreeSet
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.JSApp
@@ -81,6 +82,15 @@ object TutoMain extends JSApp {
     lookAtMatrix( p, Vec3( 0, 0, 0 ), Vec3( 0, 1, 0 ) )
   }
 
+  @JSExport
+  def translateToVoxel( voxelId: Int ): Array[Array[Double]] = {
+    voxels
+      .get( voxelId )
+      .map { v => Matrix4.translationMatrix( v.faces.foldLeft( Vec3( 0,0,0 ) )( _ - _.center ) / v.faces.length ) }
+      .getOrElse( Matrix4.unit )
+      .toSeqs.map( _.toJSArray ).toJSArray
+  }
+
   def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Array[Array[Double]] = {
     val x_orth = 2 / (right - left)
     val y_orth = 2 / (top - bottom)
@@ -129,7 +139,7 @@ object TutoMain extends JSApp {
   @JSExport
   val voxelTypeCount = standards.size
 
-  private var freeVoxelIds: Set[Int] = Set.empty
+  private var freeVoxelIds: Set[Int] = TreeSet.empty
   private var lastDockedId: Int = -1
 
   private var voxels: Map[Int, Voxel] = Map.empty
@@ -246,7 +256,7 @@ object TutoMain extends JSApp {
 
   @JSExport
   def loadVoxel( i: Int ): Unit = {
-    freeVoxelIds = Set.empty
+    freeVoxelIds = TreeSet.empty
     voxels = Map( 0 -> Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     clearSelection()
 
@@ -293,13 +303,17 @@ object TutoMain extends JSApp {
     .toJSDictionary
 
   private def listDockingOptions( voxelId: Int, faceId: Int ): Seq[(Int,Int,Int)] = {
-    voxels.lift( voxelId ).flatMap( _.faces.lift( faceId ) ).fold( Seq.empty[(Int,Int,Int)] ) { f =>
-      val faceType = f.faceType
-      standards
-        .flatMap { case ( stdId, std ) =>
-        std.uniquePositionings
-          .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
-      }.toSeq
+    voxels
+      .lift( voxelId )
+      .flatMap( _.faces.lift( faceId ) )
+      .fold( Seq.empty[(Int,Int,Int)] ) { f =>
+        val faceType = f.faceType
+        standards
+          .flatMap { case ( stdId, std ) =>
+            std
+              .uniquePositionings
+              .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
+        }.toSeq
     }
   }
 
@@ -346,6 +360,7 @@ object TutoMain extends JSApp {
                    else { val r = freeVoxelIds.head
                           freeVoxelIds = freeVoxelIds - r
                           r }
+    println(s"new voxel with id $lastDockedId, free ids: $freeVoxelIds")
 
     voxels = voxels + ( ( lastDockedId, newVoxel ) )
 
@@ -375,6 +390,7 @@ object TutoMain extends JSApp {
         scene.remove( removedMeshes._1 )
         pickScene.remove( removedMeshes._2 )
         freeVoxelIds = freeVoxelIds + selectedVoxel
+        println(s"deleted voxel $selectedVoxel, free ids: $freeVoxelIds")
         clearSelection()
       }
     }

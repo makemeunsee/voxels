@@ -33,7 +33,6 @@ function appMain() {
         });
     });
     $( "#dialog" ).dialog( "close" );
-    $( "#menu" ).hide();
 
     function toggleUI() {
         console.log("toggling ui");
@@ -90,7 +89,13 @@ function appMain() {
         loadStdVoxel( voxelId );
     }
 
-    function loadDockingOptions( options, selectionInfo ) {
+    $("#centerView").unbind("click");
+    $("#centerView").click(centerView);
+    $("#centerView").button();
+
+    $( "#leftMenu" ).hide();
+
+    function loadDockingOptions( options, selectionInfo, selectedVoxel ) {
         var menu = $( "#menu" );
         menu.empty();
         var hasSome = false;
@@ -122,10 +127,20 @@ function appMain() {
         );
 
         if (hasSome) {
-            menu.show();
+            $( "#leftMenu" ).show();
+            $("#centerView").click(centerView(selectedVoxel));
         } else {
-            menu.hide();
+            $( "#leftMenu" ).hide();
         }
+    }
+
+    var translationMatrix = new THREE.Matrix4();
+    function centerView(voxelId) {
+        return function() {
+            translationMatrix = arrToMat( scalaObj.translateToVoxel( voxelId ) );
+            console.log(translationMatrix);
+            updateMVPs();
+        };
     }
 
 //    var cuts = getURLParameter("cells") || 0;
@@ -166,7 +181,7 @@ function appMain() {
         var p = projMat.clone();
         var vp = p.multiply( viewMat );
         scaledModelMat = new THREE.Matrix4();
-        scaledModelMat.multiplyScalar( zoom ).multiply( modelMat );
+        scaledModelMat.multiplyScalar( zoom ).multiply( modelMat ).multiply( translationMatrix );
         scaledModelMat.elements[15] = 1;
         mvp = vp.multiply( scaledModelMat );
     }
@@ -252,7 +267,7 @@ function appMain() {
 
     function clearSelection() {
         scalaObj.clearSelection();
-        loadDockingOptions(null, "");
+        loadDockingOptions(null, "", -1);
     }
 
     function onMouseUp(event) {
@@ -382,7 +397,7 @@ function appMain() {
             var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
             var selection = scalaObj.selectFace(highlighted);
             var options = scalaObj.showDockingOptions();
-            loadDockingOptions(options, selection.text);
+            loadDockingOptions(options, selection.text, parseInt(selection.voxelId));
             clicked = false;
         }
 
