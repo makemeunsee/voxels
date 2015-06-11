@@ -248,6 +248,7 @@ object TutoMain extends JSApp {
 
   @JSExport
   def loadVoxel( i: Int ): Unit = {
+    freeVoxelIds = Set.empty
     voxels = Map( 0 -> Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     clearSelection()
 
