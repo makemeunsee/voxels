@@ -41,7 +41,16 @@ object TutoMain extends JSApp {
   def pickRender() = renderer.render( pickScene, dummyCam )
 
   @JSExport
-  def render() = renderer.render( scene, dummyCam )
+  def render() = {
+    meshes.values.foreach { case ( m, pm ) =>
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_time" ).updateDynamic( "value" )( 0f )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderWidth" ).updateDynamic( "value" )( 1f )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_color" ).updateDynamic( "value" )( new Vector4( 1, 1, 1, 1 ) )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderColor" ).updateDynamic( "value" )( new Vector4( 0.05,0.05,0.05,1 ) )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_highlightFlag" ).updateDynamic( "value" )( colorCode( selectedVoxel, selectedFace ).toFloat )
+    }
+    renderer.render( scene, dummyCam )
+  }
 
   @JSExport
   def naiveRotMat(theta: Double, phi: Double): Array[Array[Double]] = {
@@ -98,6 +107,7 @@ object TutoMain extends JSApp {
     orthoMatrix( left, right, bottom, top, near, far )
   }
 
+  // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName("THREE.BufferGeometry")
   class MyBufferGeometry extends Geometry {
     var attributes: js.Array[BufferAttribute] = js.native

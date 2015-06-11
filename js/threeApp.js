@@ -83,13 +83,11 @@ function appMain() {
         changeVoxel( 1 );
     }
     var voxelId = 0;
-    var highlighted = 0;
     function changeVoxel( c ) {
+        clearSelection();
         var count = scalaObj.voxelTypeCount;
         voxelId = ( voxelId + c + count ) % count;
         loadStdVoxel( voxelId );
-        highlighted = 0;
-        loadDockingOptions(null, "");
     }
 
     function loadDockingOptions( options, selectionInfo ) {
@@ -185,7 +183,6 @@ function appMain() {
         document.title = scalaObj.getVoxelName( id );
     }
 
-
     var mainContainer = document.getElementById( 'main' );
 
     // pinch detection (and more)
@@ -255,7 +252,6 @@ function appMain() {
 
     function clearSelection() {
         scalaObj.clearSelection();
-        highlighted = 0;
         loadDockingOptions(null, "");
     }
 
@@ -383,7 +379,7 @@ function appMain() {
 
             // selection
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+            var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
 
             var selection = scalaObj.selectFace(highlighted);
             var options = scalaObj.showDockingOptions(highlighted);
@@ -395,15 +391,8 @@ function appMain() {
         // normal render
         var meshes = scalaObj.currentMeshes();
         for (var i = 0; i < meshes.length; i++) {
-            meshes[i][0].material.uniforms.u_highlightFlag.value = highlighted;
-
-            for (var j = 0; j < 2; j++) {
-                meshes[i][j].material.uniforms.u_time.value = simTime;
-                meshes[i][j].material.uniforms.u_borderWidth.value = 1.0;
-                meshes[i][j].material.uniforms.u_mvpMat.value = mvp;
-                meshes[i][j].material.uniforms.u_color.value = new THREE.Vector4(1,1,1,1);
-                meshes[i][j].material.uniforms.u_borderColor.value = new THREE.Vector4(0.05,0.05,0.05,1);
-            }
+            meshes[i][0].material.uniforms.u_mvpMat.value = mvp;
+            meshes[i][1].material.uniforms.u_mvpMat.value = mvp;
         }
         scalaObj.render();
 
