@@ -33,11 +33,7 @@ object TutoMain extends JSApp {
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
 
-  private class MyMesh( override var geometry: MyBufferGeometry, override var material: ShaderMaterial ) extends Mesh {
-    frustumCulled = false
-  }
-
-  private var meshes = Map.empty[Int, (MyMesh, MyMesh)]
+  private var meshes = Map.empty[Int, (Mesh, Mesh)]
   @JSExport
   def currentMeshes() = meshes.values.map { case ( m, pm ) => Seq( m, pm ).toJSArray }.toJSArray
 
@@ -47,11 +43,11 @@ object TutoMain extends JSApp {
   @JSExport
   def render() = {
     meshes.values.foreach { case ( m, pm ) =>
-      m.material.uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_time" ).updateDynamic( "value" )( 0f )
-      m.material.uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderWidth" ).updateDynamic( "value" )( 1f )
-      m.material.uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_color" ).updateDynamic( "value" )( new Vector4( 1, 1, 1, 1 ) )
-      m.material.uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderColor" ).updateDynamic( "value" )( new Vector4( 0.05,0.05,0.05,1 ) )
-      m.material.uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_highlightFlag" ).updateDynamic( "value" )( colorCode( selectedVoxel, selectedFace ).toFloat )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_time" ).updateDynamic( "value" )( 0f )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderWidth" ).updateDynamic( "value" )( 1f )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_color" ).updateDynamic( "value" )( new Vector4( 1, 1, 1, 1 ) )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderColor" ).updateDynamic( "value" )( new Vector4( 0.05,0.05,0.05,1 ) )
+      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_highlightFlag" ).updateDynamic( "value" )( colorCode( selectedVoxel, selectedFace ).toFloat )
     }
     renderer.render( scene, dummyCam )
   }
@@ -142,7 +138,7 @@ object TutoMain extends JSApp {
   // ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[(Int,Int,Int)]
 
-  private def makeMesh( v: Voxel, vId: Int ): ( MyMesh, MyMesh ) = {
+  private def makeMesh( v: Voxel, vId: Int ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -237,7 +233,15 @@ object TutoMain extends JSApp {
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    ( new MyMesh( geom,  shaderMaterial ), new MyMesh( geom,  pickShaderMaterial ) )
+    ( combineMesh( geom, shaderMaterial ), combineMesh( geom, pickShaderMaterial ) )
+  }
+
+  private def combineMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
+    val mesh = new Mesh
+    mesh.geometry = geometry
+    mesh.material = material
+    mesh.frustumCulled = false
+    mesh
   }
 
   @JSExport
