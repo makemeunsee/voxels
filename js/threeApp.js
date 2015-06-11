@@ -18,13 +18,6 @@ function arrToMat( arr ) {
     return mat;
 }
 
-DummyCamera = function () {
-    THREE.Camera.call( this );
-    this.type = 'DummyCamera';
-};
-
-DummyCamera.prototype = Object.create( THREE.Camera.prototype );
-
 function appMain() {
 
     var scalaObj = demo.webapp.TutoMain();
@@ -156,7 +149,6 @@ function appMain() {
     var zoomSpeed = 1.01;
     var zoom = 1;
 
-    var dummyCam = new DummyCamera();
     var camTheta = Math.PI / 2;
     var camPhi = Math.PI / 2;
     var camDist = 1;
