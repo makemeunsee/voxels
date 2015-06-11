@@ -9,21 +9,22 @@ import voxels.Voxel.RegularPolygon
 case class AntiPrism( sides: Int ) extends VoxelStandard {
   assert( sides >= 3 )
 
-  private val a: Double = math.sqrt( 3 )
-
   override val scale = {
     val x1 = math.cos( 2 * math.Pi / sides )
     val y1 = math.sin( 2 * math.Pi / sides )
-    math.sqrt( ( 1 - x1 ) * ( 1 - x1 ) + y1 * y1 )
+    math.sqrt( ( 1d - x1 ) * ( 1d - x1 ) + y1 * y1 )
   }
+
+  private val theta: Double = math.Pi / sides
+  private val h: Double = math.sqrt( scale*scale - 2 + 2*math.cos( theta ) ) / 2
 
   val vertices =
     ( 0 until sides ).flatMap { i =>
       val x0 = math.cos( i * 2 * math.Pi / sides )
       val y0 = math.sin( i * 2 * math.Pi / sides )
-      val x1 = math.cos( ( 2*i+1 ) * math.Pi / sides )
-      val y1 = math.sin( ( 2*i+1 ) * math.Pi / sides )
-      Vec3( x0, y0, a * scale / 4 ) :: Vec3( x1, y1, -a * scale / 4 ) :: Nil
+      val x1 = math.cos( theta + i * 2 * math.Pi / sides )
+      val y1 = math.sin( theta + i * 2 * math.Pi / sides )
+      Vec3( x0, y0, h ) :: Vec3( x1, y1, -h ) :: Nil
     }.toList
 
   val facesStructure = {
