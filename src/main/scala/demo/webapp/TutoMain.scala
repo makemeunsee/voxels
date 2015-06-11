@@ -364,8 +364,7 @@ object TutoMain extends JSApp {
     meshes = meshes - lastDockedId
     scene.remove( removedMeshes._1 )
     pickScene.remove( removedMeshes._2 )
-    if ( lastDockedId != voxels.size )
-      freeVoxelIds = freeVoxelIds + lastDockedId
+    freeVoxelIds = freeVoxelIds + lastDockedId
   }
 
   @JSExport
