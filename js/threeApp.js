@@ -381,7 +381,7 @@ function appMain() {
             gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
             var selection = scalaObj.selectFace(highlighted);
-            var options = scalaObj.showDockingOptions(highlighted);
+            var options = scalaObj.showDockingOptions();
             loadDockingOptions(options, selection.text);
             clicked = false;
         }
