@@ -19,6 +19,7 @@ package object voxels {
     Rhombicuboctahedron ::
     RhombicPrism ::
     Nil ++
-    List( 3, 5, 6, 8 ).map( RegularPrism )
+    List( 3, 5, 6, 8 ).map( RegularPrism ) ++
+    List( 4, 5, 6, 8 ).map( AntiPrism )
   ).zipWithIndex.map { case ( v, i ) => ( i, v ) }.toMap
 }
