@@ -138,7 +138,6 @@ function appMain() {
     function centerView(voxelId) {
         return function() {
             translationMatrix = arrToMat( scalaObj.translateToVoxel( voxelId ) );
-            console.log(translationMatrix);
             updateMVPs();
         };
     }
@@ -195,6 +194,7 @@ function appMain() {
 
     function loadStdVoxel( id ) {
         scalaObj.loadVoxel( id );
+        centerView(voxelId)();
         document.title = scalaObj.getVoxelName( id );
     }
 
