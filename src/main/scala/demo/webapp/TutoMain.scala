@@ -254,16 +254,23 @@ object TutoMain extends JSApp {
     mesh
   }
 
-  @JSExport
-  def loadVoxel( i: Int ): Unit = {
-    freeVoxelIds = TreeSet.empty
-    voxels = Map( 0 -> Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
-    clearSelection()
 
+  @JSExport
+  def unloadVoxel(): Unit = {
+    freeVoxelIds = TreeSet.empty
+    voxels = Map.empty
     meshes.foreach { case ( _, ( m, pm ) ) =>
       scene.remove( m )
       pickScene.remove( pm )
     }
+    meshes = Map.empty
+    clearSelection()
+  }
+
+  @JSExport
+  def loadVoxel( i: Int ): Unit = {
+    unloadVoxel()
+    voxels = Map( 0 -> Voxel( standards.getOrElse( i, Cube ), Matrix4.unit ) )
     meshes = voxels.map { case ( k, v ) => ( k, makeMesh( v, k ) ) }
     scene.add( meshes( 0 )._1 )
     pickScene.add( meshes( 0 )._2 )

@@ -43,6 +43,10 @@ canvas {
     border: 1px solid #AAA;
 }
 
+#topbar {
+    float: right;
+}
+
 li.active {
     background: #888;
     color:      #222;

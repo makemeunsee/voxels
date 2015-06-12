@@ -16,14 +16,13 @@
     </head>
     <body>
     <div id="dialog" title="Voxels <-> slexoV">
-        <p>Click and drag to interact.</p>
+        <p>Drag to move the view.</p>
         <p>Scroll / pinch to zoom.</p>
-        <p>Double click / tap to hide UI.</p>
+        <p>Pick a face and glue a new voxel to it.</p>
+        <p>Double click / tap to remove a voxel.</p>
     </div>
     <div id="gui" class="gui-container">
-        <div>
-            <button id="previous"><</button>
-            <button id="next">></button>
+        <div id="topbar">
             <button id="screenshot">screenshot</button>
             <button id="fullscreen">fullscreen</button>
             <button id="showHelp">?</button>
@@ -40,5 +39,5 @@
     <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
     <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
     <script type="text/javascript" src="js/threeApp.js"></script>
-</body>
+    </body>
 </html>

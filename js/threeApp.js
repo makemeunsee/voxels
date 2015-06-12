@@ -29,7 +29,7 @@ function appMain() {
     $(function() {
         $( "#dialog" ).dialog({
             width: 600,
-            height: 180
+            height: 222
         });
     });
     $( "#dialog" ).dialog( "close" );
@@ -71,39 +71,52 @@ function appMain() {
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
 
-    $("#previous").unbind("click");
-    $("#previous").click(prevVoxel);
-    $("#next").unbind("click");
-    $("#next").click(nextVoxel);
-    function prevVoxel() {
-        changeVoxel( -1 );
-    }
-    function nextVoxel() {
-        changeVoxel( 1 );
-    }
-    var voxelId = 0;
-    function changeVoxel( c ) {
-        clearSelection();
-        var count = scalaObj.voxelTypeCount;
-        voxelId = ( voxelId + c + count ) % count;
-        loadStdVoxel( voxelId );
-    }
-
     $("#centerView").unbind("click");
     $("#centerView").click(centerView);
     $("#centerView").button();
 
     $( ".leftMenu" ).hide();
 
+    var voxelId = -1;
+    var count = scalaObj.voxelTypeCount;
+
+    (function () {
+        var menu = $( "#menu" );
+        menu.empty();
+        menu.append('<li id="li" class="ui-widget-header">Initial voxel:</li>');
+        for (var i = 0; i < count; i++) {
+            menu.append('<li id="li-'+i+'" class="ui-menu-item">'+scalaObj.getVoxelName(i)+'</li>');
+        }
+        $( "li.ui-menu-item" ).hover(
+            function(evt) {
+                $( this ).addClass( "active" );
+                voxelId = evt.currentTarget.id.substring(3);
+                loadStdVoxel( voxelId );
+            },
+            function(evt) {
+                $( this ).removeClass( "active" );
+                voxelId = -1;
+                scalaObj.unloadVoxel();
+            }
+        );
+        $( "li.ui-menu-item" ).click(
+            function(evt) {
+                menu.empty();
+                menu.hide();
+            }
+        );
+        menu.show();
+    })();
+
     function loadDockingOptions( options, selectionInfo, selectedVoxel ) {
         var menu = $( "#menu" );
         menu.empty();
         var hasSome = false;
-        menu.append('<li id="li-'+prop+'" class="ui-widget-header">'+selectionInfo+'</li>')
+        menu.append('<li id="li" class="ui-widget-header">'+selectionInfo+'</li>');
         for (var prop in options) {
             if (options.hasOwnProperty(prop)) {
                 hasSome = true;
-                menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>')
+                menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>');
             }
         }
 
@@ -215,8 +228,6 @@ function appMain() {
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
 
-    loadStdVoxel( voxelId );
-
     function leftButton(evt) {
         var button = evt.which || evt.button;
         return button == 1;
@@ -267,7 +278,9 @@ function appMain() {
 
     function clearSelection() {
         scalaObj.clearSelection();
-        loadDockingOptions(null, "", -1);
+        if (voxelId != -1) {
+            loadDockingOptions(null, "", -1);
+        }
     }
 
     function onMouseUp(event) {
@@ -389,15 +402,17 @@ function appMain() {
 
         if ( clicked ) {
 
-            // pickRender
-            scalaObj.pickRender();
+            if ( voxelId != -1 ) {
+                // pickRender
+                scalaObj.pickRender();
 
-            // selection
-            gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
-            var selection = scalaObj.selectFace(highlighted);
-            var options = scalaObj.showDockingOptions();
-            loadDockingOptions(options, selection.text, parseInt(selection.voxelId));
+                // selection
+                gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+                var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+                var selection = scalaObj.selectFace(highlighted);
+                var options = scalaObj.showDockingOptions();
+                loadDockingOptions(options, selection.text, parseInt(selection.voxelId));
+            }
             clicked = false;
         }
 
