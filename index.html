@@ -15,29 +15,30 @@
 
     </head>
     <body>
-    <div id="dialog" title="Voxels <-> slexoV">
-        <p>Drag to move the view.</p>
-        <p>Scroll / pinch to zoom.</p>
-        <p>Pick a face and glue a new voxel to it.</p>
-        <p>Double click / tap to remove a voxel.</p>
-    </div>
-    <div id="gui" class="gui-container">
-        <div id="topbar">
-            <button id="screenshot">screenshot</button>
-            <button id="fullscreen">fullscreen</button>
-            <button id="showHelp">?</button>
+        <div id="dialog" title="Voxels <-> slexoV">
+            <p>Drag to move the view.</p>
+            <p>Scroll / pinch to zoom.</p>
+            <p>Pick a face and glue a new voxel to it.</p>
+            <p>Double click / tap to remove a voxel.</p>
         </div>
-        <ul id="menu" class="ui-menu ui-widget leftMenu"></ul>
-        <img id="centerView" class="leftMenu" width='48' height='48' src='images/Meeting_point_64.png' />
-    </div>
-    <div id="main"></div>
+        <div id="gui" class="gui-container">
+            <div id="topbar">
+                <button id="screenshot">screenshot</button>
+                <button id="fullscreen">fullscreen</button>
+                <button id="showHelp">?</button>
+            </div>
+            <ul id="menu0" class="ui-menu ui-widget leftMenu"></ul>
+            <ul id="menu1" class="ui-menu ui-widget leftMenu"></ul>
+            <img id="centerView" class="leftMenu" width='48' height='48' src='images/Meeting_point_64.png' />
+        </div>
+        <div id="main"></div>
 
-    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
-    <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
-    <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
-    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
-    <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
-    <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
-    <script type="text/javascript" src="js/threeApp.js"></script>
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
+        <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
+        <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
+        <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+        <script type="text/javascript" src="target/scala-2.11/sphere-maze-opt.js"></script>
+        <script type="text/javascript" src="js/threeApp.js"></script>
     </body>
 </html>

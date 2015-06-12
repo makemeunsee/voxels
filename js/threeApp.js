@@ -81,10 +81,14 @@ function appMain() {
     var count = scalaObj.voxelTypeCount;
 
     (function () {
-        var menu = $( "#menu" );
-        menu.empty();
-        menu.append('<li id="li" class="ui-widget-header">Initial voxel:</li>');
+        var menu0 = $( "#menu0" );
+        var menu1 = $( "#menu1" );
+        menu0.empty();
+        menu1.empty();
+        menu0.append('<li id="li" class="ui-widget-header">Initial voxel</li>');
+        menu1.append('<li id="li" class="ui-widget-header">&#xA0;</li>');
         for (var i = 0; i < count; i++) {
+            var menu = i%2==0 ? menu0 : menu1;
             menu.append('<li id="li-'+i+'" class="ui-menu-item">'+scalaObj.getVoxelName(i)+'</li>');
         }
         $( "li.ui-menu-item" ).hover(
@@ -101,22 +105,31 @@ function appMain() {
         );
         $( "li.ui-menu-item" ).click(
             function(evt) {
-                menu.empty();
-                menu.hide();
+                menu0.empty();
+                menu1.empty();
+                menu0.hide();
+                menu1.hide();
             }
         );
-        menu.show();
+        menu0.show();
+        menu1.show();
     })();
 
-    function loadDockingOptions( options, selectionInfo, selectedVoxel ) {
-        var menu = $( "#menu" );
-        menu.empty();
+    function loadDockingOptions( options, selectedVoxel, faceInfo ) {
+        var menu0 = $( "#menu0" );
+        var menu1 = $( "#menu1" );
+        menu0.empty();
+        menu1.empty();
         var hasSome = false;
-        menu.append('<li id="li" class="ui-widget-header">'+selectionInfo+'</li>');
+        menu0.append('<li id="li" class="ui-widget-header">Voxel: '+selectedVoxel+'</li>');
+        menu1.append('<li id="li" class="ui-widget-header">&#xA0</li>');
+        var i = 0;
         for (var prop in options) {
             if (options.hasOwnProperty(prop)) {
                 hasSome = true;
+                var menu = i%2==0 ? menu0 : menu1;
                 menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>');
+                i++;
             }
         }
 
@@ -279,7 +292,7 @@ function appMain() {
     function clearSelection() {
         scalaObj.clearSelection();
         if (voxelId != -1) {
-            loadDockingOptions(null, "", -1);
+            loadDockingOptions(null, -1, "");
         }
     }
 
@@ -411,7 +424,7 @@ function appMain() {
                 var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
                 var selection = scalaObj.selectFace(highlighted);
                 var options = scalaObj.showDockingOptions();
-                loadDockingOptions(options, selection.text, parseInt(selection.voxelId));
+                loadDockingOptions(options, parseInt(selection.voxelId), selection.faceInfo);
             }
             clicked = false;
         }

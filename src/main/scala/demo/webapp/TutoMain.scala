@@ -289,10 +289,10 @@ object TutoMain extends JSApp {
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
-    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( -1, -1, "" )( f => ( vId, fId, s"Voxel: $vId, face: ${f.faceType}" ) )
+    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( -1, -1, "" )( f => ( vId, fId, f.faceType.toString ) )
     Map( ( "voxelId", selection._1.toString )
        , ( "faceId", selection._2.toString )
-       , ( "text", selection._3 )
+       , ( "faceInfo", selection._3 )
        )
       .toJSDictionary
   }
