@@ -12,12 +12,12 @@ package object voxels {
     TruncatedCube ::
     TruncatedOctahedron ::
     TruncatedIcosahedron ::
-    Cuboctahedron ::
+    TriangularCupola ::
     Icosidodecahedron ::
     RhombicDodecahedron ::
     // ElongatedDodecahedron // incompatible rhombi ::
     TrigonalTrapezohedron ::
-    Rhombicuboctahedron ::
+    SquareCupola ::
     RhombicPrism ::
     Nil ++
     List( 3, 5, 6, 8 ).map( RegularPrism ) ++
