@@ -56,6 +56,12 @@ function appMain() {
     $("#showHelp").unbind("click");
     $("#showHelp").click(showHelp);
 
+    function save() {
+        console.log(scalaObj.buildCode());
+    }
+    $("#save").unbind("click");
+    $("#save").click(save);
+
     function screenshot() {
         var w = window.open('', '');
         w.document.title = "Screenshot";
@@ -168,19 +174,14 @@ function appMain() {
         };
     }
 
-//    var cuts = getURLParameter("cells") || 0;
-//    console.log( "cells:\t", cuts );
-//    var cutPositions = new Array(2*cuts);
-//    for ( var i = 0; i < cuts; i++ ) {
-//        var cut = rndSpherePosition();
-//        cutPositions[2*i] = cut[0];
-//        cutPositions[2*i+1] = cut[1];
-//    }
-
-//    var id = getURLParameter( "polyId" ) || 3;
-//    console.log( "polyId:\t", id );
-//    var overlapThreshold = getURLParameter( "overlapThreshold" ) || 100;
-//    console.log( "overlapThreshold:\t", overlapThreshold );
+    var buildCode = getURLParameter("code") || "";
+    console.log(buildCode);
+    if (buildCode.length > 0) {
+        var voxelId = scalaObj.loadCode(buildCode);
+        if (voxelId > -1) {
+            $( ".leftMenu" ).hide();
+        }
+    }
 
     var zoomMax = 16;
     var zoomMin = 0.0625;

@@ -6,6 +6,7 @@ package demo.webapp
 
 import geometry.{Matrix4, Vec3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
+import io.{Delete, Dock, Insert, VoxelAction}
 import voxels._
 
 import scala.collection.immutable.TreeSet
@@ -148,6 +149,8 @@ object TutoMain extends JSApp {
   // ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[(Int,Int,Int)]
 
+  private var voxelActionsStack: List[VoxelAction] = Nil
+
   private def makeMesh( v: Voxel, vId: Int ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -264,6 +267,7 @@ object TutoMain extends JSApp {
       pickScene.remove( pm )
     }
     meshes = Map.empty
+    voxelActionsStack = Nil
     clearSelection()
   }
 
@@ -274,6 +278,7 @@ object TutoMain extends JSApp {
     meshes = voxels.map { case ( k, v ) => ( k, makeMesh( v, k ) ) }
     scene.add( meshes( 0 )._1 )
     pickScene.add( meshes( 0 )._2 )
+    voxelActionsStack = Insert( i ) :: voxelActionsStack
   }
 
   private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
@@ -286,6 +291,7 @@ object TutoMain extends JSApp {
   @JSExport
   def selectFace( colorCode: Int ): Dictionary[String] = {
     val ( vId, fId ) = revertColorCode( colorCode )
+    println( colorCode, vId, fId )
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
@@ -326,16 +332,21 @@ object TutoMain extends JSApp {
 
   @JSExport
   def dockVoxel( dockingID: Int ): Unit = {
-    assert( dockingID >= 0 && dockingID < dockingOptions.length )
+    assert(dockingID >= 0 && dockingID < dockingOptions.length)
 
-    val newVId = dockingOptions( dockingID )._1
-    val fId = dockingOptions( dockingID )._2
-    val rot = dockingOptions( dockingID )._3
+    val newVId = dockingOptions(dockingID)._1
+    val fId = dockingOptions(dockingID)._2
+    val rot = dockingOptions(dockingID)._3
 
-    val newVoxelStd = standards.getOrElse( newVId, Cube )
+    dockVoxel( newVId, fId, rot, selectedVoxel, selectedFace )
+  }
+
+  private def dockVoxel( stdId: Int, faceId: Int, rot: Int, onVoxelId: Int, onFaceId: Int ): Unit = {
+
+    val newVoxelStd = standards.getOrElse( stdId, Cube )
     val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
-    val sourceFace = newVoxelUntransformed.faces( fId )
-    val targetFace = voxels( selectedVoxel ).faces( selectedFace )
+    val sourceFace = newVoxelUntransformed.faces( faceId)
+    val targetFace = voxels( onVoxelId ).faces( onFaceId )
 
     // rotation so docking faces actually face each other
     val targetN@Vec3( nx, ny, nz ) = targetFace.normal
@@ -344,7 +355,7 @@ object TutoMain extends JSApp {
 
     // rotated voxel
     val newVoxelRotated = Voxel( newVoxelStd, rM )
-    val sourceFace1 = newVoxelRotated.faces( fId )
+    val sourceFace1 = newVoxelRotated.faces( faceId )
 
     val to = targetFace.center
 
@@ -375,6 +386,8 @@ object TutoMain extends JSApp {
     meshes = meshes + ( ( lastDockedId, newMeshes ) )
     scene.add( newMeshes._1 )
     pickScene.add( newMeshes._2 )
+
+    voxelActionsStack = Dock( stdId, faceId, rot, onVoxelId, onFaceId ) :: voxelActionsStack
   }
 
   @JSExport
@@ -385,19 +398,23 @@ object TutoMain extends JSApp {
     scene.remove( removedMeshes._1 )
     pickScene.remove( removedMeshes._2 )
     freeVoxelIds = freeVoxelIds + lastDockedId
+    voxelActionsStack = voxelActionsStack.tail
   }
 
   @JSExport
-  def deleteSelected(): Unit = {
+  def deleteSelected(): Unit = delete( selectedVoxel )
+
+  private def delete( id: Int ): Unit = {
     if ( voxels.size > 1 ) {
-      voxels.get( selectedVoxel ).foreach { v =>
-        voxels = voxels - selectedVoxel
-        val removedMeshes = meshes( selectedVoxel )
-        meshes = meshes - selectedVoxel
+      voxels.get( id ).foreach { v =>
+        voxels = voxels - id
+        val removedMeshes = meshes( id )
+        meshes = meshes - id
         scene.remove( removedMeshes._1 )
         pickScene.remove( removedMeshes._2 )
-        freeVoxelIds = freeVoxelIds + selectedVoxel
-        println(s"deleted voxel $selectedVoxel, free ids: $freeVoxelIds")
+        freeVoxelIds = freeVoxelIds + id
+        voxelActionsStack = Delete( id ) :: voxelActionsStack
+        println(s"deleted voxel $id, free ids: $freeVoxelIds")
         clearSelection()
       }
     }
@@ -413,4 +430,23 @@ object TutoMain extends JSApp {
 
   @JSExport
   def getVoxelName( id: Int ): String = standards.lift( id ).fold( "" )( _.name )
+
+  @JSExport
+  def buildCode(): String = voxelActionsStack.mkString(",")
+
+  @JSExport
+  def loadCode( code: String ): Int = {
+    var id = -1
+    code.split( "," ).reverse.foreach {
+      case VoxelAction.deletePattern( c ) =>
+        delete( c.toInt )
+      case VoxelAction.insertPattern( c ) =>
+        id = c.toInt
+        loadVoxel( id )
+      case VoxelAction.dockPattern( c0, c1, c2, c3, c4 ) =>
+        dockVoxel( c0.toInt, c1.toInt, c2.toInt, c3.toInt, c4.toInt )
+      case _ => ()
+    }
+    id
+  }
 }
