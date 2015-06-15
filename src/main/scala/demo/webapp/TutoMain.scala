@@ -6,7 +6,7 @@ package demo.webapp
 
 import geometry.{Matrix4, Vec3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
-import io.{Delete, Dock, Insert, VoxelAction}
+import io._
 import voxels._
 
 import scala.collection.immutable.TreeSet
@@ -142,6 +142,7 @@ object TutoMain extends JSApp {
         .map { v => Matrix4.translationMatrix( v.faces.foldLeft( Vec3( 0,0,0 ) )( _ - _.center ) / v.faces.length ) }
         .getOrElse( Matrix4.unit )
     updateMVP()
+    voxelActionsStack = CenterOn( voxelId ) :: voxelActionsStack
   }
 
   private def updateMVP(): Unit = {
@@ -473,8 +474,8 @@ object TutoMain extends JSApp {
       case VoxelAction.insertPattern( c ) =>
         id = c.toInt
         loadVoxel( id )
-//      case VoxelAction.centerOnPattern( c ) =>
-//        ???
+      case VoxelAction.centerOnPattern( c ) =>
+        centerViewOn( c.toInt )
       case VoxelAction.dockPattern( c0, c1, c2, c3, c4 ) =>
         dockVoxel( c0.toInt, c1.toInt, c2.toInt, c3.toInt, c4.toInt )
       case _ => ()

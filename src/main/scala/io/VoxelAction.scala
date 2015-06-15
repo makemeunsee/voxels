@@ -7,6 +7,7 @@ object VoxelAction {
   val insertPattern = "I([0-9]+)".r
   val dockPattern = "D([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)".r
   val deletePattern = "Z([0-9]+)".r
+  val centerOnPattern = "C([0-9]+)".r
 }
 
 sealed trait VoxelAction {
@@ -28,4 +29,8 @@ case class Dock( stdId: Int
 
 case class Delete( voxelId: Int ) extends VoxelAction {
   def toCode = s"Z$voxelId"
+}
+
+case class CenterOn( voxelId: Int ) extends VoxelAction {
+  def toCode = s"C$voxelId"
 }
