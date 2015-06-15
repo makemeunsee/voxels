@@ -19,6 +19,8 @@ import scala.scalajs.js.{Array, Dictionary}
 
 import org.denigma.threejs._
 
+import scala.util.Random
+
 object TutoMain extends JSApp {
   def main(): Unit = {
     println("start")
@@ -52,8 +54,7 @@ object TutoMain extends JSApp {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
       updateThis( "u_borderWidth", 1f )
-      updateThis( "u_color", new Vector4( 1, 1, 1, 1 ) )
-      updateThis( "u_borderColor", new Vector4( 0.05,0.05,0.05,1 ) )
+      updateThis( "u_borderColor", new Vector3( 0.05,0.05,0.05 ) )
       val cCode = colorCode( selectedVoxel, selectedFace )
       updateThis( "u_highlightFlag", ( cCode % 131072 ).toFloat )
       updateThis( "u_faceHighlightFlag", cCode.toFloat )
@@ -189,28 +190,29 @@ object TutoMain extends JSApp {
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
-      "u_color" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 1, 1, 1, 1 ) ),
-      "u_borderColor" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 0, 0, 0, 1 ) ),
+      "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
       "u_highlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val geom = new MyBufferGeometry()
 
-    // create attributes for each vertex
-    // currently 2 colors are given as vertex attributes
     val attrs = js.Dynamic.literal(
+      "a_color" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array[Float]
+      ),
       "a_normal" -> js.Dynamic.literal(
         "type" -> "v3",
-        "value" -> new Array
+        "value" -> new Array[Float]
       ),
       "a_pickColor" -> js.Dynamic.literal(
         "type" -> "f",
-        "value" -> new Array
+        "value" -> new Array[Float]
       ),
       "a_centerFlag" -> js.Dynamic.literal(
         "type" -> "f",
-        "value" -> new Array
+        "value" -> new Array[Float]
       )
     )
 
@@ -233,6 +235,7 @@ object TutoMain extends JSApp {
 
     val vertices = new Float32Array( count )
     val normals = new Float32Array( count )
+    val colors = new Float32Array( count )
     val pickColors = new Float32Array( count / 3 )
     val centerFlags = new Float32Array( count / 3 )
     val indices = new Uint16Array( indicesCount )
@@ -255,7 +258,10 @@ object TutoMain extends JSApp {
           normals.set( triOffset+3*i,   nx.toFloat )
           normals.set( triOffset+3*i+1, ny.toFloat )
           normals.set( triOffset+3*i+2, nz.toFloat )
-          centerFlags.set( offset+i, 0 )
+          colors.set( triOffset+3*i,   1f )
+          colors.set( triOffset+3*i+1, 1f )
+          colors.set( triOffset+3*i+2, 1f )
+          centerFlags.set( offset+i, 0f )
           pickColors.set( offset+i, color )
           indices.set( indicesOffset+3*i,   offset+vSize )
           indices.set( indicesOffset+3*i+1, offset+i )
@@ -267,7 +273,10 @@ object TutoMain extends JSApp {
         normals.set( triOffset+3*vSize,   nx.toFloat )
         normals.set( triOffset+3*vSize+1, ny.toFloat )
         normals.set( triOffset+3*vSize+2, nz.toFloat )
-        centerFlags.set( offset+vSize, 1 )
+        colors.set( triOffset+3*vSize,   1f )
+        colors.set( triOffset+3*vSize+1, 1f )
+        colors.set( triOffset+3*vSize+2, 1f )
+        centerFlags.set( offset+vSize, 1f )
         pickColors.set( offset+vSize, color )
 
         offset = offset + vSize + 1
@@ -277,6 +286,7 @@ object TutoMain extends JSApp {
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
+    geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
@@ -325,7 +335,6 @@ object TutoMain extends JSApp {
   @JSExport
   def selectFace( colorCode: Int ): Dictionary[String] = {
     val ( vId, fId ) = revertColorCode( colorCode )
-    println( colorCode, vId, fId )
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
@@ -362,6 +371,32 @@ object TutoMain extends JSApp {
               .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
         }.toSeq
     }
+  }
+
+  private val rnd = new Random
+
+  private def rndColor( voxelId: Int ): Unit = {
+    val voxel = voxels( voxelId )
+    val mesh = meshes( voxelId )._1
+
+    val rndInt = rnd.nextInt()
+    val r = ( ( rndInt >> 16 ) & 0xff ).toFloat / 255f
+    val g = ( ( rndInt >> 8 ) & 0xff ).toFloat / 255f
+    val b = ( rndInt & 0xff ).toFloat / 255f
+    val length = voxel.faces.foldLeft( 0 ) { case ( acc, l ) => acc + l.vertices.length + 1 }
+    val attrs = mesh
+      .geometry.asInstanceOf[MyBufferGeometry]
+      .attributes
+    val colorAttr = attrs
+      .asInstanceOf[scala.scalajs.js.Dynamic]
+      .selectDynamic( "a_color" )
+    val colorData = colorAttr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
+    ( 0 until length ).foreach { i =>
+      colorData.update( 3*i,   r )
+      colorData.update( 3*i+1, g )
+      colorData.update( 3*i+2, b )
+    }
+    colorAttr.updateDynamic( "needsUpdate" )( true )
   }
 
   @JSExport

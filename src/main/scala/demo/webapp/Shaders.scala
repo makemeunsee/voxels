@@ -9,12 +9,13 @@ object Shaders {
 #extension GL_OES_standard_derivatives : enable
   #endif
 
-uniform vec4 u_color;
-uniform vec4 u_borderColor;
+// uniform vec4 u_color;
+uniform vec3 u_borderColor;
 uniform float u_borderWidth;
 uniform float u_highlightFlag;
 uniform float u_faceHighlightFlag;
 
+varying vec3 v_color;
 varying float v_centerFlag;
 varying float v_highlightFlag;
 varying float v_faceHighlightFlag;
@@ -26,7 +27,7 @@ float edgeFactor(const float thickness, const float centerFlag)
 
 void main()
 {
-  vec4 col = u_color;
+  vec3 col = v_color;
   if (u_faceHighlightFlag == v_faceHighlightFlag) {
     col.r = 0.2+2.0*col.r;
     col.g = 0.5*col.g;
@@ -40,7 +41,7 @@ void main()
   gl_FragColor = vec4 (
     mix(u_borderColor,
       col,
-      f).rgb,
+      f),
     1.0
   );
 }"""
@@ -51,11 +52,13 @@ void main()
 
 attribute float a_centerFlag;
 attribute vec3 a_normal;
+attribute vec3 a_color;
 attribute float a_pickColor;
 
 uniform mat4 u_mvpMat;
 uniform float u_time;
 
+varying vec3 v_color;
 varying float v_centerFlag;
 varying float v_highlightFlag;
 varying float v_faceHighlightFlag;
@@ -63,6 +66,7 @@ varying float v_faceHighlightFlag;
 void main()
 {
   gl_Position = u_mvpMat * vec4(position, 1.0);
+  v_color = a_color;
   v_centerFlag = a_centerFlag;
   v_faceHighlightFlag = a_pickColor;
   v_highlightFlag = mod(v_faceHighlightFlag, 131072.0);
