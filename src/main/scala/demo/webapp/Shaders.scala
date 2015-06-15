@@ -29,6 +29,10 @@ void main()
     col.r = 0.2+2.0*col.r;
     col.g = 0.5*col.g;
     col.b = 0.5*col.b;
+  } else if ( mod(u_highlightFlag, 131072.0) == mod(v_highlightFlag, 131072.0) ) {
+    col.r = 0.5 * col.r;
+    col.g = 0.5 * col.g;
+    col.b = 0.5 * col.b;
   }
   float f = edgeFactor(u_borderWidth, v_centerFlag);
   gl_FragColor = vec4 (
