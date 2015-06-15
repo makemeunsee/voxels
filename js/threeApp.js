@@ -26,15 +26,6 @@ function selectText(element) {
     }
 }
 
-function arrToMat( arr ) {
-    var mat = new THREE.Matrix4();
-    mat.set( arr[0][0], arr[0][1], arr[0][2], arr[0][3],
-             arr[1][0], arr[1][1], arr[1][2], arr[1][3],
-             arr[2][0], arr[2][1], arr[2][2], arr[2][3],
-             arr[3][0], arr[3][1], arr[3][2], arr[3][3] );
-    return mat;
-}
-
 function appMain() {
 
     var scalaObj = demo.webapp.TutoMain();
@@ -104,7 +95,6 @@ function appMain() {
     $("#fullscreen").click(toggleFullscreen);
 
     $("#centerView").unbind("click");
-    $("#centerView").click(centerView);
     $("#centerView").button();
 
     $( ".leftMenu" ).hide();
@@ -186,18 +176,14 @@ function appMain() {
 
         if (hasSome) {
             $( ".leftMenu" ).show();
-            $("#centerView").click(centerView(selectedVoxel));
+            $("#centerView").click(
+                function() {
+                    scalaObj.centerViewOn(selectedVoxel);
+                }
+            );
         } else {
             $( ".leftMenu" ).hide();
         }
-    }
-
-    var translationMatrix = new THREE.Matrix4();
-    function centerView(voxelId) {
-        return function() {
-            translationMatrix = arrToMat( scalaObj.translateToVoxel( voxelId ) );
-            updateMVPs();
-        };
     }
 
     var buildCode = getURLParameter("code") || "";
@@ -209,45 +195,15 @@ function appMain() {
         }
     }
 
-    var zoomMax = 16;
-    var zoomMin = 0.0625;
-    var zoomSpeed = 1.01;
-    var zoom = 1;
-
-    var camTheta = Math.PI / 2;
-    var camPhi = Math.PI / 2;
-    var camDist = 1;
-
-    var projMat = new THREE.Matrix4();
-    var viewMat = arrToMat( scalaObj.viewMatOf( camTheta, camPhi, camDist ) );
-    var modelMat = new THREE.Matrix4();
-    modelMat.elements[0] = Math.sqrt(2) / 2;
-    modelMat.elements[2] = Math.sqrt(2) / 2;
-    modelMat.elements[5] = 1;
-    modelMat.elements[8] = -Math.sqrt(2) / 2;
-    modelMat.elements[10] = Math.sqrt(2) / 2;
-    var scaledModelMat = modelMat.clone();
-
-    var mvp = new THREE.Matrix4();
-    function updateMVPs() {
-        var p = projMat.clone();
-        var vp = p.multiply( viewMat );
-        scaledModelMat = new THREE.Matrix4();
-        scaledModelMat.multiplyScalar( zoom ).multiply( modelMat ).multiply( translationMatrix );
-        scaledModelMat.elements[15] = 1;
-        mvp = vp.multiply( scaledModelMat );
-    }
-
     var updateProjection = function(screenWidth, screenHeight) {
-        projMat = arrToMat( scalaObj.orthoMatrixFromScreen( screenWidth, screenHeight, 1.75 ) );
-        updateMVPs();
+        scalaObj.updateViewport( screenWidth, screenHeight );
     };
 
     updateProjection(window.innerWidth, window.innerHeight);
 
     function loadStdVoxel( id ) {
         scalaObj.loadVoxel( id );
-        centerView(voxelId)();
+        scalaObj.centerViewOn( 0 );
         document.title = scalaObj.getVoxelName( id );
     }
 
@@ -258,7 +214,7 @@ function appMain() {
     mc.get("pinch").set({ enable: true });
 
     mc.on("pinch", function(ev) {
-        zoomFct(ev.scale < 1 ? -1 : 1, 1.04);
+        scalaObj.zoom(ev.scale < 1 ? -1 : 1);
     });
 
     var pixels = new Uint8Array(4);
@@ -352,8 +308,7 @@ function appMain() {
             var deltaX = event.touches[0].clientX - mx;
             var deltaY = event.touches[0].clientY - my;
 
-            modelMat = arrToMat( scalaObj.naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) ).multiply( modelMat );
-            updateMVPs();
+            scalaObj.rotateView( deltaX, deltaY );
 
             mx = event.touches[0].clientX;
             my = event.touches[0].clientY;
@@ -361,14 +316,9 @@ function appMain() {
         }
     }
 
-    function zoomFct(delta, alpha) {
-        zoom = Math.min( Math.max( zoom * ( Math.pow( alpha, delta ) ), zoomMin ), zoomMax );
-        updateMVPs();
-    }
-
     // mouse wheel -> zoom in / out
     function onMouseWheel(event) {
-        zoomFct( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ), 1.05 );
+        scalaObj.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
     }
 
     canvas.addEventListener( "mousedown", onMouseDown, false );
@@ -457,11 +407,6 @@ function appMain() {
         }
 
         // normal render
-        var meshes = scalaObj.currentMeshes();
-        for (var i = 0; i < meshes.length; i++) {
-            meshes[i][0].material.uniforms.u_mvpMat.value = mvp;
-            meshes[i][1].material.uniforms.u_mvpMat.value = mvp;
-        }
         scalaObj.render();
 
 //        then = now;

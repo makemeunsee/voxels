@@ -36,77 +36,53 @@ object TutoMain extends JSApp {
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
 
   private var meshes = Map.empty[Int, (Mesh, Mesh)]
-  @JSExport
-  def currentMeshes() = meshes.values.map { case ( m, pm ) => Seq( m, pm ).toJSArray }.toJSArray
 
   @JSExport
   def pickRender() = renderer.render( pickScene, dummyCam )
 
+  private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
+    mesh.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic]
+      .selectDynamic( field )
+      .updateDynamic( "value" )( value )
+  }
+
   @JSExport
   def render() = {
     meshes.values.foreach { case ( m, pm ) =>
-      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_time" ).updateDynamic( "value" )( 0f )
-      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderWidth" ).updateDynamic( "value" )( 1f )
-      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_color" ).updateDynamic( "value" )( new Vector4( 1, 1, 1, 1 ) )
-      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_borderColor" ).updateDynamic( "value" )( new Vector4( 0.05,0.05,0.05,1 ) )
-      m.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic].selectDynamic( "u_highlightFlag" ).updateDynamic( "value" )( colorCode( selectedVoxel, selectedFace ).toFloat )
+      val updateThis = updateMeshMaterialValue( m ) _
+      updateThis( "u_time", 0f )
+      updateThis( "u_borderWidth", 1f )
+      updateThis( "u_color", new Vector4( 1, 1, 1, 1 ) )
+      updateThis( "u_borderColor", new Vector4( 0.05,0.05,0.05,1 ) )
+      updateThis( "u_highlightFlag", colorCode( selectedVoxel, selectedFace ).toFloat )
+      updateThis( "u_mvpMat", mvp )
     }
     renderer.render( scene, dummyCam )
   }
 
-  @JSExport
-  def naiveRotMat(theta: Double, phi: Double): Array[Array[Double]] = {
-    ( rotationMatrix( theta, 0, 1, 0 ) * rotationMatrix( phi, 1, 0, 0 ) ).toSeqs.map( _.toJSArray ).toJSArray
+  private def naiveRotMat( theta: Double, phi: Double ): Matrix4 = {
+    rotationMatrix( theta, 0, 1, 0 ) * rotationMatrix( phi, 1, 0, 0 )
   }
 
-  def latLongPosition(theta: Double, phi: Double, distance: Double): Vec3 = {
-    val cosP = math.cos( phi )
-    val sinP = math.sin( phi )
-    val cosT = math.cos( theta )
-    val sinT = math.sin( theta )
-    Vec3( distance * sinP * cosT, distance * cosP, distance * sinP * sinT )
+  private def zoomMatrix( zoom: Double ): Matrix4 = {
+    assert( zoom != 0)
+    Matrix4.unit.copy( a33 = 1d / zoom )
   }
 
-  def lookAtMatrix( eye: Vec3, target: Vec3, up: Vec3 ): Array[Array[Double]] = {
-    val forward = (target minus eye).normalize
-    val right = (forward cross up).normalize
-    val up0 =  right cross forward
-    Array( Array( right.x, right.y, right.z, -(right dot eye) ),
-           Array( up0.x, up0.y, up0.z, -(up0 dot eye) ),
-           Array( -forward.x, -forward.y, -forward.z, forward dot eye ),
-           Array( 0, 0, 0, 1 ) )
-  }
-
-  @JSExport
-  def viewMatOf( theta: Double, phi: Double, distance: Double): Array[Array[Double]] = {
-    val p = latLongPosition ( theta, math.max( 0.00001, math.min( math.Pi - 0.00001, phi ) ), distance )
-    lookAtMatrix( p, Vec3( 0, 0, 0 ), Vec3( 0, 1, 0 ) )
-  }
-
-  @JSExport
-  def translateToVoxel( voxelId: Int ): Array[Array[Double]] = {
-    voxels
-      .get( voxelId )
-      .map { v => Matrix4.translationMatrix( v.faces.foldLeft( Vec3( 0,0,0 ) )( _ - _.center ) / v.faces.length ) }
-      .getOrElse( Matrix4.unit )
-      .toSeqs.map( _.toJSArray ).toJSArray
-  }
-
-  def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Array[Array[Double]] = {
+  private def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Matrix4 = {
     val x_orth = 2 / (right - left)
     val y_orth = 2 / (top - bottom)
     val z_orth = -2 / (far - near)
     val tx = -(right + left) / (right - left)
     val ty = -(top + bottom) / (top - bottom)
     val tz = -(far + near) / (far - near)
-    Array( Array( x_orth, 0, 0, tx ),
-           Array( 0, y_orth, 0, ty ),
-           Array( 0, 0, z_orth, tz ),
-           Array( 0, 0, 0, 1 ) )
+    Matrix4( x_orth, 0, 0, tx
+           , 0, y_orth, 0, ty
+           , 0, 0, z_orth, tz
+           , 0, 0, 0, 1 )
   }
 
-  @JSExport
-  def orthoMatrixFromScreen( w: Double, h: Double, k: Double ) = {
+  private def orthoMatrixFromScreen( w: Double, h: Double, k: Double ) = {
     val hh = if ( h < 0 ) 1 else h
     val aspect = w / hh
     val far = 100
@@ -116,6 +92,60 @@ object TutoMain extends JSApp {
     val left = -right
     val bottom = -top
     orthoMatrix( left, right, bottom, top, near, far )
+  }
+
+  import scala.language.implicitConversions
+  private implicit def toJsMatrix( m: Matrix4 ): org.denigma.threejs.Matrix4 = {
+    val r = new org.denigma.threejs.Matrix4()
+    r.set( m.a00, m.a01, m.a02, m.a03
+         , m.a10, m.a11, m.a12, m.a13
+         , m.a20, m.a21, m.a22, m.a23
+         , m.a30, m.a31, m.a32, m.a33
+         )
+    r
+  }
+
+  private val zoomMax = 16
+  private val zoomMin = 0.0625
+  private val zoomSpeed = 1.05
+  private var zoom = 1d
+
+  @JSExport
+  def zoom( delta: Double ): Unit = {
+    zoom = Math.min( Math.max( zoom * Math.pow( zoomSpeed, delta ), zoomMin ), zoomMax )
+    updateMVP()
+  }
+
+  private var projMat = Matrix4.unit
+  private val viewMat = Matrix4.unit
+  private var modelMat = naiveRotMat( 0.05, 0.03 )
+  private var transMat = Matrix4.unit
+  private var mvp = Matrix4.unit
+
+  @JSExport
+  def updateViewport( width: Int, height: Int ): Unit = {
+    projMat = orthoMatrixFromScreen( width, height, 1.75 )
+    updateMVP()
+  }
+
+  @JSExport
+  def rotateView( deltaX: Int, deltaY: Int ): Unit = {
+    modelMat = naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) * modelMat
+    updateMVP()
+  }
+
+  @JSExport
+  def centerViewOn( voxelId: Int ): Unit = {
+    transMat =
+      voxels
+        .get( voxelId )
+        .map { v => Matrix4.translationMatrix( v.faces.foldLeft( Vec3( 0,0,0 ) )( _ - _.center ) / v.faces.length ) }
+        .getOrElse( Matrix4.unit )
+    updateMVP()
+  }
+
+  private def updateMVP(): Unit = {
+    mvp = projMat * zoomMatrix( zoom ) * viewMat * modelMat * transMat
   }
 
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
@@ -246,10 +276,10 @@ object TutoMain extends JSApp {
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    ( combineMesh( geom, shaderMaterial ), combineMesh( geom, pickShaderMaterial ) )
+    ( assembleMesh( geom, shaderMaterial ), assembleMesh( geom, pickShaderMaterial ) )
   }
 
-  private def combineMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
+  private def assembleMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
     val mesh = new Mesh
     mesh.geometry = geometry
     mesh.material = material
@@ -443,6 +473,8 @@ object TutoMain extends JSApp {
       case VoxelAction.insertPattern( c ) =>
         id = c.toInt
         loadVoxel( id )
+//      case VoxelAction.centerOnPattern( c ) =>
+//        ???
       case VoxelAction.dockPattern( c0, c1, c2, c3, c4 ) =>
         dockVoxel( c0.toInt, c1.toInt, c2.toInt, c3.toInt, c4.toInt )
       case _ => ()
