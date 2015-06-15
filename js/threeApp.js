@@ -9,6 +9,23 @@ function getURLParameter(sParam) {
     }
 }
 
+function selectText(element) {
+    var doc = document;
+    var text = doc.getElementById(element);
+
+    if (doc.body.createTextRange) { // ms
+        var range = doc.body.createTextRange();
+        range.moveToElementText(text);
+        range.select();
+    } else if (window.getSelection) { // moz, opera, webkit
+        var selection = window.getSelection();
+        var range = doc.createRange();
+        range.selectNodeContents(text);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
 function arrToMat( arr ) {
     var mat = new THREE.Matrix4();
     mat.set( arr[0][0], arr[0][1], arr[0][2], arr[0][3],
@@ -57,7 +74,16 @@ function appMain() {
     $("#showHelp").click(showHelp);
 
     function save() {
-        console.log(scalaObj.buildCode());
+        var buildCode = scalaObj.buildCode();
+        var selfUrl = window.location.href.toString().split("?")[0];
+        console.log(buildCode);
+        var buildUrl = selfUrl+"?code="+buildCode
+        $( "#clipboard" ).append("<a id='buildUrl' href='"+buildUrl+"'>"+buildUrl+"</a>");
+        $( "#clipboard" ).dialog({
+            width: 500,
+            height: 150
+        });
+        selectText("buildUrl");
     }
     $("#save").unbind("click");
     $("#save").click(save);
