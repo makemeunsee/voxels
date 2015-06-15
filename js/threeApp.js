@@ -168,7 +168,6 @@ function appMain() {
             },
             function(evt) {
                 $( this ).removeClass( "active" );
-                var dockId = parseInt(evt.currentTarget.id.substring(3));
                 scalaObj.undockLastVoxel();
             }
         );
