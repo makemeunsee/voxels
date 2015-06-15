@@ -118,7 +118,7 @@ object TutoMain extends JSApp {
 
   private var projMat = Matrix4.unit
   private val viewMat = Matrix4.unit
-  private var modelMat = naiveRotMat( 0.05, 0.03 )
+  private var modelMat = naiveRotMat( 0.5, 0.3 )
   private var transMat = Matrix4.unit
   private var mvp = Matrix4.unit
 
