@@ -13,9 +13,11 @@ uniform vec4 u_color;
 uniform vec4 u_borderColor;
 uniform float u_borderWidth;
 uniform float u_highlightFlag;
+uniform float u_faceHighlightFlag;
 
 varying float v_centerFlag;
 varying float v_highlightFlag;
+varying float v_faceHighlightFlag;
 
 float edgeFactor(const float thickness, const float centerFlag)
 {
@@ -25,11 +27,11 @@ float edgeFactor(const float thickness, const float centerFlag)
 void main()
 {
   vec4 col = u_color;
-  if (u_highlightFlag == v_highlightFlag) {
+  if (u_faceHighlightFlag == v_faceHighlightFlag) {
     col.r = 0.2+2.0*col.r;
     col.g = 0.5*col.g;
     col.b = 0.5*col.b;
-  } else if ( mod(u_highlightFlag, 131072.0) == mod(v_highlightFlag, 131072.0) ) {
+  } else if ( u_highlightFlag == v_highlightFlag ) {
     col.r = 0.5 * col.r;
     col.g = 0.5 * col.g;
     col.b = 0.5 * col.b;
@@ -56,12 +58,14 @@ uniform float u_time;
 
 varying float v_centerFlag;
 varying float v_highlightFlag;
+varying float v_faceHighlightFlag;
 
 void main()
 {
   gl_Position = u_mvpMat * vec4(position, 1.0);
   v_centerFlag = a_centerFlag;
-  v_highlightFlag = a_pickColor;
+  v_faceHighlightFlag = a_pickColor;
+  v_highlightFlag = mod(v_faceHighlightFlag, 131072.0);
 }"""
 
   val pickFragmentShader = """#ifdef GL_ES

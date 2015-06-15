@@ -54,7 +54,9 @@ object TutoMain extends JSApp {
       updateThis( "u_borderWidth", 1f )
       updateThis( "u_color", new Vector4( 1, 1, 1, 1 ) )
       updateThis( "u_borderColor", new Vector4( 0.05,0.05,0.05,1 ) )
-      updateThis( "u_highlightFlag", colorCode( selectedVoxel, selectedFace ).toFloat )
+      val cCode = colorCode( selectedVoxel, selectedFace )
+      updateThis( "u_highlightFlag", ( cCode % 131072 ).toFloat )
+      updateThis( "u_faceHighlightFlag", cCode.toFloat )
       updateThis( "u_mvpMat", mvp )
     }
     renderer.render( scene, dummyCam )
@@ -189,7 +191,8 @@ object TutoMain extends JSApp {
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_color" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 1, 1, 1, 1 ) ),
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_highlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_highlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val geom = new MyBufferGeometry()
