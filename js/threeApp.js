@@ -79,6 +79,11 @@ function appMain() {
     $("#save").unbind("click");
     $("#save").click(save);
 
+    $("#reset").unbind("click");
+    $("#reset").click(function() {
+        window.location = window.location.pathname;
+    });
+
     function screenshot() {
         var w = window.open('', '');
         w.document.title = "Screenshot";
