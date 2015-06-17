@@ -28,14 +28,16 @@ float edgeFactor(const float thickness, const float centerFlag)
 void main()
 {
   vec3 col = v_color;
+  float c = 0.5+0.5*cos(3.0*6.28*v_centerFlag);
   if (u_faceHighlightFlag == v_faceHighlightFlag) {
-    col.r = 0.2+2.0*col.r;
-    col.g = 0.5*col.g;
-    col.b = 0.5*col.b;
-  } else if ( u_highlightFlag == v_highlightFlag ) {
-    col.r = 0.5 * col.r;
-    col.g = 0.5 * col.g;
-    col.b = 0.5 * col.b;
+    col.r = c * col.r + (1.0-c);
+    col.g = c * col.g + 0.2*(1.0-c);
+    col.b = c * col.b;
+  }
+  else if ( u_highlightFlag == v_highlightFlag ) {
+    col.r = c*col.r;
+    col.g = c*col.g;
+    col.b = c*col.b;
   }
   float f = edgeFactor(u_borderWidth, v_centerFlag);
   gl_FragColor = vec4 (
