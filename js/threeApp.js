@@ -28,7 +28,7 @@ function selectText(element) {
 
 function appMain() {
 
-    var scalaObj = demo.webapp.TutoMain();
+    var scalaObj = demo.webapp.VoxelMain();
     demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
                                       document.getElementById('shader-fs').innerHTML,
                                       document.getElementById('shader-pick-vs').innerHTML,
@@ -91,7 +91,7 @@ function appMain() {
 
     $("#borders").unbind("click");
     $("#borders").click(function bordersFct() {
-            scalaObj.toggleBorders();
+            scalaObj.scene.toggleBorders();
         }
     );
     $("#borders").attr("checked", true);
@@ -221,7 +221,7 @@ function appMain() {
     }
 
     var updateProjection = function(screenWidth, screenHeight) {
-        scalaObj.updateViewport( screenWidth, screenHeight );
+        scalaObj.scene.updateViewport( screenWidth, screenHeight );
     };
 
     updateProjection(window.innerWidth, window.innerHeight);
@@ -238,12 +238,12 @@ function appMain() {
     mc.get("pinch").set({ enable: true });
 
     mc.on("pinch", function(ev) {
-        scalaObj.zoom(ev.scale < 1 ? -1 : 1);
+        scalaObj.scene.zoom(ev.scale < 1 ? -1 : 1);
     });
 
     var pixels = new Uint8Array(4);
 
-    var renderer = scalaObj.renderer;
+    var renderer = scalaObj.scene.renderer;
     var canvas = renderer.domElement;
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
@@ -332,7 +332,7 @@ function appMain() {
             var deltaX = event.touches[0].clientX - mx;
             var deltaY = event.touches[0].clientY - my;
 
-            scalaObj.rotateView( deltaX, deltaY );
+            scalaObj.scene.rotateView( deltaX, deltaY );
 
             mx = event.touches[0].clientX;
             my = event.touches[0].clientY;
@@ -342,7 +342,7 @@ function appMain() {
 
     // mouse wheel -> zoom in / out
     function onMouseWheel(event) {
-        scalaObj.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
+        scalaObj.scene.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
     }
 
     canvas.addEventListener( "mousedown", onMouseDown, false );
@@ -403,7 +403,9 @@ function appMain() {
     }
 
     var simTime = 0.0;
-    var gl = scalaObj.renderer.getContext();
+    var gl = renderer.getContext();
+
+    var highlighted = 0;
 
     // The main game loop
     function main() {
@@ -418,11 +420,11 @@ function appMain() {
 
             if ( voxelId != -1 ) {
                 // pickRender
-                scalaObj.pickRender();
+                scalaObj.scene.pickRender();
 
                 // selection
                 gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-                var highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+                highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
                 var selection = scalaObj.selectFace(highlighted);
                 var options = scalaObj.showDockingOptions();
                 loadDockingOptions(options, parseInt(selection.voxelId), selection.faceInfo);
@@ -431,7 +433,7 @@ function appMain() {
         }
 
         // normal render
-        scalaObj.render();
+        scalaObj.scene.render(highlighted);
 
 //        then = now;
         requestAnimFrame(main);

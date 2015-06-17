@@ -1,6 +1,6 @@
 enablePlugins(ScalaJSPlugin)
 
-name := "Sphere Maze"
+name := "Voxels"
 
 version := "1.0"
 
