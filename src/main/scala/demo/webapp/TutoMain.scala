@@ -329,6 +329,7 @@ object TutoMain extends JSApp {
     meshes.foreach { case ( _, ( m, pm ) ) =>
       scene.remove( m )
       pickScene.remove( pm )
+      // TODO check if m.geometry.dispose() and such are useful
     }
     meshes = Map.empty
     voxelActionsStack = Nil
@@ -343,6 +344,7 @@ object TutoMain extends JSApp {
     scene.add( meshes( 0 )._1 )
     pickScene.add( meshes( 0 )._2 )
     voxelActionsStack = Insert( i ) :: voxelActionsStack
+    centerViewOn( 0 )
   }
 
   private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )

@@ -224,7 +224,6 @@ function appMain() {
 
     function loadStdVoxel( id ) {
         scalaObj.loadVoxel( id );
-        scalaObj.centerViewOn( 0 );
         document.title = scalaObj.getVoxelName( id );
     }
 
