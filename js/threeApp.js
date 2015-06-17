@@ -92,6 +92,15 @@ function appMain() {
     );
     $("#borders").attr("checked", true);
 
+    $("#rndColors").unbind("click");
+    $("#rndColors").click(function rndColorsFct() {
+            scalaObj.toggleRndColors();
+        }
+    );
+    $("#rndColors").attr("checked", true);
+
+    // TODO ensure checkboxes properly reset after reload
+
     function screenshot() {
         var w = window.open('', '');
         w.document.title = "Screenshot";

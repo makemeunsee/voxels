@@ -46,6 +46,17 @@ object TutoMain extends JSApp {
     showBorders = !showBorders
   }
 
+  private var rndColors = true
+
+  @JSExport
+  def toggleRndColors(): Unit = {
+    rndColors = !rndColors
+    if ( rndColors )
+      meshes.keys foreach rndColor
+    else
+      meshes.keys foreach whiteColor
+  }
+
   @JSExport
   def pickRender() = renderer.render( pickScene, dummyCam )
 
@@ -253,7 +264,9 @@ object TutoMain extends JSApp {
       .foreach { case ( f, fId ) =>
         val Vec3( nx, ny, nz ) = f.normal
         val Vec3( cx, cy, cz ) = f.center
-        val color = colorCode( vId, fId )
+        val pickColor = colorCode( vId, fId )
+        val ( r, g, b ) = if ( rndColors ) rndColor() else ( 1f, 1f, 1f )
+        val ( cr, cg, cb ) = if ( rndColors ) rndColor() else ( 1f, 1f, 1f )
 
         val triOffset = offset*3
         val vSize = f.vertices.length
@@ -265,11 +278,11 @@ object TutoMain extends JSApp {
           normals.set( triOffset+3*i,   nx.toFloat )
           normals.set( triOffset+3*i+1, ny.toFloat )
           normals.set( triOffset+3*i+2, nz.toFloat )
-          colors.set( triOffset+3*i,   1f )
-          colors.set( triOffset+3*i+1, 1f )
-          colors.set( triOffset+3*i+2, 1f )
+          colors.set( triOffset+3*i,   r )
+          colors.set( triOffset+3*i+1, g )
+          colors.set( triOffset+3*i+2, b )
           centerFlags.set( offset+i, 0f )
-          pickColors.set( offset+i, color )
+          pickColors.set( offset+i, pickColor )
           indices.set( indicesOffset+3*i,   offset+vSize )
           indices.set( indicesOffset+3*i+1, offset+i )
           indices.set( indicesOffset+3*i+2, offset+(i+1)%vSize )
@@ -280,11 +293,11 @@ object TutoMain extends JSApp {
         normals.set( triOffset+3*vSize,   nx.toFloat )
         normals.set( triOffset+3*vSize+1, ny.toFloat )
         normals.set( triOffset+3*vSize+2, nz.toFloat )
-        colors.set( triOffset+3*vSize,   1f )
-        colors.set( triOffset+3*vSize+1, 1f )
-        colors.set( triOffset+3*vSize+2, 1f )
+        colors.set( triOffset+3*vSize,   cr )
+        colors.set( triOffset+3*vSize+1, cg )
+        colors.set( triOffset+3*vSize+2, cb )
         centerFlags.set( offset+vSize, 1f )
-        pickColors.set( offset+vSize, color )
+        pickColors.set( offset+vSize, pickColor )
 
         offset = offset + vSize + 1
         indicesOffset = indicesOffset + vSize*3
@@ -382,28 +395,57 @@ object TutoMain extends JSApp {
 
   private val rnd = new Random
 
-  private def rndColor( voxelId: Int ): Unit = {
-    val voxel = voxels( voxelId )
-    val mesh = meshes( voxelId )._1
-
+  private def rndColor(): ( Float, Float, Float ) = {
     val rndInt = rnd.nextInt()
     val r = ( ( rndInt >> 16 ) & 0xff ).toFloat / 255f
     val g = ( ( rndInt >> 8 ) & 0xff ).toFloat / 255f
     val b = ( rndInt & 0xff ).toFloat / 255f
-    val length = voxel.faces.foldLeft( 0 ) { case ( acc, l ) => acc + l.vertices.length + 1 }
-    val attrs = mesh
-      .geometry.asInstanceOf[MyBufferGeometry]
-      .attributes
-    val colorAttr = attrs
-      .asInstanceOf[scala.scalajs.js.Dynamic]
-      .selectDynamic( "a_color" )
-    val colorData = colorAttr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
-    ( 0 until length ).foreach { i =>
-      colorData.update( 3*i,   r )
-      colorData.update( 3*i+1, g )
-      colorData.update( 3*i+2, b )
+    ( r, g, b )
+  }
+
+  private def rndColor( voxelId: Int ): Unit = {
+    voxels.lift( voxelId ).foreach { voxel =>
+      ( 0 until voxel.faces.length ).foreach( i => colorFace( voxelId, i, rndColor(), rndColor() ) )
     }
-    colorAttr.updateDynamic( "needsUpdate" )( true )
+  }
+
+  private def whiteColor( voxelId: Int ): Unit = {
+    voxels.lift( voxelId ).foreach { voxel =>
+      ( 0 until voxel.faces.length ).foreach( i => colorFace(voxelId, i, ( 1,1,1 ), ( 1,1,1 ) ) )
+    }
+  }
+
+  private def colorFace( voxelId: Int
+                         , faceId: Int
+                         , color: ( Float, Float, Float )
+                         , centerColor: ( Float, Float, Float ) ): Unit = {
+    voxels.lift( voxelId ).foreach { voxel =>
+      voxel.faces.lift( faceId ).foreach { face =>
+        val mesh = meshes( voxelId )._1
+        val attrs = mesh
+          .geometry.asInstanceOf[MyBufferGeometry]
+          .attributes
+        val colorAttr = attrs
+          .asInstanceOf[scala.scalajs.js.Dynamic]
+          .selectDynamic( "a_color" )
+        val colorData = colorAttr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
+        val offset = voxel.faces.zipWithIndex.foldLeft( 0 ) { case ( acc, ( f, i ) ) =>
+          if ( i < faceId ) acc + f.vertices.length + 1
+          else if ( i > faceId ) acc
+          else acc
+        } * 3
+        val l = face.vertices.length
+        ( 0 until l ).foreach { i =>
+          colorData.update( offset+3*i,   color._1 )
+          colorData.update( offset+3*i+1, color._2 )
+          colorData.update( offset+3*i+2, color._3 )
+        }
+        colorData.update( offset+3*l,   centerColor._1 )
+        colorData.update( offset+3*l+1, centerColor._2 )
+        colorData.update( offset+3*l+2, centerColor._3 )
+        colorAttr.updateDynamic( "needsUpdate" )( true )
+      }
+    }
   }
 
   @JSExport
