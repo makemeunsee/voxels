@@ -29,6 +29,10 @@ function selectText(element) {
 function appMain() {
 
     var scalaObj = demo.webapp.TutoMain();
+    demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
+                                      document.getElementById('shader-fs').innerHTML,
+                                      document.getElementById('shader-pick-vs').innerHTML,
+                                      document.getElementById('shader-pick-fs').innerHTML);
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
