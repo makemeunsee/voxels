@@ -23,7 +23,7 @@ import scala.util.Random
 
 object TutoMain extends JSApp {
   def main(): Unit = {
-    println("start")
+    println( "start" )
   }
 
   private val dummyCam = new Camera
@@ -37,7 +37,7 @@ object TutoMain extends JSApp {
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
 
-  private var meshes = Map.empty[Int, (Mesh, Mesh)]
+  private var meshes = Map.empty[Int, ( Mesh, Mesh )]
 
   private var showBorders = true
 
@@ -86,17 +86,17 @@ object TutoMain extends JSApp {
   }
 
   private def zoomMatrix( zoom: Double ): Matrix4 = {
-    assert( zoom != 0)
+    assert( zoom != 0 )
     Matrix4.unit.copy( a33 = 1d / zoom )
   }
 
   private def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Matrix4 = {
-    val x_orth = 2 / (right - left)
-    val y_orth = 2 / (top - bottom)
-    val z_orth = -2 / (far - near)
-    val tx = -(right + left) / (right - left)
-    val ty = -(top + bottom) / (top - bottom)
-    val tz = -(far + near) / (far - near)
+    val x_orth = 2 / ( right - left )
+    val y_orth = 2 / ( top - bottom )
+    val z_orth = -2 / ( far - near )
+    val tx = -( right + left ) / ( right - left )
+    val ty = -( top + bottom ) / ( top - bottom )
+    val tz = -( far + near ) / ( far - near )
     Matrix4( x_orth, 0, 0, tx
            , 0, y_orth, 0, ty
            , 0, 0, z_orth, tz
@@ -171,22 +171,22 @@ object TutoMain extends JSApp {
   }
 
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
-  @JSName("THREE.BufferGeometry")
+  @JSName( "THREE.BufferGeometry" )
   class MyBufferGeometry extends Geometry {
     var attributes: js.Array[BufferAttribute] = js.native
     var drawcalls: js.Any = js.native
     var offsets: js.Any = js.native
-    def addAttribute(name: String, attribute: BufferAttribute): js.Dynamic = js.native
-    def addAttribute(name: String, array: js.Any, itemSize: Double): js.Dynamic = js.native
-    def getAttribute(name: String): js.Dynamic = js.native
-    def addDrawCall(start: Double, count: Double, index: Double): Unit = js.native
-    def applyMatrix(matrix: Matrix4): Unit = js.native
-    def fromGeometry(geometry: Geometry, settings: js.Any = js.native): BufferGeometry = js.native
+    def addAttribute( name: String, attribute: BufferAttribute ): js.Dynamic = js.native
+    def addAttribute( name: String, array: js.Any, itemSize: Double ): js.Dynamic = js.native
+    def getAttribute( name: String ): js.Dynamic = js.native
+    def addDrawCall( start: Double, count: Double, index: Double ): Unit = js.native
+    def applyMatrix( matrix: Matrix4 ): Unit = js.native
+    def fromGeometry( geometry: Geometry, settings: js.Any = js.native ): BufferGeometry = js.native
     def computeVertexNormals(): Unit = js.native
-    def computeOffsets(indexBufferSize: Double): Unit = js.native
+    def computeOffsets( indexBufferSize: Double ): Unit = js.native
     def merge(): Unit = js.native
     def normalizeNormals(): Unit = js.native
-    def reorderBuffers(indexBuffer: Double, indexMap: js.Array[Double], vertexCount: Double): Unit = js.native
+    def reorderBuffers( indexBuffer: Double, indexMap: js.Array[Double], vertexCount: Double ): Unit = js.native
   }
 
   @JSExport
@@ -199,7 +199,7 @@ object TutoMain extends JSApp {
   private var selectedVoxel: Int = -1
   private var selectedFace: Int = -1
   // ( voxelStd id, face id, rotation step )
-  private var dockingOptions = Seq.empty[(Int,Int,Int)]
+  private var dockingOptions = Seq.empty[( Int,Int,Int )]
 
   private var voxelActionsStack: List[VoxelAction] = Nil
 
@@ -271,7 +271,7 @@ object TutoMain extends JSApp {
         val triOffset = offset*3
         val vSize = f.vertices.length
 
-        ( 0 until vSize).foreach { i =>
+        ( 0 until vSize ).foreach { i =>
           vertices.set( triOffset+3*i,   f.rawVertices( 3*i ).toFloat )
           vertices.set( triOffset+3*i+1, f.rawVertices( 3*i+1 ).toFloat )
           vertices.set( triOffset+3*i+2, f.rawVertices( 3*i+2 ).toFloat )
@@ -285,7 +285,7 @@ object TutoMain extends JSApp {
           pickColors.set( offset+i, pickColor )
           indices.set( indicesOffset+3*i,   offset+vSize )
           indices.set( indicesOffset+3*i+1, offset+i )
-          indices.set( indicesOffset+3*i+2, offset+(i+1)%vSize )
+          indices.set( indicesOffset+3*i+2, offset+( i+1 )%vSize )
         }
         vertices.set( triOffset+3*vSize,   cx.toFloat )
         vertices.set( triOffset+3*vSize+1, cy.toFloat )
@@ -346,7 +346,7 @@ object TutoMain extends JSApp {
   }
 
   private def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
-  private def revertColorCode( colorCode: Int ): (Int, Int) = {
+  private def revertColorCode( colorCode: Int ): ( Int, Int ) = {
     val faceId = colorCode >>> 17
     val voxelId = colorCode - ( faceId << 17 ) - 1
     ( voxelId, faceId )
@@ -358,7 +358,7 @@ object TutoMain extends JSApp {
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
-    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId) ).fold( -1, -1, "" )( f => ( vId, fId, f.faceType.toString ) )
+    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId ) ).fold( -1, -1, "" )( f => ( vId, fId, f.faceType.toString ) )
     Map( ( "voxelId", selection._1.toString )
        , ( "faceId", selection._2.toString )
        , ( "faceInfo", selection._3 )
@@ -378,11 +378,11 @@ object TutoMain extends JSApp {
     .toMap
     .toJSDictionary
 
-  private def listDockingOptions( voxelId: Int, faceId: Int ): Seq[(Int,Int,Int)] = {
+  private def listDockingOptions( voxelId: Int, faceId: Int ): Seq[( Int,Int,Int )] = {
     voxels
       .lift( voxelId )
       .flatMap( _.faces.lift( faceId ) )
-      .fold( Seq.empty[(Int,Int,Int)] ) { f =>
+      .fold( Seq.empty[( Int,Int,Int )] ) { f =>
         val faceType = f.faceType
         standards
           .flatMap { case ( stdId, std ) =>
@@ -411,7 +411,7 @@ object TutoMain extends JSApp {
 
   private def whiteColor( voxelId: Int ): Unit = {
     voxels.lift( voxelId ).foreach { voxel =>
-      ( 0 until voxel.faces.length ).foreach( i => colorFace(voxelId, i, ( 1,1,1 ), ( 1,1,1 ) ) )
+      ( 0 until voxel.faces.length ).foreach( i => colorFace( voxelId, i, ( 1,1,1 ), ( 1,1,1 ) ) )
     }
   }
 
@@ -450,11 +450,11 @@ object TutoMain extends JSApp {
 
   @JSExport
   def dockVoxel( dockingID: Int ): Unit = {
-    assert(dockingID >= 0 && dockingID < dockingOptions.length)
+    assert( dockingID >= 0 && dockingID < dockingOptions.length )
 
-    val newVId = dockingOptions(dockingID)._1
-    val fId = dockingOptions(dockingID)._2
-    val rot = dockingOptions(dockingID)._3
+    val newVId = dockingOptions( dockingID )._1
+    val fId = dockingOptions( dockingID )._2
+    val rot = dockingOptions( dockingID )._3
 
     dockVoxel( newVId, fId, rot, selectedVoxel, selectedFace )
   }
@@ -463,7 +463,7 @@ object TutoMain extends JSApp {
 
     val newVoxelStd = standards.getOrElse( stdId, Cube )
     val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
-    val sourceFace = newVoxelUntransformed.faces( faceId)
+    val sourceFace = newVoxelUntransformed.faces( faceId )
     val targetFace = voxels( onVoxelId ).faces( onFaceId )
 
     // rotation so docking faces actually face each other
@@ -492,11 +492,11 @@ object TutoMain extends JSApp {
 
     val newVoxel = Voxel( newVoxelStd, tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM  )
 
-    lastDockedId = if ( freeVoxelIds.isEmpty) voxels.size
+    lastDockedId = if ( freeVoxelIds.isEmpty ) voxels.size
                    else { val r = freeVoxelIds.head
                           freeVoxelIds = freeVoxelIds - r
                           r }
-    println(s"new voxel with id $lastDockedId, free ids: $freeVoxelIds")
+    println( s"new voxel with id $lastDockedId, free ids: $freeVoxelIds" )
 
     voxels = voxels + ( ( lastDockedId, newVoxel ) )
 
@@ -532,7 +532,7 @@ object TutoMain extends JSApp {
         pickScene.remove( removedMeshes._2 )
         freeVoxelIds = freeVoxelIds + id
         voxelActionsStack = Delete( id ) :: voxelActionsStack
-        println(s"deleted voxel $id, free ids: $freeVoxelIds")
+        println( s"deleted voxel $id, free ids: $freeVoxelIds" )
         clearSelection()
       }
     }
@@ -550,7 +550,7 @@ object TutoMain extends JSApp {
   def getVoxelName( id: Int ): String = standards.lift( id ).fold( "" )( _.name )
 
   @JSExport
-  def buildCode(): String = voxelActionsStack.mkString(",")
+  def buildCode(): String = voxelActionsStack.mkString( "," )
 
   @JSExport
   def loadCode( code: String ): Int = {
