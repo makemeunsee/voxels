@@ -39,6 +39,13 @@ object TutoMain extends JSApp {
 
   private var meshes = Map.empty[Int, (Mesh, Mesh)]
 
+  private var showBorders = true
+
+  @JSExport
+  def toggleBorders(): Unit = {
+    showBorders = !showBorders
+  }
+
   @JSExport
   def pickRender() = renderer.render( pickScene, dummyCam )
 
@@ -53,7 +60,7 @@ object TutoMain extends JSApp {
     meshes.values.foreach { case ( m, pm ) =>
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_borderWidth", 1f )
+      updateThis( "u_borderWidth", if ( showBorders ) 1f else 0f )
       updateThis( "u_borderColor", new Vector3( 0.05,0.05,0.05 ) )
       val cCode = colorCode( selectedVoxel, selectedFace )
       updateThis( "u_highlightFlag", ( cCode % 131072 ).toFloat )

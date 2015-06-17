@@ -69,6 +69,7 @@ function appMain() {
         var selfUrl = window.location.href.toString().split("?")[0];
         console.log(buildCode);
         var buildUrl = selfUrl+"?code="+buildCode
+        $( "#clipboard" ).empty();
         $( "#clipboard" ).append("<a id='buildUrl' href='"+buildUrl+"'>"+buildUrl+"</a>");
         $( "#clipboard" ).dialog({
             width: 500,
@@ -83,6 +84,13 @@ function appMain() {
     $("#reset").click(function() {
         window.location = window.location.pathname;
     });
+
+    $("#borders").unbind("click");
+    $("#borders").click(function bordersFct() {
+            scalaObj.toggleBorders();
+        }
+    );
+    $("#borders").attr("checked", true);
 
     function screenshot() {
         var w = window.open('', '');
