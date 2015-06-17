@@ -81,40 +81,6 @@ object TutoMain extends JSApp {
     renderer.render( scene, dummyCam )
   }
 
-  private def naiveRotMat( theta: Double, phi: Double ): Matrix4 = {
-    rotationMatrix( theta, 0, 1, 0 ) * rotationMatrix( phi, 1, 0, 0 )
-  }
-
-  private def zoomMatrix( zoom: Double ): Matrix4 = {
-    assert( zoom != 0 )
-    Matrix4.unit.copy( a33 = 1d / zoom )
-  }
-
-  private def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Matrix4 = {
-    val x_orth = 2 / ( right - left )
-    val y_orth = 2 / ( top - bottom )
-    val z_orth = -2 / ( far - near )
-    val tx = -( right + left ) / ( right - left )
-    val ty = -( top + bottom ) / ( top - bottom )
-    val tz = -( far + near ) / ( far - near )
-    Matrix4( x_orth, 0, 0, tx
-           , 0, y_orth, 0, ty
-           , 0, 0, z_orth, tz
-           , 0, 0, 0, 1 )
-  }
-
-  private def orthoMatrixFromScreen( w: Double, h: Double, k: Double ) = {
-    val hh = if ( h < 0 ) 1 else h
-    val aspect = w / hh
-    val far = 100
-    val near = -100
-    val right = k * aspect
-    val top = k
-    val left = -right
-    val bottom = -top
-    orthoMatrix( left, right, bottom, top, near, far )
-  }
-
   import scala.language.implicitConversions
   private implicit def toJsMatrix( m: Matrix4 ): org.denigma.threejs.Matrix4 = {
     val r = new org.denigma.threejs.Matrix4()
@@ -139,19 +105,19 @@ object TutoMain extends JSApp {
 
   private var projMat = Matrix4.unit
   private val viewMat = Matrix4.unit
-  private var modelMat = naiveRotMat( 0.5, 0.3 )
+  private var modelMat = Matrix4.naiveRotMat( 0.5, 0.3 )
   private var transMat = Matrix4.unit
   private var mvp = Matrix4.unit
 
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
-    projMat = orthoMatrixFromScreen( width, height, 1.75 )
+    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
     updateMVP()
   }
 
   @JSExport
   def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    modelMat = naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) * modelMat
+    modelMat = Matrix4.naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) * modelMat
     updateMVP()
   }
 
@@ -167,7 +133,7 @@ object TutoMain extends JSApp {
   }
 
   private def updateMVP(): Unit = {
-    mvp = projMat * zoomMatrix( zoom ) * viewMat * modelMat * transMat
+    mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat * transMat
   }
 
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
@@ -407,13 +373,13 @@ object TutoMain extends JSApp {
 
   private def rndColor( voxelId: Int ): Unit = {
     voxels.lift( voxelId ).foreach { voxel =>
-      ( 0 until voxel.faces.length ).foreach( i => colorFace( voxelId, i, rndColor(), rndColor() ) )
+      voxel.faces.indices.foreach( i => colorFace( voxelId, i, rndColor(), rndColor() ) )
     }
   }
 
   private def whiteColor( voxelId: Int ): Unit = {
     voxels.lift( voxelId ).foreach { voxel =>
-      ( 0 until voxel.faces.length ).foreach( i => colorFace( voxelId, i, ( 1,1,1 ), ( 1,1,1 ) ) )
+      voxel.faces.indices.foreach( i => colorFace( voxelId, i, ( 1,1,1 ), ( 1,1,1 ) ) )
     }
   }
 

@@ -5,6 +5,8 @@ package geometry
  */
 object Matrix4 {
 
+  val unit = Matrix4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)
+
   val tolerance: Double = 0.00001d
 
   private def underTolerance( d: Double ) = d <= tolerance && d >= -tolerance
@@ -49,7 +51,39 @@ object Matrix4 {
            , 0, 0, 0, 1 )
   }
 
-  val unit = Matrix4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)
+  def naiveRotMat( theta: Double, phi: Double ): Matrix4 = {
+    rotationMatrix( theta, 0, 1, 0 ) * rotationMatrix( phi, 1, 0, 0 )
+  }
+
+  def zoomMatrix( zoom: Double ): Matrix4 = {
+    assert( zoom != 0 )
+    Matrix4.unit.copy( a33 = 1d / zoom )
+  }
+
+  private def orthoMatrix( left: Double, right: Double, bottom: Double, top: Double, near: Double, far: Double ): Matrix4 = {
+    val x_orth = 2 / ( right - left )
+    val y_orth = 2 / ( top - bottom )
+    val z_orth = -2 / ( far - near )
+    val tx = -( right + left ) / ( right - left )
+    val ty = -( top + bottom ) / ( top - bottom )
+    val tz = -( far + near ) / ( far - near )
+    Matrix4( x_orth, 0, 0, tx
+      , 0, y_orth, 0, ty
+      , 0, 0, z_orth, tz
+      , 0, 0, 0, 1 )
+  }
+
+  def orthoMatrixFromScreen( w: Double, h: Double, k: Double ) = {
+    val hh = if ( h < 0 ) 1 else h
+    val aspect = w / hh
+    val far = 100
+    val near = -100
+    val right = k * aspect
+    val top = k
+    val left = -right
+    val bottom = -top
+    orthoMatrix( left, right, bottom, top, near, far )
+  }
 }
 
 case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
