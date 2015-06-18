@@ -148,7 +148,7 @@ function appMain() {
             function(evt) {
                 $( this ).removeClass( "active" );
                 voxelId = -1;
-                scalaObj.unloadVoxel();
+                scalaObj.unloadVoxels();
             }
         );
         $( "li.ui-menu-item" ).click(
