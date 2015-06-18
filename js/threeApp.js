@@ -95,6 +95,7 @@ function appMain() {
         }
     );
     $("#borders").attr("checked", true);
+    $("#borders").prop("checked", true);
 
     $("#rndColors").unbind("click");
     $("#rndColors").click(function rndColorsFct() {
@@ -102,8 +103,7 @@ function appMain() {
         }
     );
     $("#rndColors").attr("checked", true);
-
-    // TODO ensure checkboxes properly reset after reload
+    $("#rndColors").prop("checked", true);
 
     function screenshot() {
         var w = window.open('', '');
