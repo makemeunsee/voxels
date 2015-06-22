@@ -198,6 +198,7 @@ function appMain() {
             function(evt) {
                 // docking actually happened during hover
                 clearSelection();
+                highlighted = 0;
             }
         );
 
