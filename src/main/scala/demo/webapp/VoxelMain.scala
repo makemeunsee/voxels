@@ -47,7 +47,7 @@ object VoxelMain extends JSApp {
   def loadVoxel( i: Int ): Unit = {
     unloadVoxels()
     val std = standards.getOrElse( i, Cube )
-    val v = Voxel( std, Matrix4.unit, ( 0 until std.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) ) )
+    val v = Voxel( std, Matrix4.unit, colorsForStd( std ) )
     voxels = Map( 0 -> v )
     scene.addVoxel( 0, v )
     scene.centerOn( v )
@@ -159,10 +159,7 @@ object VoxelMain extends JSApp {
 
     val newVoxelStd = standards.getOrElse( stdId, Cube )
 
-    val colors = if ( rndColors ) ( 0 until newVoxelStd.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )
-                 else ( 0 until newVoxelStd.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) )
-
-    val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit, colors )
+    val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit, colorsForStd( newVoxelStd ) )
     val sourceFace = newVoxelUntransformed.faces( faceId )
     val targetFace = voxels( onVoxelId ).faces( onFaceId )
 
@@ -231,6 +228,11 @@ object VoxelMain extends JSApp {
 
   private implicit var rndColors = false
 
+  private def colorsForStd( std: VoxelStandard ): Seq[( Int, Int )] = {
+    if ( rndColors ) ( 0 until std.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )
+    else ( 0 until std.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) )
+  }
+
   @JSExport
   def colorsAreRandom(): Boolean = rndColors
 
@@ -259,7 +261,7 @@ object VoxelMain extends JSApp {
         .foreach { case ( _, o, s ) =>
         val col = color()
         val cCol = centerColor()
-        newColors = ( ( col, cCol ) ) :: newColors
+        newColors = ( col, cCol ) :: newColors
         scene.colorFace( voxelId, o, s, col, cCol )
       }
       voxels = voxels.updated( voxelId, voxel.copy( colors = newColors.reverse ) )
