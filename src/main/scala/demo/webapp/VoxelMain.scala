@@ -4,7 +4,7 @@ package demo.webapp
  * Created by markus on 16/02/2015.
  */
 
-import demo.Rnd
+import demo.Colors
 import geometry.{Matrix4, Vec3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
 import io._
@@ -46,7 +46,8 @@ object VoxelMain extends JSApp {
   @JSExport
   def loadVoxel( i: Int ): Unit = {
     unloadVoxels()
-    val v = Voxel( standards.getOrElse( i, Cube ), Matrix4.unit )
+    val std = standards.getOrElse( i, Cube )
+    val v = Voxel( std, Matrix4.unit, ( 0 until std.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) ) )
     voxels = Map( 0 -> v )
     scene.addVoxel( 0, v )
     scene.centerOn( v )
@@ -89,10 +90,21 @@ object VoxelMain extends JSApp {
     dockingOptions = listDockingOptions( vId, fId )
     selectedVoxel = vId
     selectedFace = fId
-    val selection = voxels.lift( vId ).flatMap( _.faces.lift( fId ) ).fold( -1, -1, "" )( f => ( vId, fId, f.faceType.toString ) )
+    val selection = {
+      for ( v <- voxels.lift( vId )
+           ; f <- v.faces.lift( fId ) ) yield {
+        ( vId
+        , fId
+        , f.faceType.toString
+        , v.colors( fId )._1
+        , v.colors( fId )._2 )
+      }
+    }.getOrElse( ( -1, -1, "", -1, -1 ) )
     Map( ( "voxelId", selection._1.toString )
        , ( "faceId", selection._2.toString )
        , ( "faceInfo", selection._3 )
+       , ( "faceColor", "%06x".format( selection._4 ) )
+       , ( "faceCenterColor", "%06x".format( selection._5 ) )
        )
       .toJSDictionary
   }
@@ -146,7 +158,11 @@ object VoxelMain extends JSApp {
   private def dockVoxel( stdId: Int, faceId: Int, rot: Int, onVoxelId: Int, onFaceId: Int ): Unit = {
 
     val newVoxelStd = standards.getOrElse( stdId, Cube )
-    val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit )
+
+    val colors = if ( rndColors ) ( 0 until newVoxelStd.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )
+                 else ( 0 until newVoxelStd.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) )
+
+    val newVoxelUntransformed = Voxel( newVoxelStd, Matrix4.unit, colors )
     val sourceFace = newVoxelUntransformed.faces( faceId )
     val targetFace = voxels( onVoxelId ).faces( onFaceId )
 
@@ -156,7 +172,7 @@ object VoxelMain extends JSApp {
     val rM = rotationMatrix( sourceN, targetN.negate )
 
     // rotated voxel
-    val newVoxelRotated = Voxel( newVoxelStd, rM )
+    val newVoxelRotated = newVoxelUntransformed.copy( transformation = rM )
     val sourceFace1 = newVoxelRotated.faces( faceId )
 
     val to = targetFace.center
@@ -174,7 +190,7 @@ object VoxelMain extends JSApp {
     // translation so docking faces actually touch each other
     val tM = translationMatrix( to - from )
 
-    val newVoxel = Voxel( newVoxelStd, tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM  )
+    val newVoxel = newVoxelUntransformed.copy( transformation = tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM )
 
     lastDockedId = if ( freeVoxelIds.isEmpty ) voxels.size
     else { val r = freeVoxelIds.head
@@ -211,9 +227,12 @@ object VoxelMain extends JSApp {
     }
   }
 
-  // ******************** special effects, only visual effects (yet) ********************
+  // ******************** coloring ********************
 
-  private implicit var rndColors = true
+  private implicit var rndColors = false
+
+  @JSExport
+  def colorsAreRandom(): Boolean = rndColors
 
   @JSExport
   def toggleRndColors(): Unit = {
@@ -225,19 +244,49 @@ object VoxelMain extends JSApp {
   }
 
   private def rndColor( voxelId: Int ): Unit = {
-    colorVoxel( voxelId, Rnd.rndColor, Rnd.rndColor )
+    colorVoxel( voxelId, Colors.rndColor, Colors.rndColor )
   }
 
   private def whiteColor( voxelId: Int ): Unit = {
-    colorVoxel( voxelId, () => ( 1f, 1f, 1f ), () => ( 1f, 1f, 1f ) )
+    colorVoxel( voxelId, () => Colors.WHITE, () => Colors.WHITE )
   }
 
-  private def colorVoxel( voxelId: Int, color: () => ( Float, Float, Float), centerColor: () => ( Float, Float, Float ) ): Unit = {
+  private def colorVoxel( voxelId: Int, color: () => Int, centerColor: () => Int ): Unit = {
+    import Colors.intColorToFloatsColors
     voxels.lift( voxelId ).foreach { voxel =>
-      ThreeScene.withOffsetsAndSizes( voxel.faces ).foreach { case ( _, o, s ) =>
-        scene.colorFace( voxelId, o, s, color(), centerColor() )
+      var newColors = List.empty[( Int, Int )]
+      ThreeScene.withOffsetsAndSizes( voxel.faces )
+        .foreach { case ( _, o, s ) =>
+        val col = color()
+        val cCol = centerColor()
+        newColors = ( ( col, cCol ) ) :: newColors
+        scene.colorFace( voxelId, o, s, col, cCol )
+      }
+      voxels = voxels.updated( voxelId, voxel.copy( colors = newColors.reverse ) )
+    }
+  }
+
+  private def colorFace( voxelId: Int, faceId: Int, color: Option[Int] = None, centerColor: Option[Int] = None ): Unit = {
+    import Colors.intColorToFloatsColors
+    voxels.lift( voxelId ).foreach { voxel =>
+      ThreeScene.withOffsetsAndSizes( voxel.faces ).lift( faceId ).foreach { case ( f, o, s ) =>
+        val defCols = voxel.colors( faceId )
+        val col = color.getOrElse( defCols._1 )
+        val cCol = centerColor.getOrElse( defCols._2 )
+        scene.colorFace( voxelId, o, s, col, cCol )
+        voxels = voxels.updated( voxelId, voxel.copy( colors = voxel.colors.updated( faceId, ( col, cCol ) ) ) )
       }
     }
+  }
+
+  @JSExport
+  def changeFaceColor( color: String ): Unit = {
+    colorFace( selectedVoxel, selectedFace, Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
+  }
+
+  @JSExport
+  def changeFaceCenterColor( color: String ): Unit = {
+    colorFace( selectedVoxel, selectedFace, centerColor = Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
   }
 
   // ******************** load/save voxel constructions ********************

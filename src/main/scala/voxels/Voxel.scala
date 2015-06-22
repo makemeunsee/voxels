@@ -44,7 +44,11 @@ trait VoxelStandard {
   }.toSeq
 }
 
-case class Voxel( standard: VoxelStandard, transformation: Matrix4 ) {
+case class Voxel( standard: VoxelStandard
+                  , transformation: Matrix4
+                  , colors: Seq[( Int, Int )] ) {
+  assert( colors.length == standard.faceCount )
+
   val faces = standard.facesStructure map { case ( l, t, _ ) =>
     Face( l map { i => transformation( standard.vertices( i ) / standard.scale ) }, t )
   }

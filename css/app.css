@@ -75,6 +75,17 @@ li.active {
     top: 0;
     left: 0;
 }
-.column {
-  width: 500px
+
+#faceWidgets {
+   width:150px;
+   margin:10px auto;
+   float: left;
+}
+#left_col {
+    float:left;
+    width:50%;
+}
+#right_col {
+    float:right;
+    width:50%;
 }

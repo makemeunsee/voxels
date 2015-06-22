@@ -8,11 +8,5 @@ import scala.util.Random
 object Rnd {
   private val rnd = new Random
 
-  def rndColor(): ( Float, Float, Float ) = {
-    val rndInt = rnd.nextInt()
-    val r = ( ( rndInt >> 16 ) & 0xff ).toFloat / 255f
-    val g = ( ( rndInt >> 8 ) & 0xff ).toFloat / 255f
-    val b = ( rndInt & 0xff ).toFloat / 255f
-    ( r, g, b )
-  }
+  def rndInt(): Int = rnd.nextInt()
 }

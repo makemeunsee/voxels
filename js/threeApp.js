@@ -100,10 +100,12 @@ function appMain() {
     $("#rndColors").unbind("click");
     $("#rndColors").click(function rndColorsFct() {
             scalaObj.toggleRndColors();
+            loadColors(scalaObj.selectFace(highlighted));
         }
     );
-    $("#rndColors").attr("checked", true);
-    $("#rndColors").prop("checked", true);
+    var rndCols = scalaObj.colorsAreRandom();
+    $("#rndColors").attr("checked", rndCols);
+    $("#rndColors").prop("checked", rndCols);
 
     function screenshot() {
         var w = window.open('', '');
@@ -208,6 +210,26 @@ function appMain() {
             );
         } else {
             $( ".leftMenu" ).hide();
+        }
+    }
+
+    $("#color").change(function() {
+        scalaObj.changeFaceColor($("#color").prop("value"));
+    });
+    $("#centerColor").change(function() {
+        scalaObj.changeFaceCenterColor($("#centerColor").prop("value"));
+    });
+
+    function loadColors(selection) {
+        var color = selection.faceColor;
+        var centerColor = selection.faceCenterColor;
+        if (color !== -1) {
+            $("#color").attr("value", "#"+color);
+            $("#color").prop("value", "#"+color);
+        }
+        if (centerColor !== -1) {
+            $("#centerColor").attr("value", "#"+centerColor);
+            $("#centerColor").prop("value", "#"+centerColor);
         }
     }
 
@@ -426,6 +448,7 @@ function appMain() {
                 gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
                 highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
                 var selection = scalaObj.selectFace(highlighted);
+                loadColors(selection);
                 var options = scalaObj.showDockingOptions();
                 loadDockingOptions(options, parseInt(selection.voxelId), selection.faceInfo);
             }

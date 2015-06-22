@@ -1,6 +1,6 @@
 package demo.webapp
 
-import demo.Rnd
+import demo.Colors
 import geometry.{Vec3, Matrix4}
 import org.denigma.threejs._
 import voxels.Voxel
@@ -45,7 +45,7 @@ object ThreeScene {
       val l = f.vertices.length + 1
       val newOffset = offset + l
       ( newOffset, ( f, offset, l ) :: acc )
-    }._2
+    }._2.reverse
   }
 
   def colorCode( voxelId: Int, faceId: Int ) = ( faceId << 17 ) + ( voxelId+1 )
@@ -60,9 +60,9 @@ object ThreeScene {
   implicit def toJsMatrix( m: Matrix4 ): org.denigma.threejs.Matrix4 = {
     val r = new org.denigma.threejs.Matrix4()
     r.set( m.a00, m.a01, m.a02, m.a03
-      , m.a10, m.a11, m.a12, m.a13
-      , m.a20, m.a21, m.a22, m.a23
-      , m.a30, m.a31, m.a32, m.a33
+         , m.a10, m.a11, m.a12, m.a13
+         , m.a20, m.a21, m.a22, m.a23
+         , m.a30, m.a31, m.a32, m.a33
     )
     r
   }
@@ -126,7 +126,7 @@ class ThreeScene {
 
   private var meshes = Map.empty[Int, ( Mesh, Mesh )]
 
-  def addVoxel( id: Int, voxel: Voxel )( implicit rndColors: Boolean ): Unit = {
+  def addVoxel( id: Int, voxel: Voxel ): Unit = {
     val newMeshes = makeMesh( voxel, id )
     meshes = meshes + ( ( id, newMeshes ) )
     scene.add( newMeshes._1 )
@@ -149,7 +149,7 @@ class ThreeScene {
     meshes = Map.empty
   }
 
-  private def makeMesh( v: Voxel, vId: Int )( implicit rndColors: Boolean ): ( Mesh, Mesh ) = {
+  private def makeMesh( v: Voxel, vId: Int ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -205,48 +205,50 @@ class ThreeScene {
     val indices = new Uint16Array( indicesCount )
     var offset = 0
     var indicesOffset = 0
+
     v.faces
       .zipWithIndex
       .foreach { case ( f, fId ) =>
-      val Vec3( nx, ny, nz ) = f.normal
-      val Vec3( cx, cy, cz ) = f.center
-      val pickColor = colorCode( vId, fId )
-      val ( r, g, b ) = if ( rndColors ) Rnd.rndColor() else ( 1f, 1f, 1f )
-      val ( cr, cg, cb ) = if ( rndColors ) Rnd.rndColor() else ( 1f, 1f, 1f )
+        val Vec3( nx, ny, nz ) = f.normal
+        val Vec3( cx, cy, cz ) = f.center
+        val pickColor = colorCode( vId, fId )
+        val ( col, cCol ) = v.colors.lift( fId ).getOrElse( ( Colors.WHITE, Colors.WHITE ) )
+        val ( r, g, b ) = Colors.intColorToFloatsColors( col )
+        val ( cr, cg, cb ) = Colors.intColorToFloatsColors( cCol )
 
-      val triOffset = offset*3
-      val vSize = f.vertices.length
+        val triOffset = offset*3
+        val vSize = f.vertices.length
 
-      ( 0 until vSize ).foreach { i =>
-        vertices.set( triOffset+3*i,   f.rawVertices( 3*i ).toFloat )
-        vertices.set( triOffset+3*i+1, f.rawVertices( 3*i+1 ).toFloat )
-        vertices.set( triOffset+3*i+2, f.rawVertices( 3*i+2 ).toFloat )
-        normals.set( triOffset+3*i,   nx.toFloat )
-        normals.set( triOffset+3*i+1, ny.toFloat )
-        normals.set( triOffset+3*i+2, nz.toFloat )
-        colors.set( triOffset+3*i,   r )
-        colors.set( triOffset+3*i+1, g )
-        colors.set( triOffset+3*i+2, b )
-        centerFlags.set( offset+i, 0f )
-        pickColors.set( offset+i, pickColor )
-        indices.set( indicesOffset+3*i,   offset+vSize )
-        indices.set( indicesOffset+3*i+1, offset+i )
-        indices.set( indicesOffset+3*i+2, offset+( i+1 )%vSize )
-      }
-      vertices.set( triOffset+3*vSize,   cx.toFloat )
-      vertices.set( triOffset+3*vSize+1, cy.toFloat )
-      vertices.set( triOffset+3*vSize+2, cz.toFloat )
-      normals.set( triOffset+3*vSize,   nx.toFloat )
-      normals.set( triOffset+3*vSize+1, ny.toFloat )
-      normals.set( triOffset+3*vSize+2, nz.toFloat )
-      colors.set( triOffset+3*vSize,   cr )
-      colors.set( triOffset+3*vSize+1, cg )
-      colors.set( triOffset+3*vSize+2, cb )
-      centerFlags.set( offset+vSize, 1f )
-      pickColors.set( offset+vSize, pickColor )
+        ( 0 until vSize ).foreach { i =>
+          vertices.set( triOffset+3*i,   f.rawVertices( 3*i ).toFloat )
+          vertices.set( triOffset+3*i+1, f.rawVertices( 3*i+1 ).toFloat )
+          vertices.set( triOffset+3*i+2, f.rawVertices( 3*i+2 ).toFloat )
+          normals.set( triOffset+3*i,   nx.toFloat )
+          normals.set( triOffset+3*i+1, ny.toFloat )
+          normals.set( triOffset+3*i+2, nz.toFloat )
+          colors.set( triOffset+3*i,   r )
+          colors.set( triOffset+3*i+1, g )
+          colors.set( triOffset+3*i+2, b )
+          centerFlags.set( offset+i, 0f )
+          pickColors.set( offset+i, pickColor )
+          indices.set( indicesOffset+3*i,   offset+vSize )
+          indices.set( indicesOffset+3*i+1, offset+i )
+          indices.set( indicesOffset+3*i+2, offset+( i+1 )%vSize )
+        }
+        vertices.set( triOffset+3*vSize,   cx.toFloat )
+        vertices.set( triOffset+3*vSize+1, cy.toFloat )
+        vertices.set( triOffset+3*vSize+2, cz.toFloat )
+        normals.set( triOffset+3*vSize,   nx.toFloat )
+        normals.set( triOffset+3*vSize+1, ny.toFloat )
+        normals.set( triOffset+3*vSize+2, nz.toFloat )
+        colors.set( triOffset+3*vSize,   cr )
+        colors.set( triOffset+3*vSize+1, cg )
+        colors.set( triOffset+3*vSize+2, cb )
+        centerFlags.set( offset+vSize, 1f )
+        pickColors.set( offset+vSize, pickColor )
 
-      offset = offset + vSize + 1
-      indicesOffset = indicesOffset + vSize*3
+        offset = offset + vSize + 1
+        indicesOffset = indicesOffset + vSize*3
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )

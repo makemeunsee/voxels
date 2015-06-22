@@ -37,7 +37,15 @@
                 <ul id="menu0" class="ui-menu ui-widget leftMenu"></ul>
                 <ul id="menu1" class="ui-menu ui-widget leftMenu"></ul>
             </div>
-            <img id="centerView" class="leftMenu" width='48' height='48' src='images/Meeting_point_64.png' />
+            <div id="faceWidgets">
+                <div id="left_col">
+                    <img id="centerView" class="leftMenu" width='48' height='48' src='images/Meeting_point_64.png' />
+                </div>
+                <div id="right_col">
+                    <input type="color" id="color" value="#ffffff" class="leftMenu" />
+                    <input type="color" id="centerColor" value="#ffffff" class="leftMenu" />
+                </div>
+            </div>
         </div>
         <div id="main"></div>
         <div id="clipboard" title="Link to your build - copy it to save it"></div>
@@ -64,6 +72,19 @@ void main()
 {
   vec3 col = v_color;
   float c = 0.5+0.5*cos(3.0*6.28*v_centerFlag);
+// variant: thinner, sharper stripes
+//    if ( c > 0.85 ) {
+//      if ( v_highlightFace > 0.0 ) {
+//        col.r = 1.0;
+//        col.g = 0.2;
+//        col.b = 0.0;
+//      }
+//      else if ( v_highlightVoxel > 0.0 ) {
+//        col.r = 0.0;
+//        col.g = 0.0;
+//        col.b = 0.0;
+//      }
+//  }
   if ( v_highlightFace > 0.0 ) {
     col.r = c * col.r + (1.0-c);
     col.g = c * col.g + 0.2*(1.0-c);
