@@ -426,7 +426,6 @@ function appMain() {
     }
 
     var simTime = 0.0;
-    var gl = renderer.getContext();
 
     var highlighted = 0;
 
@@ -443,11 +442,7 @@ function appMain() {
 
             if ( voxelId != -1 ) {
                 // pickRender
-                scalaObj.scene.pickRender();
-
-                // selection
-                gl.readPixels(mx, innerHeight-my, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-                highlighted = 256*256*pixels[0] + 256*pixels[1] + pixels[2];
+                highlighted = scalaObj.scene.pickRender(mx,my);
                 var selection = scalaObj.selectFace(highlighted);
                 loadColors(selection);
                 var options = scalaObj.showDockingOptions();

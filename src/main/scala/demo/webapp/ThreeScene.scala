@@ -9,7 +9,7 @@ import voxels.Voxel.Face
 import scala.scalajs.js
 import scala.scalajs.js.Array
 import scala.scalajs.js.annotation.{JSExport, JSName}
-import scala.scalajs.js.typedarray.{Uint16Array, Float32Array}
+import scala.scalajs.js.typedarray.{Uint8Array, Uint16Array, Float32Array}
 
 /**
  * Created by markus on 17/06/2015.
@@ -101,8 +101,13 @@ class ThreeScene {
   private var transMat = Matrix4.unit
   private var mvp = Matrix4.unit
 
+  private var innerWidth: Int = 0
+  private var innerHeight: Int = 0
+
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
+    innerWidth = width
+    innerHeight = height
     projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
     updateMVP()
   }
@@ -306,17 +311,25 @@ class ThreeScene {
 
   // ******************** rendering ********************
 
-  @JSExport
-  def pickRender() = renderer.render( pickScene, dummyCam )
-
   private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
     mesh.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic]
       .selectDynamic( field )
       .updateDynamic( "value" )( value )
   }
 
+  private val pixels = new Uint8Array( 4 )
+
   @JSExport
-  def render( highlighted: Int ) = {
+  def pickRender( mouseX: Int, mouseY: Int ): Int = {
+    renderer.render( pickScene, dummyCam )
+    import js.DynamicImplicits._
+    val gl = renderer.getContext().asInstanceOf[js.Dynamic]
+    gl.readPixels( mouseX, innerHeight - mouseY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels )
+    256 * 256 * pixels( 0 ) + 256 * pixels( 1 ) + pixels( 2 )
+  }
+
+  @JSExport
+  def render( highlighted: Int ): Unit = {
     meshes.values.foreach { case ( m, pm ) =>
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
