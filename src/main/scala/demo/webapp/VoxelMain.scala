@@ -190,9 +190,9 @@ object VoxelMain extends JSApp {
     val newVoxel = newVoxelUntransformed.copy( transformation = tM * postSpinTranslation * spinRotation * bonusSpinRotation * preSpinTranslation * rM )
 
     lastDockedId = if ( freeVoxelIds.isEmpty ) voxels.size
-    else { val r = freeVoxelIds.head
-      freeVoxelIds = freeVoxelIds - r
-      r }
+                   else { val r = freeVoxelIds.head
+                          freeVoxelIds = freeVoxelIds - r
+                          r }
     println( s"new voxel with id $lastDockedId, free ids: $freeVoxelIds" )
 
     voxels = voxels + ( ( lastDockedId, newVoxel ) )
