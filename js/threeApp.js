@@ -425,8 +425,6 @@ function appMain() {
         main();
     }
 
-    var simTime = 0.0;
-
     var highlighted = 0;
 
     // The main game loop
