@@ -143,13 +143,16 @@ class ThreeScene {
     meshes = meshes - voxelId
     scene.remove( removedMeshes._1 )
     pickScene.remove( removedMeshes._2 )
+    removedMeshes._1.geometry.dispose()
+    removedMeshes._2.geometry.dispose()
   }
 
   def clear(): Unit = {
     meshes.foreach { case ( _, ( m, pm ) ) =>
       scene.remove( m )
       pickScene.remove( pm )
-      // TODO check if m.geometry.dispose() and such are useful
+      m.geometry.dispose()
+      pm.geometry.dispose()
     }
     meshes = Map.empty
   }
@@ -277,10 +280,10 @@ class ThreeScene {
   // ******************** special effects ********************
 
   def colorFace( voxelId: Int
-                 , faceOffset: Int
-                 , faceSize: Int
-                 , color: ( Float, Float, Float )
-                 , centerColor: ( Float, Float, Float ) ): Unit = {
+               , faceOffset: Int
+               , faceSize: Int
+               , color: ( Float, Float, Float )
+               , centerColor: ( Float, Float, Float ) ): Unit = {
     val mesh = meshes( voxelId )._1
     val attrs = mesh
       .geometry.asInstanceOf[MyBufferGeometry]
