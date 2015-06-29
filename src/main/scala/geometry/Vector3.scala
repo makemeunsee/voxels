@@ -4,6 +4,22 @@ package geometry
  * Created by markus on 23/05/15.
  */
 
+object Vector3 {
+  def apply( x: Double, y: Double, z: Double ): Vector3 = new Vec3( x, y, z )
+
+  def latLongPosition( theta: Double, phi: Double, distance: Double ): Vector3 = {
+    val cosP = math.cos( phi )
+    val sinP = math.sin( phi )
+    val cosT = math.cos( theta )
+    val sinT = math.sin( theta )
+    Vec3( distance * sinP * cosT, distance * cosP, distance * sinP * sinT )
+  }
+
+  def dist( v0: Vector3, v1: Vector3): Double = {
+    ( v0 - v1 ).norm
+  }
+}
+
 trait Vector3 {
   def x: Double
   def y: Double
@@ -35,10 +51,6 @@ trait Vector3 {
   def negate: Vector3
 }
 
-object Vector3 {
-  def apply( x: Double, y: Double, z: Double ): Vector3 = new Vec3( x, y, z )
-}
-
 private case class Vec3( x: Double, y: Double, z: Double) extends Vector3 {
 
   def update( i: Int, v: Double ) = i match {
@@ -58,17 +70,3 @@ private case class Vec3( x: Double, y: Double, z: Double) extends Vector3 {
 
   def negate = Vec3( -x, -y, -z )
 }
-
-object Normal3 {
-  def apply( x: Double, y: Double, z: Double ): Normal3 = apply( Vector3( x, y, z ) )
-  def apply( vec3: Vector3 ): Normal3 = {
-    val Vec3( x, y ,z ) = vec3 / vec3.norm
-    new Norm3( x, y ,z )
-  }
-}
-
-trait Normal3 extends Vector3 {
-  override def norm: Double = 1d
-}
-
-private class Norm3( x: Double, y: Double, z: Double ) extends Vec3( x, y, z ) with Normal3
