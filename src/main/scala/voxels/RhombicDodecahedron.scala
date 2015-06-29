@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -14,20 +14,20 @@ object RhombicDodecahedron extends VoxelStandard {
   private val b = 2 * math.sqrt( 3 ) / 3
 
   val vertices: List[Vertex] =
-    Vec3 ( a, a, a ) ::
-    Vec3 ( a, a, -a ) ::
-    Vec3 ( a, -a, a ) ::
-    Vec3 ( a, -a, -a ) ::
-    Vec3 ( -a, a, a ) ::
-    Vec3 ( -a, a, -a ) ::
-    Vec3 ( -a, -a, a ) ::
-    Vec3 ( -a, -a, -a) ::
-    Vec3 ( b, 0, 0 ) ::
-    Vec3 ( -b, 0, 0 ) ::
-    Vec3 ( 0, b, 0 ) ::
-    Vec3 ( 0, -b, 0 ) ::
-    Vec3 ( 0, 0, b ) ::
-    Vec3 ( 0, 0, -b ) :: Nil
+    Vector3 ( a, a, a ) ::
+    Vector3 ( a, a, -a ) ::
+    Vector3 ( a, -a, a ) ::
+    Vector3 ( a, -a, -a ) ::
+    Vector3 ( -a, a, a ) ::
+    Vector3 ( -a, a, -a ) ::
+    Vector3 ( -a, -a, a ) ::
+    Vector3 ( -a, -a, -a) ::
+    Vector3 ( b, 0, 0 ) ::
+    Vector3 ( -b, 0, 0 ) ::
+    Vector3 ( 0, b, 0 ) ::
+    Vector3 ( 0, -b, 0 ) ::
+    Vector3 ( 0, 0, b ) ::
+    Vector3 ( 0, 0, -b ) :: Nil
 
   val facesStructure =
     List(

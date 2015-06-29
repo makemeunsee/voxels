@@ -5,7 +5,7 @@ package demo.webapp
  */
 
 import demo.Colors
-import geometry.{Matrix4, Vec3}
+import geometry.{Normal3, Matrix4, Vector3}
 import geometry.Matrix4.{rotationMatrix, translationMatrix}
 import io._
 import voxels._
@@ -164,7 +164,7 @@ object VoxelMain extends JSApp {
     val targetFace = voxels( onVoxelId ).faces( onFaceId )
 
     // rotation so docking faces actually face each other
-    val targetN@Vec3( nx, ny, nz ) = targetFace.normal
+    val targetN = targetFace.normal
     val sourceN = sourceFace.normal
     val rM = rotationMatrix( sourceN, targetN.negate )
 
@@ -178,11 +178,11 @@ object VoxelMain extends JSApp {
     val from = sourceFace1.center
     val preSpinTranslation = translationMatrix( from.negate )
     val postSpinTranslation = translationMatrix( from )
-    val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize
-      , ( targetFace.vertices.head - to ).normalize
-      , Some( targetN ) )
+    val spinRotation = rotationMatrix( Normal3( sourceFace1.vertices.head - from )
+                                     , Normal3( targetFace.vertices.head - to )
+                                     , Some( targetN ) )
     // spin shift (rotation variations)
-    val bonusSpinRotation = rotationMatrix( rot*2*math.Pi/sourceFace.vertices.length, nx, ny, nz )
+    val bonusSpinRotation = rotationMatrix( rot*2*math.Pi/sourceFace.vertices.length, targetN.x, targetN.y, targetN.z )
 
     // translation so docking faces actually touch each other
     val tM = translationMatrix( to - from )

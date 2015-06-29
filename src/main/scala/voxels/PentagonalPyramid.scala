@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -15,12 +15,12 @@ object PentagonalPyramid extends VoxelStandard {
   private val h = math.sqrt( 0.25 * ( 10 - 2 * math.sqrt( 5 ) ) - 1 )
 
    val vertices: List[Vertex] =
-     Vec3( 1,0,0 ) ::
-     Vec3( c1,0,s1 ) ::
-     Vec3( -c2,0,s2 ) ::
-     Vec3( -c2,0,-s2 ) ::
-     Vec3( c1,0,-s1 ) ::
-     Vec3( 0,h,0 ) ::
+     Vector3( 1,0,0 ) ::
+     Vector3( c1,0,s1 ) ::
+     Vector3( -c2,0,s2 ) ::
+     Vector3( -c2,0,-s2 ) ::
+     Vector3( c1,0,-s1 ) ::
+     Vector3( 0,h,0 ) ::
      Nil
 
    val facesStructure =

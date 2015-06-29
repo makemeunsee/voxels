@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.{RegularPolygon, Vertex}
 
 /**
@@ -12,18 +12,18 @@ object SquareCupola extends VoxelStandard {
   private val a = math.sqrt( 2 ) / 2
 
   val vertices: List[Vertex] =
-    Vec3( 0.5+a,0.5,0 ) ::
-    Vec3( 0.5,0.5+a,0 ) ::
-    Vec3( -0.5,0.5+a,0 ) ::
-    Vec3( -0.5-a,0.5,0 ) ::
-    Vec3( -0.5-a,-0.5,0 ) ::
-    Vec3( -0.5,-0.5-a,0 ) ::
-    Vec3( 0.5,-0.5-a,0 ) ::
-    Vec3( 0.5+a,-0.5,0 ) ::
-    Vec3( 0.5,0.5,a ) ::
-    Vec3( -0.5,0.5,a ) ::
-    Vec3( -0.5,-0.5,a ) ::
-    Vec3( 0.5,-0.5,a ) ::
+    Vector3( 0.5+a,0.5,0 ) ::
+    Vector3( 0.5,0.5+a,0 ) ::
+    Vector3( -0.5,0.5+a,0 ) ::
+    Vector3( -0.5-a,0.5,0 ) ::
+    Vector3( -0.5-a,-0.5,0 ) ::
+    Vector3( -0.5,-0.5-a,0 ) ::
+    Vector3( 0.5,-0.5-a,0 ) ::
+    Vector3( 0.5+a,-0.5,0 ) ::
+    Vector3( 0.5,0.5,a ) ::
+    Vector3( -0.5,0.5,a ) ::
+    Vector3( -0.5,-0.5,a ) ::
+    Vector3( 0.5,-0.5,a ) ::
     Nil
 
   val facesStructure =

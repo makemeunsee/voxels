@@ -1,7 +1,7 @@
 package demo.webapp
 
 import demo.Colors
-import geometry.{Vec3, Matrix4}
+import geometry.{Vector3, Matrix4}
 import org.denigma.threejs._
 import voxels.Voxel
 import voxels.Voxel.Face
@@ -119,7 +119,7 @@ class ThreeScene {
   }
 
   def centerOn( voxel: Voxel ): Unit = {
-    transMat = Matrix4.translationMatrix( voxel.faces.foldLeft( Vec3( 0,0,0 ) )( _ - _.center ) / voxel.faces.length )
+    transMat = Matrix4.translationMatrix( voxel.faces.foldLeft( Vector3( 0,0,0 ) )( _ - _.center ) / voxel.faces.length )
     updateMVP()
   }
 
@@ -217,8 +217,8 @@ class ThreeScene {
     v.faces
       .zipWithIndex
       .foreach { case ( f, fId ) =>
-        val Vec3( nx, ny, nz ) = f.normal
-        val Vec3( cx, cy, cz ) = f.center
+        val n = f.normal
+        val c = f.center
         val pickColor = colorCode( vId, fId )
         val ( col, cCol ) = v.colors.lift( fId ).getOrElse( ( Colors.WHITE, Colors.WHITE ) )
         val ( r, g, b ) = Colors.intColorToFloatsColors( col )
@@ -231,9 +231,9 @@ class ThreeScene {
           vertices.set( triOffset+3*i,   f.rawVertices( 3*i ).toFloat )
           vertices.set( triOffset+3*i+1, f.rawVertices( 3*i+1 ).toFloat )
           vertices.set( triOffset+3*i+2, f.rawVertices( 3*i+2 ).toFloat )
-          normals.set( triOffset+3*i,   nx.toFloat )
-          normals.set( triOffset+3*i+1, ny.toFloat )
-          normals.set( triOffset+3*i+2, nz.toFloat )
+          normals.set( triOffset+3*i,   n.x.toFloat )
+          normals.set( triOffset+3*i+1, n.y.toFloat )
+          normals.set( triOffset+3*i+2, n.z.toFloat )
           colors.set( triOffset+3*i,   r )
           colors.set( triOffset+3*i+1, g )
           colors.set( triOffset+3*i+2, b )
@@ -243,12 +243,12 @@ class ThreeScene {
           indices.set( indicesOffset+3*i+1, offset+i )
           indices.set( indicesOffset+3*i+2, offset+( i+1 )%vSize )
         }
-        vertices.set( triOffset+3*vSize,   cx.toFloat )
-        vertices.set( triOffset+3*vSize+1, cy.toFloat )
-        vertices.set( triOffset+3*vSize+2, cz.toFloat )
-        normals.set( triOffset+3*vSize,   nx.toFloat )
-        normals.set( triOffset+3*vSize+1, ny.toFloat )
-        normals.set( triOffset+3*vSize+2, nz.toFloat )
+        vertices.set( triOffset+3*vSize,   c.x.toFloat )
+        vertices.set( triOffset+3*vSize+1, c.y.toFloat )
+        vertices.set( triOffset+3*vSize+2, c.z.toFloat )
+        normals.set( triOffset+3*vSize,   n.x.toFloat )
+        normals.set( triOffset+3*vSize+1, n.y.toFloat )
+        normals.set( triOffset+3*vSize+2, n.z.toFloat )
         colors.set( triOffset+3*vSize,   cr )
         colors.set( triOffset+3*vSize+1, cg )
         colors.set( triOffset+3*vSize+2, cb )
@@ -337,7 +337,7 @@ class ThreeScene {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
       updateThis( "u_borderWidth", if ( showBorders ) 1f else 0f )
-      updateThis( "u_borderColor", new Vector3( 0.05,0.05,0.05 ) )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0.05,0.05,0.05 ) )
       updateThis( "u_highlightFlag", ( highlighted % 131072 ).toFloat )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       updateThis( "u_mvpMat", mvp )

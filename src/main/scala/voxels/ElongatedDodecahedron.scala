@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -14,24 +14,24 @@ object ElongatedDodecahedron extends VoxelStandard {
   private val b = 2 * math.sqrt( 3 ) / 3
 
   val vertices: List[Vertex] =
-    Vec3 ( a, a+0.5, a ) ::
-    Vec3 ( a, a+0.5, -a ) ::
-    Vec3 ( a, -a-0.5, a ) ::
-    Vec3 ( a, -a-0.5, -a ) ::
-    Vec3 ( -a, a+0.5, a ) ::
-    Vec3 ( -a, a+0.5, -a ) ::
-    Vec3 ( -a, -a-0.5, a ) ::
-    Vec3 ( -a, -a-0.5, -a) ::
-    Vec3 ( b, 0.5, 0 ) ::
-    Vec3 ( -b, 0.5, 0 ) ::
-    Vec3 ( 0, 0.5, b ) ::
-    Vec3 ( 0, 0.5, -b ) ::
-    Vec3 ( b, -0.5, 0 ) ::
-    Vec3 ( -b, -0.5, 0 ) ::
-    Vec3 ( 0, -0.5, b ) ::
-    Vec3 ( 0, -0.5, -b ) ::
-    Vec3 ( 0, b+0.5, 0 ) ::
-    Vec3 ( 0, -b-0.5, 0 ) :: Nil
+    Vector3 ( a, a+0.5, a ) ::
+    Vector3 ( a, a+0.5, -a ) ::
+    Vector3 ( a, -a-0.5, a ) ::
+    Vector3 ( a, -a-0.5, -a ) ::
+    Vector3 ( -a, a+0.5, a ) ::
+    Vector3 ( -a, a+0.5, -a ) ::
+    Vector3 ( -a, -a-0.5, a ) ::
+    Vector3 ( -a, -a-0.5, -a) ::
+    Vector3 ( b, 0.5, 0 ) ::
+    Vector3 ( -b, 0.5, 0 ) ::
+    Vector3 ( 0, 0.5, b ) ::
+    Vector3 ( 0, 0.5, -b ) ::
+    Vector3 ( b, -0.5, 0 ) ::
+    Vector3 ( -b, -0.5, 0 ) ::
+    Vector3 ( 0, -0.5, b ) ::
+    Vector3 ( 0, -0.5, -b ) ::
+    Vector3 ( 0, b+0.5, 0 ) ::
+    Vector3 ( 0, -b-0.5, 0 ) :: Nil
 
   val facesStructure =
     List(

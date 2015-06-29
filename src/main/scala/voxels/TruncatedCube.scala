@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.{RegularPolygon, Vertex}
 
 /**
@@ -13,30 +13,30 @@ object TruncatedCube extends VoxelStandard {
   private val a = 0.5 + math.sqrt( 2 ) / 2
 
   val vertices: List[Vertex] =
-    Vec3( a,a,0.5 ) ::
-    Vec3( 0.5,a,a ) ::
-    Vec3( -0.5,a,a ) ::
-    Vec3( -a,a,0.5 ) ::
-    Vec3( -a,a,-0.5 ) ::
-    Vec3( -0.5,a,-a ) ::
-    Vec3( 0.5,a,-a ) ::
-    Vec3( a,a,-0.5 ) ::
-    Vec3( a,0.5,a ) ::
-    Vec3( -a,0.5,a ) ::
-    Vec3( -a,0.5,-a ) ::
-    Vec3( a,0.5,-a ) ::
-    Vec3( a,-0.5,a ) ::
-    Vec3( -a,-0.5,a ) ::
-    Vec3( -a,-0.5,-a ) ::
-    Vec3( a,-0.5,-a ) ::
-    Vec3( a,-a,0.5 ) ::
-    Vec3( 0.5,-a,a ) ::
-    Vec3( -0.5,-a,a ) ::
-    Vec3( -a,-a,0.5 ) ::
-    Vec3( -a,-a,-0.5 ) ::
-    Vec3( -0.5,-a,-a ) ::
-    Vec3( 0.5,-a,-a ) ::
-    Vec3( a,-a,-0.5 ) :: Nil
+    Vector3( a,a,0.5 ) ::
+    Vector3( 0.5,a,a ) ::
+    Vector3( -0.5,a,a ) ::
+    Vector3( -a,a,0.5 ) ::
+    Vector3( -a,a,-0.5 ) ::
+    Vector3( -0.5,a,-a ) ::
+    Vector3( 0.5,a,-a ) ::
+    Vector3( a,a,-0.5 ) ::
+    Vector3( a,0.5,a ) ::
+    Vector3( -a,0.5,a ) ::
+    Vector3( -a,0.5,-a ) ::
+    Vector3( a,0.5,-a ) ::
+    Vector3( a,-0.5,a ) ::
+    Vector3( -a,-0.5,a ) ::
+    Vector3( -a,-0.5,-a ) ::
+    Vector3( a,-0.5,-a ) ::
+    Vector3( a,-a,0.5 ) ::
+    Vector3( 0.5,-a,a ) ::
+    Vector3( -0.5,-a,a ) ::
+    Vector3( -a,-a,0.5 ) ::
+    Vector3( -a,-a,-0.5 ) ::
+    Vector3( -0.5,-a,-a ) ::
+    Vector3( 0.5,-a,-a ) ::
+    Vector3( a,-a,-0.5 ) :: Nil
 
   val facesStructure =
     List(

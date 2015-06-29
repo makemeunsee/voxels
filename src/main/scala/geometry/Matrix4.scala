@@ -24,7 +24,7 @@ object Matrix4 {
            , 0,                        0,                        0,                        1 )
   }
 
-  def rotationMatrix( from: Vec3, to: Vec3, fallbackAxis: Option[Vec3] = None ): Matrix4 = {
+  def rotationMatrix( from: Vector3, to: Vector3, fallbackAxis: Option[Normal3] = None ): Matrix4 = {
     val v = from cross to
     val s = v.norm
     val c = from dot to
@@ -37,14 +37,14 @@ object Matrix4 {
       if( c >= 0 )
         unit
       else {
-        val Vec3( rx, ry, rz ) = fallbackAxis.getOrElse( from cross from.copy(if ( from.x != 0) 2 * from.x else from.x + 1 ) ).normalize
-        rotationMatrix(math.Pi, rx, ry, rz )
+        val n = fallbackAxis.getOrElse( Normal3( from cross from.update( 0, if ( from.x != 0) 2 * from.x else from.x + 1 ) ) )
+        rotationMatrix(math.Pi, n.x, n.y, n.z )
       }
     else
       unit + vM + ( ( vM * vM ) scalarTimes ( ( 1-c ) / s / s ) )
   }
 
-  def translationMatrix( v: Vec3 ): Matrix4 = {
+  def translationMatrix( v: Vector3 ): Matrix4 = {
     Matrix4( 1, 0, 0, v.x
            , 0, 1, 0, v.y
            , 0, 0, 1, v.z
@@ -99,20 +99,20 @@ case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
   def row( i: Int ) = {
     assert( i < 4 && i >= 0 )
     i match {
-      case 0 => Vec4( a00, a01, a02, a03 )
-      case 1 => Vec4( a10, a11, a12, a13 )
-      case 2 => Vec4( a20, a21, a22, a23 )
-      case 3 => Vec4( a30, a31, a32, a33 )
+      case 0 => Vector4( a00, a01, a02, a03 )
+      case 1 => Vector4( a10, a11, a12, a13 )
+      case 2 => Vector4( a20, a21, a22, a23 )
+      case 3 => Vector4( a30, a31, a32, a33 )
     }
   }
 
   def col( i: Int ) = {
     assert( i < 4 && i >= 0 )
     i match {
-      case 0 => Vec4( a00, a10, a20, a30 )
-      case 1 => Vec4( a01, a11, a21, a31 )
-      case 2 => Vec4( a02, a12, a22, a32 )
-      case 3 => Vec4( a03, a13, a23, a33 )
+      case 0 => Vector4( a00, a10, a20, a30 )
+      case 1 => Vector4( a01, a11, a21, a31 )
+      case 2 => Vector4( a02, a12, a22, a32 )
+      case 3 => Vector4( a03, a13, a23, a33 )
     }
   }
 
@@ -139,13 +139,15 @@ case class Matrix4( a00: Double, a01: Double, a02: Double, a03: Double
            , a20 * a, a21 * a, a22 * a, a23 * a
            , a30 * a, a31 * a, a32 * a, a33 * a )
 
-  def apply( v: Vec3 ): Vec3 = apply( Vec4( v ) ).toVec3
+  // multiply vector v by this matrix. returns this*v.
+  def apply( v: Vector3 ): Vector3 = apply( Vector4( v ) ).toVec3
 
-  def apply( v: Vec4 ): Vec4 = {
-    Vec4( row( 0 ) dot v
-        , row( 1 ) dot v
-        , row( 2 ) dot v
-        , row( 3 ) dot v )
+  // multiply vector v by this matrix. returns this*v.
+  def apply( v: Vector4 ): Vector4 = {
+    Vector4( row( 0 ) dot v
+           , row( 1 ) dot v
+           , row( 2 ) dot v
+           , row( 3 ) dot v )
   }
 
 }

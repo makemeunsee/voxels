@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.{RegularPolygon, Vertex}
 
 /**
@@ -13,36 +13,36 @@ object Icosidodecahedron extends VoxelStandard {
   private val phi: Double = ( 1 + math.sqrt( 5 ) ) / 2
 
   val vertices: List[Vertex] =
-      Vec3 ( 0, 0, phi ) ::
-      Vec3 ( 1d/2, -phi/2, ( 1d+phi )/2 ) ::
-      Vec3 ( 1d/2, phi/2, ( 1d+phi )/2 ) ::
-      Vec3 ( -1d/2, phi/2, ( 1d+phi )/2 ) ::
-      Vec3 ( -1d/2, -phi/2, ( 1d+phi )/2 ) ::
-      Vec3 ( ( 1d+phi )/2, -1d/2, phi/2 ) ::
-      Vec3 ( ( 1d+phi )/2, 1d/2, phi/2 ) ::
-      Vec3 ( -( 1d+phi )/2, 1d/2, phi/2 ) ::
-      Vec3 ( -( 1d+phi )/2, -1d/2, phi/2 ) ::
-      Vec3 ( phi/2, -( 1d+phi )/2, 1d/2 ) ::
-      Vec3 ( phi/2, ( 1d+phi )/2, 1d/2 ) ::
-      Vec3 ( -phi/2, ( 1d+phi )/2, 1d/2 ) ::
-      Vec3 ( -phi/2, -( 1d+phi )/2, 1d/2 ) ::
-      Vec3 ( 0, -phi, 0 ) ::
-      Vec3 ( phi, 0, 0 ) ::
-      Vec3 ( 0, phi, 0 ) ::
-      Vec3 ( -phi, 0, 0 ) ::
-      Vec3 ( phi/2, -( 1d+phi )/2, -1d/2 ) ::
-      Vec3 ( phi/2, ( 1d+phi )/2, -1d/2 ) ::
-      Vec3 ( -phi/2, ( 1d+phi )/2, -1d/2 ) ::
-      Vec3 ( -phi/2, -( 1d+phi )/2, -1d/2 ) ::
-      Vec3 ( ( 1d+phi )/2, -1d/2, -phi/2 ) ::
-      Vec3 ( ( 1d+phi )/2, 1d/2, -phi/2 ) ::
-      Vec3 ( -( 1d+phi )/2, 1d/2, -phi/2 ) ::
-      Vec3 ( -( 1d+phi )/2, -1d/2, -phi/2 ) ::
-      Vec3 ( 1d/2, -phi/2, -( 1d+phi )/2 ) ::
-      Vec3 ( 1d/2, phi/2, -( 1d+phi )/2 ) ::
-      Vec3 ( -1d/2, phi/2, -( 1d+phi )/2 ) ::
-      Vec3 ( -1d/2, -phi/2, -( 1d+phi )/2 ) ::
-      Vec3 ( 0, 0, -phi ) :: Nil
+      Vector3 ( 0, 0, phi ) ::
+      Vector3 ( 1d/2, -phi/2, ( 1d+phi )/2 ) ::
+      Vector3 ( 1d/2, phi/2, ( 1d+phi )/2 ) ::
+      Vector3 ( -1d/2, phi/2, ( 1d+phi )/2 ) ::
+      Vector3 ( -1d/2, -phi/2, ( 1d+phi )/2 ) ::
+      Vector3 ( ( 1d+phi )/2, -1d/2, phi/2 ) ::
+      Vector3 ( ( 1d+phi )/2, 1d/2, phi/2 ) ::
+      Vector3 ( -( 1d+phi )/2, 1d/2, phi/2 ) ::
+      Vector3 ( -( 1d+phi )/2, -1d/2, phi/2 ) ::
+      Vector3 ( phi/2, -( 1d+phi )/2, 1d/2 ) ::
+      Vector3 ( phi/2, ( 1d+phi )/2, 1d/2 ) ::
+      Vector3 ( -phi/2, ( 1d+phi )/2, 1d/2 ) ::
+      Vector3 ( -phi/2, -( 1d+phi )/2, 1d/2 ) ::
+      Vector3 ( 0, -phi, 0 ) ::
+      Vector3 ( phi, 0, 0 ) ::
+      Vector3 ( 0, phi, 0 ) ::
+      Vector3 ( -phi, 0, 0 ) ::
+      Vector3 ( phi/2, -( 1d+phi )/2, -1d/2 ) ::
+      Vector3 ( phi/2, ( 1d+phi )/2, -1d/2 ) ::
+      Vector3 ( -phi/2, ( 1d+phi )/2, -1d/2 ) ::
+      Vector3 ( -phi/2, -( 1d+phi )/2, -1d/2 ) ::
+      Vector3 ( ( 1d+phi )/2, -1d/2, -phi/2 ) ::
+      Vector3 ( ( 1d+phi )/2, 1d/2, -phi/2 ) ::
+      Vector3 ( -( 1d+phi )/2, 1d/2, -phi/2 ) ::
+      Vector3 ( -( 1d+phi )/2, -1d/2, -phi/2 ) ::
+      Vector3 ( 1d/2, -phi/2, -( 1d+phi )/2 ) ::
+      Vector3 ( 1d/2, phi/2, -( 1d+phi )/2 ) ::
+      Vector3 ( -1d/2, phi/2, -( 1d+phi )/2 ) ::
+      Vector3 ( -1d/2, -phi/2, -( 1d+phi )/2 ) ::
+      Vector3 ( 0, 0, -phi ) :: Nil
 
   val facesStructure =
     List(

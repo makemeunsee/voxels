@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.RegularPolygon
 import voxels.Voxel.Vertex
 
@@ -10,14 +10,14 @@ import voxels.Voxel.Vertex
 object Cube extends VoxelStandard {
 
   val vertices: List[Vertex] =
-    Vec3( 1,1,1 ) ::
-    Vec3( -1,1,1 ) ::
-    Vec3( -1,1,-1 ) ::
-    Vec3( 1,1,-1 ) ::
-    Vec3( -1,-1,-1 ) ::
-    Vec3( 1,-1,-1 ) ::
-    Vec3( 1,-1,1 ) ::
-    Vec3( -1,-1,1 ) :: Nil
+    Vector3( 1,1,1 ) ::
+    Vector3( -1,1,1 ) ::
+    Vector3( -1,1,-1 ) ::
+    Vector3( 1,1,-1 ) ::
+    Vector3( -1,-1,-1 ) ::
+    Vector3( 1,-1,-1 ) ::
+    Vector3( 1,-1,1 ) ::
+    Vector3( -1,-1,1 ) :: Nil
 
   val facesStructure =
     List(

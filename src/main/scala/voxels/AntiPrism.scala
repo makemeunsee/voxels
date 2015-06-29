@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.RegularPolygon
 
 /**
@@ -24,7 +24,7 @@ case class AntiPrism( sides: Int ) extends VoxelStandard {
       val y0 = math.sin( i * 2 * math.Pi / sides )
       val x1 = math.cos( theta + i * 2 * math.Pi / sides )
       val y1 = math.sin( theta + i * 2 * math.Pi / sides )
-      Vec3( x0, y0, h ) :: Vec3( x1, y1, -h ) :: Nil
+      Vector3( x0, y0, h ) :: Vector3( x1, y1, -h ) :: Nil
     }.toList
 
   val facesStructure = {

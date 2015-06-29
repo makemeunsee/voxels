@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -11,11 +11,11 @@ object SquarePyramid extends VoxelStandard {
   override val scale = 1d
 
   val vertices: List[Vertex] =
-    Vec3( 0.5,0,0.5 ) ::
-    Vec3( -0.5,0,0.5 ) ::
-    Vec3( -0.5,0,-0.5 ) ::
-    Vec3( 0.5,0,-0.5 ) ::
-    Vec3( 0,math.sqrt( 2 )/2,0 ) :: Nil
+    Vector3( 0.5,0,0.5 ) ::
+    Vector3( -0.5,0,0.5 ) ::
+    Vector3( -0.5,0,-0.5 ) ::
+    Vector3( 0.5,0,-0.5 ) ::
+    Vector3( 0,math.sqrt( 2 )/2,0 ) :: Nil
 
   val facesStructure =
     List(

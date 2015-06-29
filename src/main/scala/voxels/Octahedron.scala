@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -9,12 +9,12 @@ import voxels.Voxel._
 object Octahedron extends VoxelStandard {
 
   val vertices: List[Vertex] =
-    Vec3( 0,1,0 ) ::
-    Vec3( 1,0,0 ) ::
-    Vec3( 0,0,1 ) ::
-    Vec3( -1,0,0 ) ::
-    Vec3( 0,0,-1 ) ::
-    Vec3( 0,-1,0 ) :: Nil
+    Vector3( 0,1,0 ) ::
+    Vector3( 1,0,0 ) ::
+    Vector3( 0,0,1 ) ::
+    Vector3( -1,0,0 ) ::
+    Vector3( 0,0,-1 ) ::
+    Vector3( 0,-1,0 ) :: Nil
 
   val facesStructure =
     List(

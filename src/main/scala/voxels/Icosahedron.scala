@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import geometry.gold
 import voxels.Voxel.{RegularPolygon, Vertex}
 
@@ -10,18 +10,18 @@ import voxels.Voxel.{RegularPolygon, Vertex}
 object Icosahedron extends VoxelStandard {
 
   val vertices: List[Vertex] =
-    Vec3 ( 0, 1, gold ) ::
-    Vec3 ( 0, -1, gold ) ::
-    Vec3 ( 0, -1, -gold ) ::
-    Vec3 ( 0, 1, -gold ) ::
-    Vec3 ( 1,  gold, 0 ) ::
-    Vec3 ( -1, gold, 0 ) ::
-    Vec3 ( -1, -gold, 0 ) ::
-    Vec3 ( 1, -gold, 0 ) ::
-    Vec3 ( gold, 0, 1 ) ::
-    Vec3 ( gold, 0, -1 ) ::
-    Vec3 ( -gold, 0, -1 ) ::
-    Vec3 ( -gold, 0, 1 ) :: Nil
+    Vector3 ( 0, 1, gold ) ::
+    Vector3 ( 0, -1, gold ) ::
+    Vector3 ( 0, -1, -gold ) ::
+    Vector3 ( 0, 1, -gold ) ::
+    Vector3 ( 1,  gold, 0 ) ::
+    Vector3 ( -1, gold, 0 ) ::
+    Vector3 ( -1, -gold, 0 ) ::
+    Vector3 ( 1, -gold, 0 ) ::
+    Vector3 ( gold, 0, 1 ) ::
+    Vector3 ( gold, 0, -1 ) ::
+    Vector3 ( -gold, 0, -1 ) ::
+    Vector3 ( -gold, 0, 1 ) :: Nil
 
   val facesStructure =
     List(

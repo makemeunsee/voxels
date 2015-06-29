@@ -3,11 +3,11 @@ package geometry
 /**
  * Created by markus on 23/05/15.
  */
-object Vec4 {
-  def apply( v: Vec3 ): Vec4 = Vec4( v.x, v.y, v.z, 1 )
+object Vector4 {
+  def apply( v: Vector3 ): Vector4 = Vector4( v.x, v.y, v.z, 1 )
 }
 
-case class Vec4( x: Double, y: Double, z: Double, w: Double) {
+case class Vector4( x: Double, y: Double, z: Double, w: Double ) {
   def apply( i: Int ) = i match {
     case 0 => x
     case 1 => y
@@ -15,7 +15,7 @@ case class Vec4( x: Double, y: Double, z: Double, w: Double) {
     case 3 => w
   }
 
-  def toVec3 = Vec3( x, y, z )
+  def toVec3 = Vector3( x, y, z )
 
   def update( i: Int, v: Double ) = i match {
     case 0 => copy( x = v )
@@ -28,16 +28,16 @@ case class Vec4( x: Double, y: Double, z: Double, w: Double) {
 
   def normalize = {
     val n = norm
-    Vec4( x / n, y / n, z / n, w / n )
+    Vector4( x / n, y / n, z / n, w / n )
   }
 
-  def minus( v: Vec4 ) = Vec4( x - v.x, y - v.y, z - v.z, w - v.w )
+  def minus( v: Vector4 ) = Vector4( x - v.x, y - v.y, z - v.z, w - v.w )
   def - = minus _
-  def plus( v: Vec4 ) = Vec4( x + v.x, y + v.y, z + v.z, w + v.w )
+  def plus( v: Vector4 ) = Vector4( x + v.x, y + v.y, z + v.z, w + v.w )
   def + = plus _
-  def times( scalar: Double ) = Vec4( x*scalar, y*scalar, z*scalar, w*scalar )
+  def times( scalar: Double ) = Vector4( x*scalar, y*scalar, z*scalar, w*scalar )
   def * = times _
   def dividedBy( scalar: Double) = times( 1d/scalar )
   def / = dividedBy _
-  def dot( v: Vec4 ) = x*v.x + y*v.y + z*v.z + w*v.w
+  def dot( v: Vector4 ) = x*v.x + y*v.y + z*v.z + w*v.w
 }

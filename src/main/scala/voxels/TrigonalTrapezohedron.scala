@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel._
 
 /**
@@ -14,14 +14,14 @@ object TrigonalTrapezohedron extends VoxelStandard {
   private val b = math.sqrt( 5 ) / 6
 
   val vertices: List[Vertex] =
-    Vec3( 0,0,-3*b ) ::
-    Vec3( 0,2d/3,-b ) ::
-    Vec3( a,-1d/3,-b ) ::
-    Vec3( -a,-1d/3,-b ) ::
-    Vec3( a,1d/3,b ) ::
-    Vec3( -a,1d/3,b ) ::
-    Vec3( 0,-2d/3,b ) ::
-    Vec3( 0,0,3*b ) ::
+    Vector3( 0,0,-3*b ) ::
+    Vector3( 0,2d/3,-b ) ::
+    Vector3( a,-1d/3,-b ) ::
+    Vector3( -a,-1d/3,-b ) ::
+    Vector3( a,1d/3,b ) ::
+    Vector3( -a,1d/3,b ) ::
+    Vector3( 0,-2d/3,b ) ::
+    Vector3( 0,0,3*b ) ::
     Nil
 
   val facesStructure =

@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.RegularPolygon
 
 /**
@@ -18,7 +18,7 @@ case class RegularPrism( sides: Int ) extends VoxelStandard {
   val vertices = ( 0 until sides ).flatMap { i =>
     val x = math.cos( i * 2 * math.Pi / sides )
     val y = math.sin( i * 2 * math.Pi / sides )
-    Vec3( x, y, scale / 2 ) :: Vec3( x, y, -scale / 2 ) :: Nil
+    Vector3( x, y, scale / 2 ) :: Vector3( x, y, -scale / 2 ) :: Nil
   }.toList
 
   val facesStructure = {

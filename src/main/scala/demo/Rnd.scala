@@ -9,4 +9,6 @@ object Rnd {
   private val rnd = new Random
 
   def rndInt(): Int = rnd.nextInt()
+
+  def rndUniformDouble(): Double = rnd.nextDouble()
 }

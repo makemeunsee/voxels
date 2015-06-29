@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import geometry.gold
 import voxels.Voxel._
 
@@ -10,26 +10,26 @@ import voxels.Voxel._
 object Dodecahedron extends VoxelStandard {
 
   val vertices: List[Vertex] =
-    Vec3 ( 1, 1, 1 ) ::
-    Vec3 ( 1, 1, -1 ) ::
-    Vec3 ( 1, -1, 1 ) ::
-    Vec3 ( 1, -1, -1 ) ::
-    Vec3 ( -1, 1, 1 ) ::
-    Vec3 ( -1, 1, -1 ) ::
-    Vec3 ( -1, -1, 1 ) ::
-    Vec3 ( -1, -1, -1) ::
-    Vec3 ( 0, 1/gold, gold ) ::
-    Vec3 ( 0, 1/gold, -gold ) ::
-    Vec3 ( 0, -1/gold, gold ) ::
-    Vec3 ( 0, -1/gold, -gold ) ::
-    Vec3 ( 1/gold, gold, 0 ) ::
-    Vec3 ( 1/gold, -gold, 0 ) ::
-    Vec3 ( -1/gold, gold, 0 ) ::
-    Vec3 ( -1/gold, -gold, 0) ::
-    Vec3 ( gold, 0, 1/gold ) ::
-    Vec3 ( gold, 0, -1/gold ) ::
-    Vec3 ( -gold, 0, 1/gold ) ::
-    Vec3 ( -gold, 0, -1/gold ) :: Nil
+    Vector3 ( 1, 1, 1 ) ::
+    Vector3 ( 1, 1, -1 ) ::
+    Vector3 ( 1, -1, 1 ) ::
+    Vector3 ( 1, -1, -1 ) ::
+    Vector3 ( -1, 1, 1 ) ::
+    Vector3 ( -1, 1, -1 ) ::
+    Vector3 ( -1, -1, 1 ) ::
+    Vector3 ( -1, -1, -1) ::
+    Vector3 ( 0, 1/gold, gold ) ::
+    Vector3 ( 0, 1/gold, -gold ) ::
+    Vector3 ( 0, -1/gold, gold ) ::
+    Vector3 ( 0, -1/gold, -gold ) ::
+    Vector3 ( 1/gold, gold, 0 ) ::
+    Vector3 ( 1/gold, -gold, 0 ) ::
+    Vector3 ( -1/gold, gold, 0 ) ::
+    Vector3 ( -1/gold, -gold, 0) ::
+    Vector3 ( gold, 0, 1/gold ) ::
+    Vector3 ( gold, 0, -1/gold ) ::
+    Vector3 ( -gold, 0, 1/gold ) ::
+    Vector3 ( -gold, 0, -1/gold ) :: Nil
 
   val facesStructure =
     List(

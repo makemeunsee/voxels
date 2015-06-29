@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.{RegularPolygon, Vertex}
 
 /**
@@ -16,15 +16,15 @@ object TriangularCupola extends VoxelStandard {
   private val d = math.sqrt( 3 ) / 6
 
   val vertices: List[Vertex] =
-    Vec3( 1,0,0 ) ::
-    Vec3( 0.5,b,0 ) ::
-    Vec3( -0.5,b,0 ) ::
-    Vec3( -1,0,0 ) ::
-    Vec3( -0.5,-b,0 ) ::
-    Vec3( 0.5,-b,0 ) ::
-    Vec3( 0.5,d,a ) ::
-    Vec3( -0.5,d,a ) ::
-    Vec3( 0,-c,a ) ::
+    Vector3( 1,0,0 ) ::
+    Vector3( 0.5,b,0 ) ::
+    Vector3( -0.5,b,0 ) ::
+    Vector3( -1,0,0 ) ::
+    Vector3( -0.5,-b,0 ) ::
+    Vector3( 0.5,-b,0 ) ::
+    Vector3( 0.5,d,a ) ::
+    Vector3( -0.5,d,a ) ::
+    Vector3( 0,-c,a ) ::
     Nil
 
   val facesStructure =

@@ -1,6 +1,6 @@
 package voxels
 
-import geometry.Vec3
+import geometry.Vector3
 import voxels.Voxel.{RegularPolygon, StdRhombus}
 
 /**
@@ -13,14 +13,14 @@ object RhombicPrism extends VoxelStandard {
   private val b = math.sqrt( 2 )
 
   val vertices =
-    Vec3( b*a, 0, 0.5 ) ::
-    Vec3( 0, a, 0.5 ) ::
-    Vec3( -b*a, 0, 0.5 ) ::
-    Vec3( 0, -a, 0.5 ) ::
-    Vec3( b*a, 0, -0.5 ) ::
-    Vec3( 0, a, -0.5 ) ::
-    Vec3( -b*a, 0, -0.5 ) ::
-    Vec3( 0, -a, -0.5 ) ::
+    Vector3( b*a, 0, 0.5 ) ::
+    Vector3( 0, a, 0.5 ) ::
+    Vector3( -b*a, 0, 0.5 ) ::
+    Vector3( 0, -a, 0.5 ) ::
+    Vector3( b*a, 0, -0.5 ) ::
+    Vector3( 0, a, -0.5 ) ::
+    Vector3( -b*a, 0, -0.5 ) ::
+    Vector3( 0, -a, -0.5 ) ::
     Nil
 
   val facesStructure =
