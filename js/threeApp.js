@@ -9,30 +9,16 @@ function getURLParameter(sParam) {
     }
 }
 
-function selectText(element) {
-    var doc = document;
-    var text = doc.getElementById(element);
-
-    if (doc.body.createTextRange) { // ms
-        var range = doc.body.createTextRange();
-        range.moveToElementText(text);
-        range.select();
-    } else if (window.getSelection) { // moz, opera, webkit
-        var selection = window.getSelection();
-        var range = doc.createRange();
-        range.selectNodeContents(text);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    }
-}
-
 function appMain() {
 
     var scalaObj = demo.webapp.VoxelMain();
+
     demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
                                       document.getElementById('shader-fs').innerHTML,
                                       document.getElementById('shader-pick-vs').innerHTML,
                                       document.getElementById('shader-pick-fs').innerHTML);
+
+    scalaObj.main();
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
@@ -67,22 +53,6 @@ function appMain() {
     }
     $("#showHelp").unbind("click");
     $("#showHelp").click(showHelp);
-
-    function save() {
-        var buildCode = scalaObj.buildCode();
-        var selfUrl = window.location.href.toString().split("?")[0];
-        console.log(buildCode);
-        var buildUrl = selfUrl+"?code="+buildCode
-        $( "#clipboard" ).empty();
-        $( "#clipboard" ).append("<a id='buildUrl' href='"+buildUrl+"'>"+buildUrl+"</a>");
-        $( "#clipboard" ).dialog({
-            width: 500,
-            height: 150
-        });
-        selectText("buildUrl");
-    }
-    $("#save").unbind("click");
-    $("#save").click(save);
 
     $("#reset").unbind("click");
     $("#reset").click(function() {
@@ -122,93 +92,11 @@ function appMain() {
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
 
-    $("#centerView").unbind("click");
-    $("#centerView").button();
-
     $( ".leftMenu" ).hide();
 
-    var voxelId = -1;
-    var count = scalaObj.voxelTypeCount;
-
-    (function () {
-        var menu0 = $( "#menu0" );
-        var menu1 = $( "#menu1" );
-        menu0.empty();
-        menu1.empty();
-        menu0.append('<li id="li" class="ui-widget-header">Initial voxel</li>');
-        menu1.append('<li id="li" class="ui-widget-header">&#xA0;</li>');
-        for (var i = 0; i < count; i++) {
-            var menu = i%2==0 ? menu0 : menu1;
-            menu.append('<li id="li-'+i+'" class="ui-menu-item">'+scalaObj.getVoxelName(i)+'</li>');
-        }
-        $( "li.ui-menu-item" ).hover(
-            function(evt) {
-                $( this ).addClass( "active" );
-                voxelId = evt.currentTarget.id.substring(3);
-                loadStdVoxel( voxelId );
-            },
-            function(evt) {
-                $( this ).removeClass( "active" );
-                voxelId = -1;
-                scalaObj.unloadVoxels();
-            }
-        );
-        $( "li.ui-menu-item" ).click(
-            function(evt) {
-                menu0.empty();
-                menu1.empty();
-                menu0.hide();
-                menu1.hide();
-            }
-        );
-        menu0.show();
-        menu1.show();
-    })();
-
-    function loadDockingOptions( options, selectedVoxel, faceInfo ) {
-        var menu0 = $( "#menu0" );
-        var menu1 = $( "#menu1" );
-        menu0.empty();
-        menu1.empty();
-        var hasSome = false;
-        menu0.append('<li id="li" class="ui-widget-header">Voxel: '+selectedVoxel+'</li>');
-        menu1.append('<li id="li" class="ui-widget-header">&#xA0</li>');
-        var i = 0;
-        for (var prop in options) {
-            if (options.hasOwnProperty(prop)) {
-                hasSome = true;
-                var menu = i%2==0 ? menu0 : menu1;
-                menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>');
-                i++;
-            }
-        }
-
-        $( "li.ui-menu-item" ).hover(
-            function(evt) {
-                $( this ).addClass( "active" );
-                var dockId = parseInt(evt.currentTarget.id.substring(3));
-                scalaObj.dockVoxel(dockId);
-            },
-            function(evt) {
-                $( this ).removeClass( "active" );
-                scalaObj.undockLastVoxel();
-            }
-        );
-        $( "li.ui-menu-item" ).click(
-            function(evt) {
-                // docking actually happened during hover
-                clearSelection();
-                highlighted = 0;
-            }
-        );
-
-        if (hasSome) {
+    function showFaceMenu( selectedFace ) {
+        if ( selectedFace > -1 ) {
             $( ".leftMenu" ).show();
-            $("#centerView").click(
-                function() {
-                    scalaObj.centerViewOn(selectedVoxel);
-                }
-            );
         } else {
             $( ".leftMenu" ).hide();
         }
@@ -234,25 +122,11 @@ function appMain() {
         }
     }
 
-    var buildCode = getURLParameter("code") || "";
-    console.log(buildCode);
-    if (buildCode.length > 0) {
-        var voxelId = scalaObj.loadCode(buildCode);
-        if (voxelId > -1) {
-            $( ".leftMenu" ).hide();
-        }
-    }
-
     var updateProjection = function(screenWidth, screenHeight) {
         scalaObj.scene.updateViewport( screenWidth, screenHeight );
     };
 
     updateProjection(window.innerWidth, window.innerHeight);
-
-    function loadStdVoxel( id ) {
-        scalaObj.loadVoxel( id );
-        document.title = scalaObj.getVoxelName( id );
-    }
 
     var mainContainer = document.getElementById( 'main' );
 
@@ -315,15 +189,12 @@ function appMain() {
     }
 
     function doubleClick() {
-//        toggleUI();
-        scalaObj.deleteSelected();
+        toggleUI();
     }
 
     function clearSelection() {
         scalaObj.clearSelection();
-        if (voxelId != -1) {
-            loadDockingOptions(null, -1, "");
-        }
+        loadDockingOptions( 0 );
     }
 
     function onMouseUp(event) {
@@ -438,14 +309,11 @@ function appMain() {
 
         if ( clicked ) {
 
-            if ( voxelId != -1 ) {
-                // pickRender
-                highlighted = scalaObj.scene.pickRender(mx,my);
-                var selection = scalaObj.selectFace(highlighted);
-                loadColors(selection);
-                var options = scalaObj.showDockingOptions();
-                loadDockingOptions(options, parseInt(selection.voxelId), selection.faceInfo);
-            }
+            // pickRender
+            highlighted = scalaObj.scene.pickRender(mx,my);
+            var selection = scalaObj.selectFace(highlighted);
+            loadColors(selection);
+            showFaceMenu(selection.faceId);
             clicked = false;
         }
 

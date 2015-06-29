@@ -11,9 +11,11 @@ trait Model {
   def cutNewFace( theta: Double, phi: Double ): Model
 }
 
-object CubeModel extends Model {
+case class CubeModel( colors: Seq[(Int, Int)] ) extends Model {
   def cutNewFace( t: Double, p: Double ) = this
+
   private val cube = Cube.facesStructure map { _._1 map { i => Normal3( Cube.vertices( i ) ) } }
+
   private val faceInfo: Seq[(Normal3, Seq[Int])] = Seq(
     ( Normal3( 0,  1,  0 ),  Seq( 2, 5, 3, 4 ) ),
     ( Normal3( 0,  -1, 0 ),  Seq( 2, 5, 3, 4 ) ),
@@ -22,7 +24,11 @@ object CubeModel extends Model {
     ( Normal3( 0,  0,  1 ),  Seq( 0, 3, 1, 5 ) ),
     ( Normal3( 0,  0,  -1 ), Seq( 0, 3, 1, 5 ) )
   )
-  def faces = cube.zip( faceInfo ).map { case ( vs, ( n, ns ) ) =>
-    Face( n, vs, ns )
-  }.toArray
+
+  def faces = cube
+    .zip( faceInfo )
+    .zip( colors )
+    .map { case ( ( vs, ( n, ns ) ), ( color, centerColor ) ) =>
+      Face( n, vs, ns, color, centerColor )
+    }.toArray
 }
