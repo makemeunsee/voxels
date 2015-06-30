@@ -4,5 +4,5 @@
 package object geometry {
   val gold = ( 1 + math.sqrt( 5 ) ) / 2
 
-  def uniformToSphericCoordinates( u: Double, v: Double ): ( Double, Double ) = ( 2*math.Pi*u, math.acos( 2*v - 1 ) )
+  def uniformToSphericCoords( u: Double, v: Double ): ( Double, Double ) = ( 2d*math.Pi*u, math.acos( 2d*v - 1 ) )
 }

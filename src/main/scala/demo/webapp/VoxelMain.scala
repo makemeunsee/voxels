@@ -4,7 +4,8 @@ package demo.webapp
  * Created by markus on 16/02/2015.
  */
 
-import demo.Colors
+import demo.{Rnd, Colors}
+import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
 
 import scala.scalajs.js.JSConverters._
@@ -14,7 +15,12 @@ import scala.scalajs.js.Dictionary
 
 object VoxelMain extends JSApp {
 
-  private val model = CubeModel.cut( 0, math.Pi/4d )
+  private val model: VoronoiModel = ( 0 until 1000 ).foldLeft( CubeModel: VoronoiModel ) { case ( m, _ ) =>
+    val u = Rnd.rndUniformDouble()
+    val v = Rnd.rndUniformDouble()
+    val ( theta, phi ) = geometry.uniformToSphericCoords( u, v )
+    m.cut( theta, phi )
+  }
 
   def main(): Unit = {
     println( "start" )
