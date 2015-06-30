@@ -32,7 +32,9 @@ function appMain() {
     demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
                                       document.getElementById('shader-fs').innerHTML,
                                       document.getElementById('shader-pick-vs').innerHTML,
-                                      document.getElementById('shader-pick-fs').innerHTML);
+                                      document.getElementById('shader-pick-fs').innerHTML,
+                                      document.getElementById('shader-axis-vs').innerHTML,
+                                      document.getElementById('shader-axis-fs').innerHTML);
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
@@ -88,6 +90,14 @@ function appMain() {
     $("#reset").click(function() {
         window.location = window.location.pathname;
     });
+
+    $("#axis").unbind("click");
+    $("#axis").click(function axisFct() {
+            scalaObj.scene.toggleAxis();
+        }
+    );
+    $("#axis").attr("checked", false);
+    $("#axis").prop("checked", false);
 
     $("#borders").unbind("click");
     $("#borders").click(function bordersFct() {

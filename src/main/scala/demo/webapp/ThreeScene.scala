@@ -1,7 +1,7 @@
 package demo.webapp
 
 import demo.Colors
-import geometry.{Vec3, Matrix4}
+import geometry.{Matrix4, Vec3}
 import org.denigma.threejs._
 import voxels.Voxel
 import voxels.Voxel.Face
@@ -9,7 +9,7 @@ import voxels.Voxel.Face
 import scala.scalajs.js
 import scala.scalajs.js.Array
 import scala.scalajs.js.annotation.{JSExport, JSName}
-import scala.scalajs.js.typedarray.{Uint8Array, Uint16Array, Float32Array}
+import scala.scalajs.js.typedarray.{Float32Array, Uint16Array, Uint8Array}
 
 /**
  * Created by markus on 17/06/2015.
@@ -68,7 +68,7 @@ object ThreeScene {
   }
 }
 
-import ThreeScene._
+import demo.webapp.ThreeScene._
 
 class ThreeScene {
 
@@ -126,7 +126,21 @@ class ThreeScene {
   private def updateMVP(): Unit = {
     mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat * transMat
   }
+  
+  // ******************** axis management ********************
 
+  private lazy val axisMesh: Mesh = makeAxisMesh
+  private var showAxis: Boolean = false
+
+  @JSExport
+  def toggleAxis(): Unit = {
+    showAxis = !showAxis
+    if ( showAxis )
+      scene.add( axisMesh )
+    else
+      scene.remove( axisMesh )
+  }
+  
   // ******************** mesh management ********************
 
   private var meshes = Map.empty[Int, ( Mesh, Mesh )]
@@ -154,6 +168,8 @@ class ThreeScene {
       m.geometry.dispose()
       pm.geometry.dispose()
     }
+    scene.remove( axisMesh )
+    showAxis = false
     meshes = Map.empty
   }
 
@@ -269,6 +285,102 @@ class ThreeScene {
     ( assembleMesh( geom, shaderMaterial ), assembleMesh( geom, pickShaderMaterial ) )
   }
 
+  private def makeAxisMesh: Mesh = {
+    val customUniforms = js.Dynamic.literal(
+      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() )
+    )
+
+    val geom = new MyBufferGeometry()
+
+    val attrs = js.Dynamic.literal(
+      "a_color" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array[Float]
+      )
+    )
+
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.attributes = attrs
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader = Shaders.axisVertexShader
+    shaderMaterial.fragmentShader = Shaders.axisFragmentShader
+    shaderMaterial.wireframe = true
+    //    shaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
+
+    val count = 18
+    val indicesCount = 9
+
+    val vertices = new Float32Array( count )
+    val colors = new Float32Array( count )
+    val indices = new Uint16Array( indicesCount )
+
+    // 0
+    vertices.set( 0, 0f )
+    vertices.set( 1, 0f )
+    vertices.set( 2, 0f )
+    // 1
+    vertices.set( 3, 3f )
+    vertices.set( 4, 0f )
+    vertices.set( 5, 0f )
+    // 2
+    vertices.set( 6, 0f )
+    vertices.set( 7, 0f )
+    vertices.set( 8, 0f )
+    // 3
+    vertices.set( 9, 0f )
+    vertices.set( 10, 3f )
+    vertices.set( 11, 0f )
+    // 4
+    vertices.set( 12, 0f )
+    vertices.set( 13, 0f )
+    vertices.set( 14, 3f )
+    // 5
+    vertices.set( 15, 0f )
+    vertices.set( 16, 0f )
+    vertices.set( 17, 0f )
+
+    // 0
+    colors.set( 0, 1f )
+    colors.set( 1, 0f )
+    colors.set( 2, 0f )
+    // 1
+    colors.set( 3, 1f )
+    colors.set( 4, 0f )
+    colors.set( 5, 0f )
+    // 2
+    colors.set( 6, 0f )
+    colors.set( 7, 1f )
+    colors.set( 8, 0f )
+    // 3
+    colors.set( 9, 0f )
+    colors.set( 10, 1f )
+    colors.set( 11, 0f )
+    // 4
+    colors.set( 12, 0f )
+    colors.set( 13, 0f )
+    colors.set( 14, 1f )
+    // 5
+    colors.set( 15, 0f )
+    colors.set( 16, 0f )
+    colors.set( 17, 1f )
+
+    indices.set( 0, 0 )
+    indices.set( 1, 1 )
+    indices.set( 2, 0 )
+    indices.set( 3, 2 )
+    indices.set( 4, 3 )
+    indices.set( 5, 2 )
+    indices.set( 6, 4 )
+    indices.set( 7, 5 )
+    indices.set( 8, 4 )
+
+    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
+    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
+
+    assembleMesh( geom, shaderMaterial )
+  }
+
   private def assembleMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
     val mesh = new Mesh
     mesh.geometry = geometry
@@ -342,6 +454,7 @@ class ThreeScene {
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       updateThis( "u_mvpMat", mvp )
     }
+    updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
     renderer.render( scene, dummyCam )
   }
 }
