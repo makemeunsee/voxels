@@ -1,7 +1,7 @@
 package demo.webapp
 
 import demo.Colors
-import geometry.voronoi.{Face, Model}
+import geometry.voronoi.{VoronoiModel, Face}
 import geometry.Matrix4
 import org.denigma.threejs._
 
@@ -122,7 +122,7 @@ class ThreeScene {
 
   private var meshes: Option[( Mesh, Mesh )] = None
 
-  def addModel( model: Model ): Unit = {
+  def addModel( model: VoronoiModel ): Unit = {
     meshes = Some( makeMesh( model ) )
     scene.add( meshes.get._1 )
     pickScene.add( meshes.get._2 )
@@ -138,7 +138,7 @@ class ThreeScene {
     meshes = None
   }
 
-  private def makeMesh( m: Model ): ( Mesh, Mesh ) = {
+  private def makeMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),

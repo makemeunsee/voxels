@@ -5,7 +5,7 @@ package demo.webapp
  */
 
 import demo.Colors
-import geometry.voronoi.CubeModel
+import geometry.voronoi.VoronoiModel.CubeModel
 import voxels._
 
 import scala.scalajs.js.JSConverters._
@@ -15,7 +15,7 @@ import scala.scalajs.js.Dictionary
 
 object VoxelMain extends JSApp {
 
-  private var model = CubeModel( (0 until 6).map(_ => (Colors.WHITE, Colors.WHITE)) )
+  private var model = CubeModel
 
   def main(): Unit = {
     println( "start" )
@@ -46,9 +46,17 @@ object VoxelMain extends JSApp {
   def selectFace( colorCode: Int ): Dictionary[String] = {
     selectedFace = ThreeScene.revertColorCode( colorCode )
 
+    val ( col, cCol ) = {
+      val faces = model.faces
+      if ( selectedFace < faces.length && selectedFace > -1 ) {
+        val face = faces( selectedFace )
+        ( face.color, face.centerColor )
+      } else
+        ( Colors.WHITE, Colors. WHITE )
+    }
     Map( ( "faceId", selectedFace.toString )
-       , ( "faceColor", "%06x".format( Colors.WHITE ) )
-       , ( "faceCenterColor", "%06x".format( Colors.WHITE ) )
+       , ( "faceColor", "%06x".format( col ) )
+       , ( "faceCenterColor", "%06x".format( cCol ) )
        )
       .toJSDictionary
   }
@@ -61,11 +69,6 @@ object VoxelMain extends JSApp {
   // ******************** coloring ********************
 
   private implicit var rndColors = false
-
-  private def colorsForStd( std: VoxelStandard ): Seq[( Int, Int )] = {
-    if ( rndColors ) ( 0 until std.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )
-    else ( 0 until std.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) )
-  }
 
   @JSExport
   def colorsAreRandom(): Boolean = rndColors
@@ -89,25 +92,24 @@ object VoxelMain extends JSApp {
 
   private def colorVoxel( color: () => Int, centerColor: () => Int ): Unit = {
     import Colors.intColorToFloatsColors
-    var newColors = List.empty[( Int, Int )]
     ThreeScene.withOffsetsAndSizes( model.faces )
-      .foreach { case ( _, o, s ) =>
-      val col = color()
-      val cCol = centerColor()
-      newColors = ( col, cCol ) :: newColors
-      scene.colorFace( o, s, col, cCol )
-    }
-    model = model.copy( colors = newColors.reverse )
+      .zipWithIndex
+      .foreach { case ( ( _, o, s ), id ) =>
+        val col = color()
+        val cCol = centerColor()
+        scene.colorFace( o, s, col, cCol )
+        model.updateColor( id, col, cCol )
+      }
   }
 
   private def colorFace( faceId: Int, color: Option[Int] = None, centerColor: Option[Int] = None ): Unit = {
     import Colors.intColorToFloatsColors
     ThreeScene.withOffsetsAndSizes( model.faces ).lift( faceId ).foreach { case ( f, o, s ) =>
-      val defCols = model.colors( faceId )
+      val defCols = ( f.color, f.centerColor )
       val col = color.getOrElse( defCols._1 )
       val cCol = centerColor.getOrElse( defCols._2 )
       scene.colorFace( o, s, col, cCol )
-      model = model.copy( colors = model.colors.updated( faceId, ( col, cCol ) ) )
+      model.updateColor( faceId, col, cCol )
     }
   }
 
