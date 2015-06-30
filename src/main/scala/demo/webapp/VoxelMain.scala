@@ -6,7 +6,6 @@ package demo.webapp
 
 import demo.Colors
 import geometry.voronoi.VoronoiModel.CubeModel
-import voxels._
 
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.JSApp
@@ -15,7 +14,7 @@ import scala.scalajs.js.Dictionary
 
 object VoxelMain extends JSApp {
 
-  private var model = CubeModel
+  private val model = CubeModel.cut( 0, math.Pi/4d )
 
   def main(): Unit = {
     println( "start" )

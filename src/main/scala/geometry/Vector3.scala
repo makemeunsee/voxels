@@ -7,14 +7,6 @@ package geometry
 object Vector3 {
   def apply( x: Double, y: Double, z: Double ): Vector3 = new Vec3( x, y, z )
 
-  def latLongPosition( theta: Double, phi: Double, distance: Double ): Vector3 = {
-    val cosP = math.cos( phi )
-    val sinP = math.sin( phi )
-    val cosT = math.cos( theta )
-    val sinT = math.sin( theta )
-    Vec3( distance * sinP * cosT, distance * cosP, distance * sinP * sinT )
-  }
-
   def dist( v0: Vector3, v1: Vector3): Double = {
     ( v0 - v1 ).norm
   }

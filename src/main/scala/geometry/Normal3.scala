@@ -9,6 +9,15 @@ object Normal3 {
     val Vec3( x, y ,z ) = vec3 / vec3.norm
     new Norm3( x, y ,z )
   }
+
+  // equator on plane x,z
+  def latLongPosition( lati: Double, longi: Double ): Normal3 = {
+    val cos0 = math.cos( lati )
+    val sin0 = math.sin( lati )
+    val cos1 = math.cos( longi )
+    val sin1 = math.sin( longi )
+    new Norm3( cos0*cos1, sin0, -cos0*sin1 )
+  }
 }
 
 trait Normal3 extends Vector3 {

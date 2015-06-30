@@ -21,9 +21,9 @@ object VoronoiModel {
   def toCutPlane( planeNormal: Normal3 )( p: Vector3 ): ToPlane = {
     val diff = p - planeNormal
     diff.x * planeNormal.x + diff.y * planeNormal.y + diff.z * planeNormal.z match {
-      case k if k <= tolerance => OnPlane
-      case k if k > tolerance  => Above
-      case _                   => Below
+      case k if math.abs( k ) <= tolerance => OnPlane
+      case k if k > tolerance              => Above
+      case _                               => Below
     }
   }
 
@@ -140,9 +140,10 @@ object VoronoiModel {
 
   type Cut = ( Int, Face, Seq[Vector3] )
 
-  private def cutFace( newFaceId: Int, face: Face, n: Normal3 ): ( Face, Seq[Vector3] ) = {
+  def cutFace( newFaceId: Int, face: Face, n: Normal3 ): ( Face, Seq[Vector3] ) = {
     def toPlane = toCutPlane( n ) _
     val cutInfo = face.vertices.map( v => ( v, toPlane( v ) ) )
+    println(cutInfo)
     val afterCut = cyclicConsecutivePairs( cutInfo )
       .foldLeft( List.empty[Vector3], List.empty[Vector3]  ) { case ( ( allVerts, newVerts ), ( vi0, vi1 ) ) =>
       ( vi0, vi1 ) match {
@@ -185,7 +186,7 @@ object VoronoiModel {
 
   private val cube = Cube.facesStructure map { _._1 map { i => Cube.vertices( i ) } }
 
-  private val faceInfo: Seq[( Normal3, Set[Int] )] = Seq(
+  private val cubeFaceInfo: Seq[( Normal3, Set[Int] )] = Seq(
     ( Normal3( 0,  1,  0 ),  Set( 2, 5, 3, 4 ) ),
     ( Normal3( 0,  -1, 0 ),  Set( 2, 5, 3, 4 ) ),
     ( Normal3( 1,  0,  0 ),  Set( 0, 4, 1, 5 ) ),
@@ -194,47 +195,55 @@ object VoronoiModel {
     ( Normal3( 0,  0,  -1 ), Set( 0, 3, 1, 5 ) )
   )
 
-  private val faces = cube
-    .zip( faceInfo )
+  private val cubeFaces = cube
+    .zip( cubeFaceInfo )
     .map { case ( vs, ( n, ns ) ) =>
-    Face( n, vs, ns, Colors.WHITE, Colors.WHITE )
-  }.toArray
+      Face( n, vs, ns, Colors.WHITE, Colors.WHITE )
+    }.toArray
 
-  object CubeModel extends VoronoiModel( faces )
+  object CubeModel extends VoronoiModelImpl( cubeFaces )
 }
 
-trait CuttableModel {
+trait VoronoiModel {
   def faces: Array[Face]
-  def cut( theta: Double, phi: Double ): CuttableModel = cut( Normal3( Vector3.latLongPosition( theta, phi, 1 ) ) )
-  def cut( n: Normal3 ): CuttableModel
-  def updateColor( faceId: Int, color: Int, centerColor: Int ): CuttableModel
+  def cut( theta: Double, phi: Double ): VoronoiModel = cut( Normal3.latLongPosition( theta, phi ) )
+  def cut( n: Normal3 ): VoronoiModel
+  def updateColor( faceId: Int, color: Int, centerColor: Int ): VoronoiModel
 }
 
 import VoronoiModel._
 
-case class VoronoiModel( faces: Array[Face] ) extends CuttableModel {
+case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
   // mutates!
-  def cut( n: Normal3 ): CuttableModel = {
-    val ( closestId, _ ) = closestSeed( n )
+  def cut( n: Normal3 ): VoronoiModel = {
+    println( n )
+    val ( closestId, closestSd ) = closestSeed( n )
+    println( closestId )
+    println( closestSd )
     val cuts = doCuts( n, Set( closestId ), Set( closestId ), Seq.empty )
+    println( cuts )
 
-    // update existing faces (ensuring neighbours are coherent with actual geometry)
-    cleanNeighbours( cuts.map( triplet => ( triplet._1, triplet._2 ) ) )
-      .foreach { case ( i, f ) =>
-        faces.update( i, f )
-      }
+    if ( cuts.isEmpty )
+      this
+    else {
+      // update existing faces (ensuring neighbours are coherent with actual geometry)
+      cleanNeighbours( cuts.map( triplet => ( triplet._1, triplet._2 ) ) )
+        .foreach { case ( i, f ) =>
+          faces.update( i, f )
+        }
 
-    val newPoints = cuts
-      .foldLeft( Seq.empty[( Vector3, Int )] ) { case ( allPts, ( i, _, pts ) ) =>
-        pts.map( p => ( p, i ) ) ++ allPts
-      }
-      .groupBy( _._1 )
-      .map { case ( p, pairs ) => ( p, pairs.unzip._2.toSet ) }
-    val orderedPoints = maybeFlip( n, chain( newPoints ) )
-    val newFaceNeighbours = newPoints.values.reduce( _ ++ _ )
-    val newFace = Face( n, orderedPoints, newFaceNeighbours, Colors.WHITE, Colors.WHITE )
+      val newPoints = cuts
+        .foldLeft( Seq.empty[( Vector3, Int )] ) { case ( allPts, ( i, _, pts ) ) =>
+          pts.map( p => ( p, i ) ) ++ allPts
+        }
+        .groupBy( _._1 )
+        .map { case ( p, pairs ) => ( p, pairs.unzip._2.toSet ) }
+      val orderedPoints = maybeFlip( n, chain( newPoints ) )
+      val newFaceNeighbours = newPoints.values.reduce( _ ++ _ )
+      val newFace = Face( n, orderedPoints, newFaceNeighbours, Colors.WHITE, Colors.WHITE )
 
-    VoronoiModel( faces :+ newFace )
+      VoronoiModelImpl( faces :+ newFace )
+    }
   }
 
   @tailrec
@@ -251,7 +260,7 @@ case class VoronoiModel( faces: Array[Face] ) extends CuttableModel {
         doCuts( n, t, visited + i, acc )
       else
         doCuts( n
-              , ( face.neighbours ++ t ).filterNot( j => t.contains( j ) || visited.contains( j ) )
+              , t ++ face.neighbours.filterNot( j => t.contains( j ) || visited.contains( j ) )
               , visited + i
               , ( i, newFace, newPoints ) +: acc )
     }
