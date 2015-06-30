@@ -1,14 +1,14 @@
 package demo.webapp
 
 import demo.Colors
-import geometry.voronoi.{VoronoiModel, Face}
 import geometry.Matrix4
+import geometry.voronoi.{Face, VoronoiModel}
 import org.denigma.threejs._
 
 import scala.scalajs.js
 import scala.scalajs.js.Array
 import scala.scalajs.js.annotation.{JSExport, JSName}
-import scala.scalajs.js.typedarray.{Float32Array, Uint16Array, Uint8Array}
+import scala.scalajs.js.typedarray.{Float32Array, Uint32Array, Uint8Array}
 
 /**
  * Created by markus on 17/06/2015.
@@ -65,7 +65,7 @@ object ThreeScene {
   }
 }
 
-import ThreeScene._
+import demo.webapp.ThreeScene._
 
 class ThreeScene {
 
@@ -207,7 +207,7 @@ class ThreeScene {
     val colors = new Float32Array( count )
     val pickColors = new Float32Array( count / 3 )
     val centerFlags = new Float32Array( count / 3 )
-    val indices = new Uint16Array( indicesCount )
+    val indices = new Uint32Array( indicesCount )
     var offset = 0
     var indicesOffset = 0
 
@@ -290,7 +290,7 @@ class ThreeScene {
 
     val vertices = new Float32Array( count )
     val colors = new Float32Array( count )
-    val indices = new Uint16Array( indicesCount )
+    val indices = new Uint32Array( indicesCount )
 
     // 0
     vertices.set( 0, 0f )

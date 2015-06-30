@@ -4,18 +4,17 @@ package demo.webapp
  * Created by markus on 16/02/2015.
  */
 
-import demo.{Rnd, Colors}
+import demo.{Colors, Rnd}
 import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
 
+import scala.scalajs.js.{Dictionary, JSApp}
 import scala.scalajs.js.JSConverters._
-import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-import scala.scalajs.js.Dictionary
 
 object VoxelMain extends JSApp {
 
-  private val model: VoronoiModel = ( 0 until 1000 ).foldLeft( CubeModel: VoronoiModel ) { case ( m, _ ) =>
+  private val model: VoronoiModel = ( 0 until 10000 ).foldLeft( CubeModel: VoronoiModel ) { case ( m, _ ) =>
     val u = Rnd.rndUniformDouble()
     val v = Rnd.rndUniformDouble()
     val ( theta, phi ) = geometry.uniformToSphericCoords( u, v )
