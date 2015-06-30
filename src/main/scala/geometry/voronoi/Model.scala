@@ -102,17 +102,57 @@ import Model._
 
 case class CubeModel( colors: Seq[( Int, Int )] ) extends Model {
   def cut( n: Normal3 ) = {
-    val ( closestId, closestSd ) = closestSeed( n )
-    val cuts = doCuts( n, List( closestId ), Set( closestId ), Seq.empty )
+    val ( closestId, _ ) = closestSeed( n )
+    val cuts = doCuts( n, Set( closestId ), Set( closestId ), Seq.empty )
+
+    // update existing faces (ensuring neighbours are coherent with actual geometry)
+    cleanNeighbours( cuts.map( triplet => ( triplet._1, triplet._2 ) ) )
+      .foreach { case ( i, f ) =>
+        faces.update( i, f )
+      }
+
+    val newPoints = cuts
+      .foldLeft( Seq.empty[( Vector3, Int )] ) { case ( allPts, ( i, _, pts ) ) =>
+        pts.map( p => ( p, i ) ) ++ allPts
+      }
+      .groupBy( _._1 )
+    val orderedPoints = maybeFlip( n, chain( newPoints ) )
+    val newFaceNeighbours = newPoints.foldLeft( Set.empty[Int] ) { case ( acc, ( _, neighs ) ) =>
+      acc ++ neighs.unzip._2
+    }
+    val newFace = Face( n, orderedPoints, newFaceNeighbours, Colors.WHITE, Colors.WHITE )
+
     // TODO
     this
   }
 
+  @tailrec
+  private def cleanNeighs( indexedFaces: Seq[( Int, Face )], acc: Seq[( Int, Face )] ): Seq[( Int, Face )] = indexedFaces match {
+    case Nil             => acc
+    case ( i, f ) :: ifs =>
+      val ( cleanedF, cleanedFs ) = ifs
+        .foldLeft( ( i, f ), Seq.empty[( Int, Face )] ) { case ( ( ( i0, f0 ), newIFs ), ( i1, f1 ) ) =>
+          if ( f0.neighbours.contains( i1 ) )
+            if ( 2 <= f0.vertices.count( f1.vertices.contains ) )
+              ( ( i0, f0 ), ( i1, f1 ) +: newIFs )
+            else
+              ( ( i0, f0.copy( neighbours = f0.neighbours.filter( _ != i1 ) ) )
+              , ( i1, f1.copy( neighbours = f1.neighbours.filter( _ != i0 )) ) +: newIFs )
+          else
+            ( ( i0, f0 ), ( i1, f1 ) +: newIFs )
+        }
+      cleanNeighs( cleanedFs, cleanedF +: acc )
+  }
+  def cleanNeighbours = cleanNeighs( _, Seq.empty )
+
   type Cut = ( Int, Face, Seq[Vector3] )
   @tailrec
-  private def doCuts( n: Normal3, ids: Seq[Int], visited: Set[Int], acc: Seq[Cut] ): Seq[Cut] = ids match {
-    case Nil    => acc
-    case i :: t =>
+  private def doCuts( n: Normal3, ids: Set[Int], visited: Set[Int], acc: Seq[Cut] ): Seq[Cut] =
+    if ( ids.isEmpty )
+      acc
+    else {
+      val i = ids.head
+      val t = ids.tail
       val face = faces( i )
       val ( newFace, newPoints ) = cutFace( faces.length, face, n )
       // valid intersection of polygon edges and plane happens at only 2 points
@@ -123,7 +163,7 @@ case class CubeModel( colors: Seq[( Int, Int )] ) extends Model {
               , ( face.neighbours ++ t ).filterNot( j => t.contains( j ) || visited.contains( j ) )
               , visited + i
               , ( i, newFace, newPoints ) +: acc )
-  }
+    }
 
   private def cutFace( newFaceId: Int, face: Face, n: Normal3 ): ( Face, Seq[Vector3] ) = {
     def toPlane = toCutPlane( n ) _
@@ -163,7 +203,7 @@ case class CubeModel( colors: Seq[( Int, Int )] ) extends Model {
         }
       }
     val edgePoints = removeDuplicates( afterCut._2 )
-    val newNeighbours = if ( edgePoints.isEmpty ) face.neighbours else newFaceId +: face.neighbours
+    val newNeighbours = if ( edgePoints.isEmpty ) face.neighbours else face.neighbours + newFaceId
     val newVertices = cyclicRemoveConsecutiveDuplicates( afterCut._1 )
     ( Face( n, newVertices, newNeighbours, Colors.WHITE, Colors.WHITE ), edgePoints )
   }
@@ -195,13 +235,13 @@ case class CubeModel( colors: Seq[( Int, Int )] ) extends Model {
 
   private val cube = Cube.facesStructure map { _._1 map { i => Cube.vertices( i ) } }
 
-  private val faceInfo: Seq[( Normal3, Seq[Int] )] = Seq(
-    ( Normal3( 0,  1,  0 ),  Seq( 2, 5, 3, 4 ) ),
-    ( Normal3( 0,  -1, 0 ),  Seq( 2, 5, 3, 4 ) ),
-    ( Normal3( 1,  0,  0 ),  Seq( 0, 4, 1, 5 ) ),
-    ( Normal3( -1, 0,  0 ),  Seq( 0, 4, 1, 5 ) ),
-    ( Normal3( 0,  0,  1 ),  Seq( 0, 3, 1, 5 ) ),
-    ( Normal3( 0,  0,  -1 ), Seq( 0, 3, 1, 5 ) )
+  private val faceInfo: Seq[( Normal3, Set[Int] )] = Seq(
+    ( Normal3( 0,  1,  0 ),  Set( 2, 5, 3, 4 ) ),
+    ( Normal3( 0,  -1, 0 ),  Set( 2, 5, 3, 4 ) ),
+    ( Normal3( 1,  0,  0 ),  Set( 0, 4, 1, 5 ) ),
+    ( Normal3( -1, 0,  0 ),  Set( 0, 4, 1, 5 ) ),
+    ( Normal3( 0,  0,  1 ),  Set( 0, 3, 1, 5 ) ),
+    ( Normal3( 0,  0,  -1 ), Set( 0, 3, 1, 5 ) )
   )
 
   val faces = cube

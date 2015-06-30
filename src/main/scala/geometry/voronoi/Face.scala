@@ -7,7 +7,7 @@ import geometry.{Vector3, Normal3}
  */
 case class Face( seed: Normal3
                  , vertices: Seq[ Vector3 ]
-                 , neighbours: Seq[ Int ]
+                 , neighbours: Set[ Int ]
                  , color: Int
                  , centerColor: Int ) {
   def barycenter: Vector3 = vertices.foldLeft( Vector3( 0, 0, 0 ) )( _ + _ ) / vertices.length
