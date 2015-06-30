@@ -117,13 +117,18 @@ function appMain() {
     $("#rndColors").attr("checked", rndCols);
     $("#rndColors").prop("checked", rndCols);
 
+    var takeScreenshot = false;
+    var tmpImg = null;
     function screenshot() {
+        takeScreenshot = true;
         var w = window.open('', '');
         w.document.title = "Screenshot";
-        w.document.body.style.backgroundColor = "black";
-        var img = new Image();
-        img.src = canvas.toDataURL("image/png");
-        w.document.body.appendChild(img);
+        tmpImg = new Image();
+        w.document.body.appendChild(tmpImg);
+        // force frame rendering to get screenshot data
+        unpause();
+        pause();
+        tmpImg = null;
     }
     $("#screenshot").unbind("click");
     $("#screenshot").click(screenshot);
@@ -461,6 +466,11 @@ function appMain() {
 
         // normal render
         scalaObj.scene.render(highlighted);
+
+        if (takeScreenshot) {
+            tmpImg.src = renderer.domElement.toDataURL("image/png");
+            takeScreenshot = false;
+        }
 
 //        then = now;
         requestAnimFrame(main);

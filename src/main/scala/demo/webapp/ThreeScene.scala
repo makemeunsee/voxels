@@ -35,7 +35,7 @@ object ThreeScene {
   }
 
   object ReadableWebGLRendererParameters extends WebGLRendererParameters {
-    preserveDrawingBuffer = true
+    preserveDrawingBuffer = false
   }
 
   // zip faces of a voxel with their offset and size as jn the meshes data buffers
