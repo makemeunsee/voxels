@@ -14,6 +14,10 @@ import scala.scalajs.js.typedarray.{Float32Array, Uint32Array, Uint8Array}
  * Created by markus on 17/06/2015.
  */
 object ThreeScene {
+
+  private val textureW = 256
+  private val textureH = 128
+
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName( "THREE.BufferGeometry" )
   class MyBufferGeometry extends Geometry {
@@ -75,9 +79,20 @@ class ThreeScene {
   private val dummyCam = new Camera
   private val scene = new Scene
   private val pickScene = new Scene
+  private val rtScene = new Scene
 
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
+
+  private val renderingTexture = makeTexture( textureW, textureH )
+
+  private def makeTexture( w: Int, h: Int ): WebGLRenderTarget = {
+    val t = new WebGLRenderTarget( w, h )
+//    t.asInstanceOf[js.Dynamic].updateDynamic( "format" )( 1020d ) // RGB
+//    t.asInstanceOf[js.Dynamic].updateDynamic( "minFilter" )( 1006d ) // Linear, needed for non power of 2 sizes
+    t.asInstanceOf[js.Dynamic].updateDynamic( "magFilter" )( 1003d ) // Nearest. Comment for smoother rendering
+    t
+  }
 
   // ******************** view management ********************
 
@@ -100,12 +115,22 @@ class ThreeScene {
   private var innerWidth: Int = 0
   private var innerHeight: Int = 0
 
+  private val screenMesh: Mesh = makeScreenMesh( textureW, textureH )
+  rtScene.add( screenMesh )
+
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
+    println( "viewport", width, height )
     innerWidth = width
     innerHeight = height
     projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
     updateMVP()
+
+//    renderingTexture = makeTexture( width, height )
+
+//    screenMesh.foreach( rtScene.remove( _ ) )
+//    screenMesh = Some( makeScreenMesh( width, height ) )
+//    rtScene.add( screenMesh.get )
   }
 
   @JSExport
@@ -127,9 +152,9 @@ class ThreeScene {
   def toggleAxis(): Unit = {
     showAxis = !showAxis
     if ( showAxis )
-      scene.add( axisMesh )
+      rtScene.add( axisMesh )
     else
-      scene.remove( axisMesh )
+      rtScene.remove( axisMesh )
   }
   
   // ******************** mesh management ********************
@@ -150,8 +175,38 @@ class ThreeScene {
       pm.geometry.dispose()
     }
     meshes = None
-    scene.remove( axisMesh )
+    rtScene.remove( axisMesh )
+//    screenMesh.foreach( rtScene.remove( _ ) )
+    rtScene.remove( screenMesh )
     showAxis = false
+  }
+
+  private def makeScreenMesh( width: Int, height: Int ): Mesh = {
+    val plane = new PlaneGeometry( width, height )
+//
+    val customUniforms = js.Dynamic.literal(
+      "texture" -> js.Dynamic.literal("type" -> "t", "value" -> renderingTexture )
+    )
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader =
+      """varying vec2 vUv;
+        |void main() {
+        |    vUv = position.xy;
+        |    gl_Position = vec4( 2.0*position-1.0, 1.0 );
+        |}
+      """.stripMargin
+    shaderMaterial.fragmentShader =
+      """uniform sampler2D texture;
+        |varying vec2 vUv;
+        |void main(){
+        |    gl_FragColor = texture2D( texture, vUv );
+        |}
+      """.stripMargin
+    shaderMaterial.depthWrite = false
+
+    assembleMesh( plane, shaderMaterial )
+
   }
 
   private def makeMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
@@ -359,7 +414,7 @@ class ThreeScene {
     assembleMesh( geom, shaderMaterial )
   }
 
-  private def assembleMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
+  private def assembleMesh( geometry: Geometry, material: Material ): Mesh = {
     val mesh = new Mesh
     mesh.geometry = geometry
     mesh.material = material
@@ -434,6 +489,9 @@ class ThreeScene {
       updateThis( "u_mvpMat", mvp )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
-    renderer.render( scene, dummyCam )
+
+    renderer.render( scene, dummyCam, renderingTexture )
+//    screenMesh.foreach { m => updateMeshMaterialValue( m )( "texture", renderingTexture ) }
+    renderer.render( rtScene, dummyCam )
   }
 }
