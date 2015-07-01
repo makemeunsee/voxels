@@ -295,7 +295,6 @@ function appMain() {
     reset();
 //    var then = Date.now();
     var running = true;
-    main();
 
 
     // Functions ---
@@ -317,6 +316,17 @@ function appMain() {
 
     var highlighted = 0;
 
+    var stats = new Stats();
+    stats.setMode( 1 ); // 0: fps, 1: ms, 2: mb
+
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.bottom = '0px';
+
+    document.body.appendChild( stats.domElement );
+
+    main();
+
     // The main game loop
     function main() {
         if(!running) {
@@ -325,6 +335,8 @@ function appMain() {
 
 //        var now = Date.now();
 //        var dt = now - then;
+
+        stats.begin();
 
         if ( clicked ) {
 
@@ -343,6 +355,8 @@ function appMain() {
             tmpImg.src = renderer.domElement.toDataURL("image/png");
             takeScreenshot = false;
         }
+
+        stats.end();
 
 //        then = now;
         requestAnimFrame(main);
