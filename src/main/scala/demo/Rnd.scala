@@ -5,8 +5,8 @@ import scala.util.Random
 /**
  * Created by markus on 17/06/2015.
  */
-object Rnd {
-  private val rnd = new Random
+class Rnd( seed: Long ) {
+  private val rnd = new Random( seed )
 
   def rndInt(): Int = rnd.nextInt()
 

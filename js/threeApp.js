@@ -20,10 +20,14 @@ function appMain() {
                                       document.getElementById('shader-axis-vs').innerHTML,
                                       document.getElementById('shader-axis-fs').innerHTML);
 
-    scalaObj.main();
+    var cuts = getURLParameter("cuts") || 2000;
+    console.log("cuts:\t", cuts);
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
+
+    scalaObj.initRnd(seed);
+    scalaObj.loadModel(cuts);
 
     // help dialog
     $(function() {

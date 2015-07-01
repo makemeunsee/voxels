@@ -13,7 +13,7 @@ object Colors {
     ( r, g, b )
   }
 
-  def rndColor(): Int = Rnd.rndInt() & WHITE
+  def rndColor()( implicit rnd: Rnd ): Int = rnd.rndInt() & WHITE
 
   val WHITE = 0xFFFFFF
 }

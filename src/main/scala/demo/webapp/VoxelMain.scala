@@ -8,21 +8,31 @@ import demo.{Colors, Rnd}
 import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
 
-import scala.scalajs.js.{Dictionary, JSApp}
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.{Dictionary, JSApp}
 
 object VoxelMain extends JSApp {
 
-  private val model: VoronoiModel = ( 0 until 10000 ).foldLeft( CubeModel: VoronoiModel ) { case ( m, _ ) =>
-    val u = Rnd.rndUniformDouble()
-    val v = Rnd.rndUniformDouble()
-    val ( theta, phi ) = geometry.uniformToSphericCoords( u, v )
-    m.cut( theta, phi )
+  private var model: VoronoiModel = CubeModel
+  private implicit var rnd = new Rnd( System.currentTimeMillis() )
+
+  def main(): Unit = {}
+
+  @JSExport
+  def initRnd( seed: Long ): Unit = {
+    rnd = new Rnd( seed )
   }
 
-  def main(): Unit = {
+  @JSExport
+  def loadModel( cuts: Int ): Unit = {
     println( "start" )
+    model = ( 0 until cuts ).foldLeft( model ) { case ( m, _ ) =>
+      val u = rnd.rndUniformDouble()
+      val v = rnd.rndUniformDouble()
+      val ( theta, phi ) = geometry.uniformToSphericCoords( u, v )
+      m.cut( theta, phi )
+    }
     scene.addModel( model )
   }
 
