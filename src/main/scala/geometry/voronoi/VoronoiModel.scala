@@ -1,7 +1,7 @@
 package geometry.voronoi
 
 import demo.Colors
-import geometry.{Vector3, Normal3}
+import geometry.{Normal3, Vector3}
 import voxels.Cube
 
 import scala.annotation.tailrec
@@ -203,58 +203,88 @@ object VoronoiModel {
 
 trait VoronoiModel {
   def faces: Array[Face]
-  def cut( theta: Double, phi: Double ): VoronoiModel = cut( Normal3.fromSphericCoordinates( theta, phi ) )
-  def cut( n: Normal3 ): VoronoiModel
-  def updateColor( faceId: Int, color: Int, centerColor: Int ): VoronoiModel
+  // mutates the original!
+  def cut( ns: Seq[Normal3] ): VoronoiModel
+  // mutates!
+  def updateColor( faceId: Int, color: Int, centerColor: Int ): Unit
 }
 
-import VoronoiModel._
+import geometry.voronoi.VoronoiModel._
 
 case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
+
   // mutates!
-  def cut( n: Normal3 ): VoronoiModel = {
-    val ( closestId, closestSd ) = closestSeed( n )
-    val cuts = doCuts( n, Set( closestId ), Set( closestId ), Seq.empty )
+  // faces array must be of the proper size to accomodate the new face at position newFaceId
+  private def cut( n: Normal3, newFaceId: Int ): Unit = {
+    // the find the closest face to the cut
+    val ( closestId, _ ) = closestSeed( n )
+
+    // cut the closest face, and its neighbours, and their neighbours, and so on,
+    // until nothing is cut
+    val cuts = doCuts( n, newFaceId, Set( closestId ), Set( closestId ), Seq.empty )
 
     if ( cuts.isEmpty ) {
       println("cut cancelled", n)
-      this
+      throw new Error("bad cut!")
     } else {
-//      println("cutting", n)
-      // update existing faces (ensuring neighbours are coherent with actual geometry)
+      //      println("cutting", n)
+
+      // update topology (neighbours of each face) then update the face array with the updated faces
       cleanNeighbours( cuts.map( triplet => ( triplet._1, triplet._2 ) ) )
         .foreach { case ( i, f ) =>
           faces.update( i, f )
         }
 
+      // gather all points created by the cut, attaching to them the indices of the face they're part of
       val newPoints = cuts
         .foldLeft( Seq.empty[( Vector3, Int )] ) { case ( allPts, ( i, _, pts ) ) =>
           pts.map( p => ( p, i ) ) ++ allPts
         }
         .groupBy( _._1 )
         .map { case ( p, pairs ) => ( p, pairs.unzip._2.toSet ) }
+      // chain the points into a coherent polygon
+      // and reverse the polygon if needed
       val orderedPoints = maybeFlip( n, chain( newPoints ) )
+      // gather all face indices (neighbours) for each new point
       val newFaceNeighbours = newPoints.values.reduce( _ ++ _ )
+      // create a new face
       val newFace = Face( n, orderedPoints, newFaceNeighbours, Colors.WHITE, Colors.WHITE )
 
-      VoronoiModelImpl( faces :+ newFace )
+      faces.update( newFaceId, newFace )
     }
   }
 
+  // mutates!
+  def cut( ns: Seq[Normal3] ): VoronoiModel = {
+    val fL = faces.length
+    val nL = ns.length
+    val newFaces: Array[Face] = Array.fill( fL + nL )( null: Face )
+    Array.copy( faces, 0, newFaces, 0, fL )
+    // create a model, copy of the original, with a face array of the proper length
+    val cutModel = VoronoiModelImpl( newFaces )
+    // do cuts -> for each cut, update the existing faces and add a new face in the faces array
+    for( i <- 0 until nL ) {
+      cutModel.cut( ns( i ), i + fL )
+    }
+    cutModel
+  }
+
+  // find all the faces cut at the normal n, returns all the faces with the cut applied
   @tailrec
-  private def doCuts( n: Normal3, ids: Set[Int], visited: Set[Int], acc: Seq[Cut] ): Seq[Cut] =
+  private def doCuts( n: Normal3, newFaceId: Int, ids: Set[Int], visited: Set[Int], acc: Seq[Cut] ): Seq[Cut] =
     if ( ids.isEmpty )
       acc
     else {
       val i = ids.head
       val t = ids.tail
       val face = faces( i )
-      val ( newFace, newPoints ) = cutFace( faces.length, face, n )
+      val ( newFace, newPoints ) = cutFace( newFaceId, face, n )
       // valid intersection of polygon edges and plane happens at only 2 points
       if ( newPoints.size != 2 )
-        doCuts( n, t, visited + i, acc )
+        doCuts( n, newFaceId, t, visited + i, acc )
       else
         doCuts( n
+              , newFaceId
               , t ++ face.neighbours.filterNot( j => t.contains( j ) || visited.contains( j ) )
               , visited + i
               , ( i, newFace, newPoints ) +: acc )
@@ -286,11 +316,10 @@ case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
   }
 
   // mutates!
-  def updateColor( faceId: Int, color: Int, centerColor: Int ): VoronoiModel = {
+  def updateColor( faceId: Int, color: Int, centerColor: Int ): Unit = {
     if ( faceId > -1 && faceId < faces.length )
       faces.update( faceId, faces( faceId ).copy( color = color, centerColor = centerColor ) )
     else
       ()
-    this
   }
 }

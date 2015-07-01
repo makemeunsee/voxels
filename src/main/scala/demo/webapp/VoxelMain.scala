@@ -5,6 +5,7 @@ package demo.webapp
  */
 
 import demo.{Colors, Rnd}
+import geometry.Normal3
 import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
 
@@ -17,6 +18,8 @@ object VoxelMain extends JSApp {
   private var model: VoronoiModel = CubeModel
   private implicit var rnd = new Rnd( System.currentTimeMillis() )
 
+  // ******************** init code ********************
+
   def main(): Unit = {}
 
   @JSExport
@@ -25,14 +28,21 @@ object VoxelMain extends JSApp {
   }
 
   @JSExport
-  def loadModel( cuts: Int ): Unit = {
+  def loadModel( cutCount: Int ): Unit = {
     println( "start" )
-    model = ( 0 until cuts ).foldLeft( model ) { case ( m, _ ) =>
-      val u = rnd.rndUniformDouble()
-      val v = rnd.rndUniformDouble()
-      val ( theta, phi ) = geometry.uniformToSphericCoords( u, v )
-      m.cut( theta, phi )
+
+    // prepare cuts
+    val cutNormals = ( 0 until cutCount ).map { _ =>
+      val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.rndUniformDouble(), rnd.rndUniformDouble() )
+      Normal3.fromSphericCoordinates( theta, phi )
     }
+
+    val t0 = System.currentTimeMillis()
+    // apply cuts
+    model = model.cut( cutNormals )
+    val t1 = System.currentTimeMillis()
+    println( "cut time", t1 - t0 )
+
     scene.addModel( model )
   }
 
@@ -41,20 +51,10 @@ object VoxelMain extends JSApp {
   @JSExport
   val scene = new ThreeScene
 
-  // ******************** voxels management ********************
-  
-  // clear everything
-  @JSExport
-  def unloadVoxels(): Unit = {
-    scene.clear()
-    clearSelection()
-  }
-
-  // ******************** voxel and face selection management ********************
+  // ******************** face selection management ********************
 
   // what's currently selected
   private var selectedFace: Int = -1
-  // what can be docked to the selection ( voxelStd id, face id, rotation step )
 
   @JSExport
   def selectFace( colorCode: Int ): Dictionary[String] = {
@@ -97,14 +97,14 @@ object VoxelMain extends JSApp {
   }
 
   private def rndColor(): Unit = {
-    colorVoxel( Colors.rndColor, Colors.rndColor )
+    colorModel( Colors.rndColor, Colors.rndColor )
   }
 
   private def whiteColor(): Unit = {
-    colorVoxel( () => Colors.WHITE, () => Colors.WHITE )
+    colorModel( () => Colors.WHITE, () => Colors.WHITE )
   }
 
-  private def colorVoxel( color: () => Int, centerColor: () => Int ): Unit = {
+  private def colorModel( color: () => Int, centerColor: () => Int ): Unit = {
     import Colors.intColorToFloatsColors
     ThreeScene.withOffsetsAndSizes( model.faces )
       .zipWithIndex

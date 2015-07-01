@@ -4,8 +4,8 @@
         <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
         <link rel="icon" href="favicon.ico" />
 
-        <title>Voxels <-> slexoV</title>
-        <meta name="description" content="voxels">
+        <title>Voronoi sphere</title>
+        <meta name="description" content="voronoi sphere">
         <meta name="viewport" content="width=device-width">
 
         <link rel="stylesheet" href="css/app.css">
@@ -15,7 +15,7 @@
 
     </head>
     <body>
-        <div id="dialog" title="Voxels <-> slexoV">
+        <div id="dialog" title="Voronoi sphere">
             <p>Drag to move the view.</p>
             <p>Scroll / pinch to zoom.</p>
             <p>Pick a face and change its colors.</p>
@@ -39,7 +39,6 @@
             </div>
         </div>
         <div id="main"></div>
-        <div id="clipboard" title="Link to your build - copy it to save it"></div>
 
         <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
