@@ -38,8 +38,8 @@ object ThreeScene {
     preserveDrawingBuffer = false
   }
 
-  // zip faces of a voxel with their offset and size as jn the meshes data buffers
-  def withOffsetsAndSizes( faces: List[Face] ): List[( Face, Int, Int )] = {
+  // zip faces of a voxel with their offset and size as in the meshes data buffers
+  def withOffsetsAndSizes( faces: Iterable[Face] ): Seq[( Face, Int, Int )] = {
     faces.foldLeft( ( 0, List.empty[( Face, Int, Int )] ) ) { case ( ( offset, acc ), f ) =>
       // counting the centers which is automatically added to the meshes
       val l = f.vertices.length + 1
@@ -106,6 +106,7 @@ class ThreeScene {
 
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
+    println( "viewport", width, height )
     innerWidth = width
     innerHeight = height
     projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
@@ -282,7 +283,7 @@ class ThreeScene {
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    ( assembleMesh( geom, shaderMaterial ), assembleMesh( geom, pickShaderMaterial ) )
+    ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( geom, pickShaderMaterial, "pickMesh" ) )
   }
 
   private def makeAxisMesh: Mesh = {
@@ -378,14 +379,15 @@ class ThreeScene {
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    assembleMesh( geom, shaderMaterial )
+    assembleMesh( geom, shaderMaterial, "axisMesh" )
   }
 
-  private def assembleMesh( geometry: MyBufferGeometry, material: ShaderMaterial ): Mesh = {
+  private def assembleMesh( geometry: Geometry, material: Material, name: String ): Mesh = {
     val mesh = new Mesh
     mesh.geometry = geometry
     mesh.material = material
     mesh.frustumCulled = false
+    mesh.name = name
     mesh
   }
 
@@ -417,11 +419,11 @@ class ThreeScene {
     colorAttr.updateDynamic( "needsUpdate" )( true )
   }
 
-  private var showBorders = true
+  private var bordersWidth = 1f
 
   @JSExport
-  def toggleBorders(): Unit = {
-    showBorders = !showBorders
+  def setBordersWidth( brdrsWdth: Float ): Unit = {
+    bordersWidth = math.min( 2, math.max( 0, brdrsWdth/10f ) )
   }
 
   // ******************** rendering ********************
@@ -448,8 +450,8 @@ class ThreeScene {
     meshes.values.foreach { case ( m, pm ) =>
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_borderWidth", if ( showBorders ) 1f else 0f )
-      updateThis( "u_borderColor", new Vector3( 0.05,0.05,0.05 ) )
+      updateThis( "u_borderWidth", bordersWidth )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0.05,0.05,0.05 ) )
       updateThis( "u_highlightFlag", ( highlighted % 131072 ).toFloat )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       updateThis( "u_mvpMat", mvp )

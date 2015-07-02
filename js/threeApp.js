@@ -29,6 +29,7 @@ function selectText(element) {
 function appMain() {
 
     var scalaObj = demo.webapp.VoxelMain();
+
     demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
                                       document.getElementById('shader-fs').innerHTML,
                                       document.getElementById('shader-pick-vs').innerHTML,
@@ -42,19 +43,11 @@ function appMain() {
     // help dialog
     $(function() {
         $( "#dialog" ).dialog({
+            autoOpen: false,
             width: 600,
             height: 222
         });
     });
-    $( "#dialog" ).dialog( "close" );
-
-    function toggleUI() {
-        console.log("toggling ui");
-        if ( $( "#gui" ).css( "display" ) === "none" )
-            $( "#gui" ).show();
-        else
-            $( "#gui" ).hide();
-    }
 
     // jqueryui widgets
     $(function() {
@@ -117,18 +110,24 @@ function appMain() {
     $("#rndColors").attr("checked", rndCols);
     $("#rndColors").prop("checked", rndCols);
 
+    $( "#bordersSlider" ).slider( {
+        orientation: "horizontal",
+        min: 0,
+        max: 20,
+        value: 10,
+        slide: refreshBordersWidth,
+        change: refreshBordersWidth
+    });
+
+    function refreshBordersWidth(evt, ui) {
+        scalaObj.scene.setBordersWidth(ui.value);
+    }
+
+    $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
+
     var takeScreenshot = false;
-    var tmpImg = null;
     function screenshot() {
         takeScreenshot = true;
-        var w = window.open('', '');
-        w.document.title = "Screenshot";
-        tmpImg = new Image();
-        w.document.body.appendChild(tmpImg);
-        // force frame rendering to get screenshot data
-        unpause();
-        pause();
-        tmpImg = null;
     }
     $("#screenshot").unbind("click");
     $("#screenshot").click(screenshot);
@@ -140,12 +139,24 @@ function appMain() {
     $("#centerView").unbind("click");
     $("#centerView").button();
 
-    $( ".leftMenu" ).hide();
+    $( "#leftColumn" ).hide();
+    $( "#rightColumn" ).hide();
+
+    function showFaceMenu( selectedFace ) {
+        if ( selectedFace > -1 && uiVisible) {
+            $( "#rightColumn" ).show();
+        } else {
+            $( "#rightColumn" ).hide();
+        }
+    }
 
     var voxelId = -1;
     var count = scalaObj.voxelTypeCount;
 
+    // custom left column: selection of first voxel
     (function () {
+        var centerButton = $( "#centerView" );
+        centerButton.hide();
         var menu0 = $( "#menu0" );
         var menu1 = $( "#menu1" );
         menu0.empty();
@@ -172,26 +183,26 @@ function appMain() {
             function(evt) {
                 menu0.empty();
                 menu1.empty();
-                menu0.hide();
-                menu1.hide();
+                centerButton.show();
+                $( "#leftColumn" ).hide();
             }
         );
-        menu0.show();
-        menu1.show();
+        $( "#leftColumn" ).show();
     })();
 
+    var faceSelected = false;
     function loadDockingOptions( options, selectedVoxel, faceInfo ) {
         var menu0 = $( "#menu0" );
         var menu1 = $( "#menu1" );
         menu0.empty();
         menu1.empty();
-        var hasSome = false;
+        faceSelected = false;
         menu0.append('<li id="li" class="ui-widget-header">Voxel: '+selectedVoxel+'</li>');
         menu1.append('<li id="li" class="ui-widget-header">&#xA0</li>');
         var i = 0;
         for (var prop in options) {
             if (options.hasOwnProperty(prop)) {
-                hasSome = true;
+                faceSelected = true;
                 var menu = i%2==0 ? menu0 : menu1;
                 menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>');
                 i++;
@@ -217,15 +228,17 @@ function appMain() {
             }
         );
 
-        if (hasSome) {
-            $( ".leftMenu" ).show();
+        if (faceSelected) {
+            $( "#leftColumn" ).show();
+            $( "#rightColumn" ).show();
             $("#centerView").click(
                 function() {
                     scalaObj.centerViewOn(selectedVoxel);
                 }
             );
         } else {
-            $( ".leftMenu" ).hide();
+            $( "#leftColumn" ).hide();
+            $( "#rightColumn" ).hide();
         }
     }
 
@@ -254,15 +267,9 @@ function appMain() {
     if (buildCode.length > 0) {
         var voxelId = scalaObj.loadCode(buildCode);
         if (voxelId > -1) {
-            $( ".leftMenu" ).hide();
+            $( "#leftColumn" ).hide();
         }
     }
-
-    var updateProjection = function(screenWidth, screenHeight) {
-        scalaObj.scene.updateViewport( screenWidth, screenHeight );
-    };
-
-    updateProjection(window.innerWidth, window.innerHeight);
 
     function loadStdVoxel( id ) {
         scalaObj.loadVoxel( id );
@@ -279,12 +286,9 @@ function appMain() {
         scalaObj.scene.zoom(ev.scale < 1 ? -1 : 1);
     });
 
-    var pixels = new Uint8Array(4);
-
-    var renderer = scalaObj.scene.renderer;
-    var canvas = renderer.domElement;
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    mainContainer.appendChild( canvas );
+    function updateProjection(screenWidth, screenHeight) {
+        scalaObj.scene.updateViewport( screenWidth, screenHeight );
+    }
 
     function leftButton(evt) {
         var button = evt.which || evt.button;
@@ -330,7 +334,6 @@ function appMain() {
     }
 
     function doubleClick() {
-//        toggleUI();
         scalaObj.deleteSelected();
     }
 
@@ -382,6 +385,9 @@ function appMain() {
     function onMouseWheel(event) {
         scalaObj.scene.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
     }
+
+    var renderer = scalaObj.scene.renderer;
+    var canvas = renderer.domElement;
 
     canvas.addEventListener( "mousedown", onMouseDown, false );
     canvas.addEventListener( "touchstart", onTouchStart, false );
@@ -441,6 +447,15 @@ function appMain() {
 
     var highlighted = 0;
 
+    // canvas & webgl context code
+
+    updateProjection(window.innerWidth, window.innerHeight);
+
+    var pixels = new Uint8Array(4);
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    mainContainer.appendChild( canvas );
+
     var stats = new Stats();
     stats.setMode( 1 ); // 0: fps, 1: ms, 2: mb
 
@@ -480,7 +495,10 @@ function appMain() {
         scalaObj.scene.render(highlighted);
 
         if (takeScreenshot) {
-            tmpImg.src = renderer.domElement.toDataURL("image/png");
+            var data = renderer.domElement.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+            var evt = document.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+            $("<a href='"+data+"' download='screenshot.png'/>")[0].dispatchEvent(evt);
             takeScreenshot = false;
         }
 

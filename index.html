@@ -15,40 +15,35 @@
 
     </head>
     <body>
+        <div id="main"></div>
         <div id="dialog" title="Voxels <-> slexoV">
             <p>Drag to move the view.</p>
             <p>Scroll / pinch to zoom.</p>
             <p>Pick a face and glue a new voxel to it.</p>
             <p>Double click / tap to remove a voxel.</p>
         </div>
-        <div id="gui" class="gui-container">
-            <div id="topbar">
-                <button id="reset">reset</button>
-                <button id="save">save</button>
-                <button id="screenshot">screenshot</button>
-                <button id="fullscreen">fullscreen</button>
-                <button id="showHelp">?</button>
-            </div>
-            <div>
-                <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
-                <input type="checkbox" id="borders"><label id="bordersLabel" for="borders">Show borders</label>
-                <input type="checkbox" id="rndColors"><label id="rndColorsLabel" for="rndColors">Random colors</label>
-            </div>
-            <div>
-                <ul id="menu0" class="ui-menu ui-widget leftMenu"></ul>
-                <ul id="menu1" class="ui-menu ui-widget leftMenu"></ul>
-            </div>
-            <div id="faceWidgets">
-                <div id="left_col">
-                    <img id="centerView" class="leftMenu" width='48' height='48' src='images/Meeting_point_64.png' />
-                </div>
-                <div id="right_col">
-                    <input type="color" id="color" value="#ffffff" class="leftMenu" />
-                    <input type="color" id="centerColor" value="#ffffff" class="leftMenu" />
-                </div>
-            </div>
+        <div id="topbarLeft" class="gui">
+            <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
+            <input type="checkbox" id="rndColors"><label id="rndColorsLabel" for="rndColors">Random colors</label>
+            <p>Borders width</p>
+            <div id="bordersSlider" class="slider"></div>
         </div>
-        <div id="main"></div>
+        <div id="topbarRight" class="gui">
+            <button id="reset">reset</button>
+            <button id="save">save</button>
+            <button id="screenshot">screenshot</button>
+            <button id="fullscreen">fullscreen</button>
+            <button id="showHelp">?</button>
+        </div>
+        <div id="leftColumn" class="gui">
+            <ul id="menu0" class="ui-menu ui-widget menu"></ul>
+            <ul id="menu1" class="ui-menu ui-widget menu"></ul>
+            <img id="centerView" class="menu" width='48' height='48' src='images/Meeting_point_64.png' />
+        </div>
+        <div id="rightColumn" class="gui">
+            <input type="color" id="color" value="#ffffff" />
+            <input type="color" id="centerColor" value="#ffffff" />
+        </div>
         <div id="clipboard" title="Link to your build - copy it to save it"></div>
 
         <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
