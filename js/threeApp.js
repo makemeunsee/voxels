@@ -27,23 +27,27 @@ function appMain() {
     console.log("seed:\t", seed);
 
     scalaObj.initRnd(seed);
-    scalaObj.loadModel(cuts);
 
     // help dialog
     $(function() {
         $( "#dialog" ).dialog({
+            autoOpen: false,
             width: 600,
             height: 222
         });
     });
-    $( "#dialog" ).dialog( "close" );
 
+    var uiVisible = true;
     function toggleUI() {
         console.log("toggling ui");
-        if ( $( "#gui" ).css( "display" ) === "none" )
-            $( "#gui" ).show();
-        else
-            $( "#gui" ).hide();
+        uiVisible = !uiVisible;
+        if ( uiVisible ) {
+            $( ".gui" ).show();
+            stats.domElement.style.display = "block";
+        } else {
+            $( ".gui" ).hide();
+            stats.domElement.style.display = "none";
+        }
     }
 
     // jqueryui widgets
@@ -73,14 +77,6 @@ function appMain() {
     $("#axis").attr("checked", false);
     $("#axis").prop("checked", false);
 
-    $("#borders").unbind("click");
-    $("#borders").click(function bordersFct() {
-            scalaObj.scene.toggleBorders();
-        }
-    );
-    $("#borders").attr("checked", true);
-    $("#borders").prop("checked", true);
-
     $("#rndColors").unbind("click");
     $("#rndColors").click(function rndColorsFct() {
             scalaObj.toggleRndColors();
@@ -91,18 +87,37 @@ function appMain() {
     $("#rndColors").attr("checked", rndCols);
     $("#rndColors").prop("checked", rndCols);
 
+    $( "#downsamplingSlider" ).slider( {
+        orientation: "horizontal",
+        min: 0,
+        max: 7,
+        value: 0,
+        slide: refreshDownsampling,
+        change: refreshDownsampling
+    });
+
+    function refreshDownsampling(evt, ui) {
+        scalaObj.scene.setDownsampling(ui.value);
+    }
+
+    $( "#bordersSlider" ).slider( {
+        orientation: "horizontal",
+        min: 0,
+        max: 20,
+        value: 10,
+        slide: refreshBordersWidth,
+        change: refreshBordersWidth
+    });
+
+    function refreshBordersWidth(evt, ui) {
+        scalaObj.scene.setBordersWidth(ui.value);
+    }
+
+    $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
+
     var takeScreenshot = false;
-    var tmpImg = null;
     function screenshot() {
         takeScreenshot = true;
-        var w = window.open('', '');
-        w.document.title = "Screenshot";
-        tmpImg = new Image();
-        w.document.body.appendChild(tmpImg);
-        // force frame rendering to get screenshot data
-        unpause();
-        pause();
-        tmpImg = null;
     }
     $("#screenshot").unbind("click");
     $("#screenshot").click(screenshot);
@@ -111,13 +126,13 @@ function appMain() {
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
 
-    $( ".leftMenu" ).hide();
+    $( "#rightColumn" ).hide();
 
     function showFaceMenu( selectedFace ) {
-        if ( selectedFace > -1 ) {
-            $( ".leftMenu" ).show();
+        if ( selectedFace > -1 && uiVisible) {
+            $( "#rightColumn" ).show();
         } else {
-            $( ".leftMenu" ).hide();
+            $( "#rightColumn" ).hide();
         }
     }
 
@@ -141,12 +156,6 @@ function appMain() {
         }
     }
 
-    var updateProjection = function(screenWidth, screenHeight) {
-        scalaObj.scene.updateViewport( screenWidth, screenHeight );
-    };
-
-    updateProjection(window.innerWidth, window.innerHeight);
-
     var mainContainer = document.getElementById( 'main' );
 
     // pinch detection (and more)
@@ -157,12 +166,9 @@ function appMain() {
         scalaObj.scene.zoom(ev.scale < 1 ? -1 : 1);
     });
 
-    var pixels = new Uint8Array(4);
-
-    var renderer = scalaObj.scene.renderer;
-    var canvas = renderer.domElement;
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    mainContainer.appendChild( canvas );
+    var updateProjection = function(screenWidth, screenHeight) {
+        scalaObj.scene.updateViewport( screenWidth, screenHeight );
+    };
 
     function leftButton(evt) {
         var button = evt.which || evt.button;
@@ -258,6 +264,9 @@ function appMain() {
         scalaObj.scene.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
     }
 
+    var renderer = scalaObj.scene.renderer;
+    var canvas = renderer.domElement;
+
     canvas.addEventListener( "mousedown", onMouseDown, false );
     canvas.addEventListener( "touchstart", onTouchStart, false );
 
@@ -316,6 +325,15 @@ function appMain() {
 
     var highlighted = 0;
 
+    // canvas & webgl context code
+
+    updateProjection(window.innerWidth, window.innerHeight);
+
+    var pixels = new Uint8Array(4);
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    mainContainer.appendChild( canvas );
+
     var stats = new Stats();
     stats.setMode( 1 ); // 0: fps, 1: ms, 2: mb
 
@@ -324,6 +342,8 @@ function appMain() {
     stats.domElement.style.bottom = '0px';
 
     document.body.appendChild( stats.domElement );
+
+    scalaObj.loadModel(cuts);
 
     main();
 
@@ -352,7 +372,10 @@ function appMain() {
         scalaObj.scene.render(highlighted);
 
         if (takeScreenshot) {
-            tmpImg.src = renderer.domElement.toDataURL("image/png");
+            var data = renderer.domElement.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+            var evt = document.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+            $("<a href='"+data+"' download='screenshot.png'/>")[0].dispatchEvent(evt);
             takeScreenshot = false;
         }
 

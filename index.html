@@ -3,43 +3,46 @@
     <head>
         <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
         <link rel="icon" href="favicon.ico" />
-
+    
         <title>Voronoi sphere</title>
         <meta name="description" content="voronoi sphere">
         <meta name="viewport" content="width=device-width">
-
+    
         <link rel="stylesheet" href="css/app.css">
         <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/dot-luv/jquery-ui.min.css">
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-
+    
     </head>
     <body>
+        <div id="main"></div>
         <div id="dialog" title="Voronoi sphere">
             <p>Drag to move the view.</p>
             <p>Scroll / pinch to zoom.</p>
             <p>Pick a face and change its colors.</p>
             <p>Double click / tap to hide UI.</p>
         </div>
-        <div id="gui" class="gui-container">
-            <div id="topbar">
-                <button id="reset">reset</button>
-                <button id="screenshot">screenshot</button>
-                <button id="fullscreen">fullscreen</button>
-                <button id="showHelp">?</button>
-            </div>
-            <div>
-                <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
-                <input type="checkbox" id="borders"><label id="bordersLabel" for="borders">Show borders</label>
-                <input type="checkbox" id="rndColors"><label id="rndColorsLabel" for="rndColors">Random colors</label>
-            </div>
-            <div id="faceWidgets">
-                <input type="color" id="color" value="#ffffff" class="leftMenu" />
-                <input type="color" id="centerColor" value="#ffffff" class="leftMenu" />
-            </div>
+        <div id="topbarLeft" class="gui">
+            <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
+            <input type="checkbox" id="rndColors"><label id="rndColorsLabel" for="rndColors">Random colors</label>
         </div>
-        <div id="main"></div>
-
+        <div id="topbarRight" class="gui">
+            <button id="reset">reset</button>
+            <button id="screenshot">screenshot</button>
+            <button id="fullscreen">fullscreen</button>
+            <button id="showHelp">?</button>
+        </div>
+        <div id="leftColumn" class="gui">
+            <p>Downsampling</p>
+            <div id="downsamplingSlider" class="slider"></div>
+            <p>Borders</p>
+            <div id="bordersSlider" class="slider"></div>
+        </div>
+        <div id="rightColumn" class="gui">
+            <input type="color" id="color" value="#ffffff" />
+            <input type="color" id="centerColor" value="#ffffff" />
+        </div>
+        
         <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
   #endif

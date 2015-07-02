@@ -31,6 +31,6 @@ case class RegularPrism( sides: Int ) extends VoxelStandard {
     }
   }
 
-  override def name = s"Regular $sides-sided prism"
+  override def name = s"$sides-sided prism"
 }
 

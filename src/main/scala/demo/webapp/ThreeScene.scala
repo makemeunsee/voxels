@@ -64,9 +64,9 @@ object ThreeScene {
   implicit def toJsMatrix( m: Matrix4 ): org.denigma.threejs.Matrix4 = {
     val r = new org.denigma.threejs.Matrix4()
     r.set( m.a00, m.a01, m.a02, m.a03
-         , m.a10, m.a11, m.a12, m.a13
-         , m.a20, m.a21, m.a22, m.a23
-         , m.a30, m.a31, m.a32, m.a33
+      , m.a10, m.a11, m.a12, m.a13
+      , m.a20, m.a21, m.a22, m.a23
+      , m.a30, m.a31, m.a32, m.a33
     )
     r
   }
@@ -108,7 +108,6 @@ class ThreeScene {
   private var innerWidth: Int = 0
   private var innerHeight: Int = 0
 
-
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
     println( "viewport", width, height )
@@ -129,7 +128,7 @@ class ThreeScene {
   private def updateMVP(): Unit = {
     mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat
   }
-  
+
   // ******************** axis management ********************
 
   private lazy val axisMesh: Mesh = makeAxisMesh
@@ -143,7 +142,7 @@ class ThreeScene {
     else
       rtScene.remove( axisMesh )
   }
-  
+
   // ******************** mesh management ********************
 
   private var meshes: Option[( Mesh, Mesh )] = None
@@ -154,18 +153,18 @@ class ThreeScene {
     pickScene.add( meshes.get._2 )
   }
 
-//  def clear(): Unit = {
-//    for ( ( m, pm ) <- meshes ) {
-//      scene.remove( m )
-//      pickScene.remove( pm )
-//      m.geometry.dispose()
-//      pm.geometry.dispose()
-//    }
-//    meshes = None
-//    rtScene.remove( axisMesh )
-//    screenMesh.foreach( rtScene.remove( _ ) )
-//    showAxis = false
-//  }
+  //  def clear(): Unit = {
+  //    for ( ( m, pm ) <- meshes ) {
+  //      scene.remove( m )
+  //      pickScene.remove( pm )
+  //      m.geometry.dispose()
+  //      pm.geometry.dispose()
+  //    }
+  //    meshes = None
+  //    rtScene.remove( axisMesh )
+  //    screenMesh.foreach( rtScene.remove( _ ) )
+  //    showAxis = false
+  //  }
 
   private def makeScreenMesh: Mesh = {
     val plane = new PlaneBufferGeometry( 2, 2 )
@@ -252,45 +251,45 @@ class ThreeScene {
     var indicesOffset = 0
 
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
-        val n = f.seed
-        val c = f.barycenter
-        val pickColor = colorCode( i )
-        val ( r, g, b ) = Colors.intColorToFloatsColors( f.color )
-        val ( cr, cg, cb ) = Colors.intColorToFloatsColors( f.centerColor )
+      val n = f.seed
+      val c = f.barycenter
+      val pickColor = colorCode( i )
+      val ( r, g, b ) = Colors.intColorToFloatsColors( f.color )
+      val ( cr, cg, cb ) = Colors.intColorToFloatsColors( f.centerColor )
 
-        val triOffset = offset*3
-        val vSize = f.vertices.length
+      val triOffset = offset*3
+      val vSize = f.vertices.length
 
-        for ( j <- 0 until vSize ) {
-          vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
-          vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
-          vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
-          normals.set( triOffset+3*j,   n.x.toFloat )
-          normals.set( triOffset+3*j+1, n.y.toFloat )
-          normals.set( triOffset+3*j+2, n.z.toFloat )
-          colors.set( triOffset+3*j,   r )
-          colors.set( triOffset+3*j+1, g )
-          colors.set( triOffset+3*j+2, b )
-          centerFlags.set( offset+j, 0f )
-          pickColors.set( offset+j, pickColor )
-          indices.set( indicesOffset+3*j,   offset+vSize )
-          indices.set( indicesOffset+3*j+1, offset+j )
-          indices.set( indicesOffset+3*j+2, offset+( j+1 )%vSize )
-        }
-        vertices.set( triOffset+3*vSize,   c.x.toFloat )
-        vertices.set( triOffset+3*vSize+1, c.y.toFloat )
-        vertices.set( triOffset+3*vSize+2, c.z.toFloat )
-        normals.set( triOffset+3*vSize,   n.x.toFloat )
-        normals.set( triOffset+3*vSize+1, n.y.toFloat )
-        normals.set( triOffset+3*vSize+2, n.z.toFloat )
-        colors.set( triOffset+3*vSize,   cr )
-        colors.set( triOffset+3*vSize+1, cg )
-        colors.set( triOffset+3*vSize+2, cb )
-        centerFlags.set( offset+vSize, 1f )
-        pickColors.set( offset+vSize, pickColor )
+      for ( j <- 0 until vSize ) {
+        vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
+        vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
+        vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
+        normals.set( triOffset+3*j,   n.x.toFloat )
+        normals.set( triOffset+3*j+1, n.y.toFloat )
+        normals.set( triOffset+3*j+2, n.z.toFloat )
+        colors.set( triOffset+3*j,   r )
+        colors.set( triOffset+3*j+1, g )
+        colors.set( triOffset+3*j+2, b )
+        centerFlags.set( offset+j, 0f )
+        pickColors.set( offset+j, pickColor )
+        indices.set( indicesOffset+3*j,   offset+vSize )
+        indices.set( indicesOffset+3*j+1, offset+j )
+        indices.set( indicesOffset+3*j+2, offset+( j+1 )%vSize )
+      }
+      vertices.set( triOffset+3*vSize,   c.x.toFloat )
+      vertices.set( triOffset+3*vSize+1, c.y.toFloat )
+      vertices.set( triOffset+3*vSize+2, c.z.toFloat )
+      normals.set( triOffset+3*vSize,   n.x.toFloat )
+      normals.set( triOffset+3*vSize+1, n.y.toFloat )
+      normals.set( triOffset+3*vSize+2, n.z.toFloat )
+      colors.set( triOffset+3*vSize,   cr )
+      colors.set( triOffset+3*vSize+1, cg )
+      colors.set( triOffset+3*vSize+2, cb )
+      centerFlags.set( offset+vSize, 1f )
+      pickColors.set( offset+vSize, pickColor )
 
-        offset = offset + vSize + 1
-        indicesOffset = indicesOffset + vSize*3
+      offset = offset + vSize + 1
+      indicesOffset = indicesOffset + vSize*3
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
@@ -436,9 +435,9 @@ class ThreeScene {
   }
 
   def colorFace( faceOffset: Int
-               , faceSize: Int
-               , color: ( Float, Float, Float )
-               , centerColor: ( Float, Float, Float ) ): Unit = {
+                 , faceSize: Int
+                 , color: ( Float, Float, Float )
+                 , centerColor: ( Float, Float, Float ) ): Unit = {
 
     for ( ( mesh, _ ) <- meshes ) {
       val attrs = mesh
@@ -462,11 +461,11 @@ class ThreeScene {
     }
   }
 
-  private var showBorders = true
+  private var bordersWidth = 1f
 
   @JSExport
-  def toggleBorders(): Unit = {
-    showBorders = !showBorders
+  def setBordersWidth( brdrsWdth: Float ): Unit = {
+    bordersWidth = math.min( 2, math.max( 0, brdrsWdth/10f ) )
   }
 
   // ******************** rendering ********************
@@ -493,7 +492,7 @@ class ThreeScene {
     for ( ( m, pm ) <- meshes ) {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_borderWidth", if ( showBorders ) 1f else 0f )
+      updateThis( "u_borderWidth", bordersWidth )
       updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0.05,0.05,0.05 ) )
       updateThis( "u_highlightFlag", ( highlighted % 131072 ).toFloat )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
