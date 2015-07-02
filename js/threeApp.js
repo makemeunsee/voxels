@@ -267,6 +267,7 @@ function appMain() {
     if (buildCode.length > 0) {
         var voxelId = scalaObj.loadCode(buildCode);
         if (voxelId > -1) {
+            $("#centerView").show();
             $( "#leftColumn" ).hide();
         }
     }
