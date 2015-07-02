@@ -18,6 +18,9 @@ object ThreeScene {
   private val textureW = 256
   private val textureH = 128
 
+  @JSName( "THREE.PlaneBufferGeometry" )
+  class PlaneBufferGeometry( width: Float, height: Float ) extends Geometry
+
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName( "THREE.BufferGeometry" )
   class MyBufferGeometry extends Geometry {
@@ -84,16 +87,6 @@ class ThreeScene {
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
 
-  private val renderingTexture = makeTexture( textureW, textureH )
-
-  private def makeTexture( w: Int, h: Int ): WebGLRenderTarget = {
-    val t = new WebGLRenderTarget( w, h )
-//    t.asInstanceOf[js.Dynamic].updateDynamic( "format" )( 1020d ) // RGB
-//    t.asInstanceOf[js.Dynamic].updateDynamic( "minFilter" )( 1006d ) // Linear, needed for non power of 2 sizes
-    t.asInstanceOf[js.Dynamic].updateDynamic( "magFilter" )( 1003d ) // Nearest. Comment for smoother rendering
-    t
-  }
-
   // ******************** view management ********************
 
   private val zoomMax = 16
@@ -115,8 +108,6 @@ class ThreeScene {
   private var innerWidth: Int = 0
   private var innerHeight: Int = 0
 
-  private val screenMesh: Mesh = makeScreenMesh( textureW, textureH )
-  rtScene.add( screenMesh )
 
   @JSExport
   def updateViewport( width: Int, height: Int ): Unit = {
@@ -126,11 +117,7 @@ class ThreeScene {
     projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
     updateMVP()
 
-//    renderingTexture = makeTexture( width, height )
-
-//    screenMesh.foreach( rtScene.remove( _ ) )
-//    screenMesh = Some( makeScreenMesh( width, height ) )
-//    rtScene.add( screenMesh.get )
+    adjustTexturing( innerWidth, innerHeight )
   }
 
   @JSExport
@@ -167,23 +154,22 @@ class ThreeScene {
     pickScene.add( meshes.get._2 )
   }
 
-  def clear(): Unit = {
-    for ( ( m, pm ) <- meshes ) {
-      scene.remove( m )
-      pickScene.remove( pm )
-      m.geometry.dispose()
-      pm.geometry.dispose()
-    }
-    meshes = None
-    rtScene.remove( axisMesh )
+//  def clear(): Unit = {
+//    for ( ( m, pm ) <- meshes ) {
+//      scene.remove( m )
+//      pickScene.remove( pm )
+//      m.geometry.dispose()
+//      pm.geometry.dispose()
+//    }
+//    meshes = None
+//    rtScene.remove( axisMesh )
 //    screenMesh.foreach( rtScene.remove( _ ) )
-    rtScene.remove( screenMesh )
-    showAxis = false
-  }
+//    showAxis = false
+//  }
 
-  private def makeScreenMesh( width: Int, height: Int ): Mesh = {
-    val plane = new PlaneGeometry( width, height )
-//
+  private def makeScreenMesh: Mesh = {
+    val plane = new PlaneBufferGeometry( 2, 2 )
+
     val customUniforms = js.Dynamic.literal(
       "texture" -> js.Dynamic.literal("type" -> "t", "value" -> renderingTexture )
     )
@@ -205,8 +191,7 @@ class ThreeScene {
       """.stripMargin
     shaderMaterial.depthWrite = false
 
-    assembleMesh( plane, shaderMaterial )
-
+    assembleMesh( plane, shaderMaterial, "screenMesh" )
   }
 
   private def makeMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
@@ -315,7 +300,7 @@ class ThreeScene {
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    ( assembleMesh( geom, shaderMaterial ), assembleMesh( geom, pickShaderMaterial ) )
+    ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( geom, pickShaderMaterial, "pickMesh" ) )
   }
 
   private def makeAxisMesh: Mesh = {
@@ -411,18 +396,44 @@ class ThreeScene {
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    assembleMesh( geom, shaderMaterial )
+    assembleMesh( geom, shaderMaterial, "axisMesh" )
   }
 
-  private def assembleMesh( geometry: Geometry, material: Material ): Mesh = {
+  private def assembleMesh( geometry: Geometry, material: Material, name: String ): Mesh = {
     val mesh = new Mesh
     mesh.geometry = geometry
     mesh.material = material
     mesh.frustumCulled = false
+    mesh.name = name
     mesh
   }
 
   // ******************** special effects ********************
+
+  private var downsampling = 1
+
+  @JSExport
+  def setDownsampling( dwnSmplng: Int ): Unit = {
+    downsampling = math.pow( 2, math.max( 0, math.min( 7, dwnSmplng ) ) ).toInt
+    adjustTexturing( innerWidth, innerHeight )
+  }
+
+  private val screenMesh: Mesh = makeScreenMesh
+  rtScene.add( screenMesh )
+
+  private var renderingTexture = makeTexture( textureW, textureH )
+
+  private def makeTexture( w: Int, h: Int ): WebGLRenderTarget = {
+    val t = new WebGLRenderTarget( w, h )
+    //    t.asInstanceOf[js.Dynamic].updateDynamic( "format" )( 1020d ) // RGB
+    t.asInstanceOf[js.Dynamic].updateDynamic( "minFilter" )( 1006d ) // Linear, needed for non power of 2 sizes
+    t.asInstanceOf[js.Dynamic].updateDynamic( "magFilter" )( 1003d ) // Nearest. Comment for smoother rendering
+    t
+  }
+
+  private def adjustTexturing( w: Int, h: Int ): Unit = {
+    renderingTexture = makeTexture( w / downsampling, h / downsampling )
+  }
 
   def colorFace( faceOffset: Int
                , faceSize: Int
@@ -491,7 +502,7 @@ class ThreeScene {
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
 
     renderer.render( scene, dummyCam, renderingTexture )
-//    screenMesh.foreach { m => updateMeshMaterialValue( m )( "texture", renderingTexture ) }
+    updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
     renderer.render( rtScene, dummyCam )
   }
 }
