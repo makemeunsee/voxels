@@ -1,6 +1,5 @@
 package geometry.voronoi
 
-import demo.Colors
 import geometry.{Normal3, Vector3}
 import voxels.Cube
 
@@ -178,7 +177,7 @@ object VoronoiModel {
     val edgePoints = removeDuplicates( afterCut._2.reverse )
     val newNeighbours = if ( edgePoints.isEmpty ) face.neighbours else face.neighbours + newFaceId
     val newVertices = cyclicRemoveConsecutiveDuplicates( afterCut._1.reverse )
-    ( Face( face.seed, newVertices, newNeighbours, Colors.WHITE, Colors.WHITE ), edgePoints )
+    ( Face( face.seed, newVertices, newNeighbours ), edgePoints )
   }
 
   private val cube = Cube.facesStructure map { _._1 map { i => Cube.vertices( i ) } }
@@ -195,7 +194,7 @@ object VoronoiModel {
   private val cubeFaces = cube
     .zip( cubeFaceInfo )
     .map { case ( vs, ( n, ns ) ) =>
-      Face( n, vs, ns, Colors.WHITE, Colors.WHITE )
+      Face( n, vs, ns )
     }.toArray
 
   object CubeModel extends VoronoiModelImpl( cubeFaces )
@@ -248,7 +247,7 @@ case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
       // gather all face indices (neighbours) for each new point
       val newFaceNeighbours = newPoints.values.reduce( _ ++ _ )
       // create a new face
-      val newFace = Face( n, orderedPoints, newFaceNeighbours, Colors.WHITE, Colors.WHITE )
+      val newFace = Face( n, orderedPoints, newFaceNeighbours )
 
       faces.update( newFaceId, newFace )
     }

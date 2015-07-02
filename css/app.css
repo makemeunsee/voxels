@@ -55,6 +55,7 @@ li.active {
 
 #leftColumn {
     margin:10px auto;
+    padding-right: 25px;
     float:left;
     clear:left;
 }

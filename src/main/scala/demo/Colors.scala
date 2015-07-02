@@ -16,4 +16,5 @@ object Colors {
   def rndColor()( implicit rnd: Rnd ): Int = rnd.rndInt() & WHITE
 
   val WHITE = 0xFFFFFF
+  val BLACK = 0x000000
 }

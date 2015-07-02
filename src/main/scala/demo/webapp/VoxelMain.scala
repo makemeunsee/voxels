@@ -66,7 +66,7 @@ object VoxelMain extends JSApp {
         val face = faces( selectedFace )
         ( face.color, face.centerColor )
       } else
-        ( Colors.WHITE, Colors. WHITE )
+        ( Colors.BLACK, Colors.BLACK )
     }
     Map( ( "faceId", selectedFace.toString )
        , ( "faceColor", "%06x".format( col ) )
@@ -93,15 +93,15 @@ object VoxelMain extends JSApp {
     if ( rndColors )
       rndColor()
     else
-      whiteColor()
+      color( Colors.WHITE )
   }
 
   private def rndColor(): Unit = {
     colorModel( Colors.rndColor, Colors.rndColor )
   }
 
-  private def whiteColor(): Unit = {
-    colorModel( () => Colors.WHITE, () => Colors.WHITE )
+  private def color( c: Int ): Unit = {
+    colorModel( () => c, () => c )
   }
 
   private def colorModel( color: () => Int, centerColor: () => Int ): Unit = {

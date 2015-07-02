@@ -24,6 +24,7 @@ object ThreeScene {
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName( "THREE.BufferGeometry" )
   class MyBufferGeometry extends Geometry {
+    override def clone(): MyBufferGeometry = js.native
     var attributes: js.Array[BufferAttribute] = js.native
     var drawcalls: js.Any = js.native
     var offsets: js.Any = js.native
@@ -64,9 +65,9 @@ object ThreeScene {
   implicit def toJsMatrix( m: Matrix4 ): org.denigma.threejs.Matrix4 = {
     val r = new org.denigma.threejs.Matrix4()
     r.set( m.a00, m.a01, m.a02, m.a03
-      , m.a10, m.a11, m.a12, m.a13
-      , m.a20, m.a21, m.a22, m.a23
-      , m.a30, m.a31, m.a32, m.a33
+         , m.a10, m.a11, m.a12, m.a13
+         , m.a20, m.a21, m.a22, m.a23
+         , m.a30, m.a31, m.a32, m.a33
     )
     r
   }
@@ -86,6 +87,7 @@ class ThreeScene {
 
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
+//  renderer.setClearColor( new org.denigma.threejs.Color( 0.7, 0.7, 0.9 ) )
 
   // ******************** view management ********************
 
@@ -153,18 +155,18 @@ class ThreeScene {
     pickScene.add( meshes.get._2 )
   }
 
-  //  def clear(): Unit = {
-  //    for ( ( m, pm ) <- meshes ) {
-  //      scene.remove( m )
-  //      pickScene.remove( pm )
-  //      m.geometry.dispose()
-  //      pm.geometry.dispose()
-  //    }
-  //    meshes = None
-  //    rtScene.remove( axisMesh )
-  //    screenMesh.foreach( rtScene.remove( _ ) )
-  //    showAxis = false
-  //  }
+//  def clear(): Unit = {
+//    for ( ( m, pm ) <- meshes ) {
+//      scene.remove( m )
+//      pickScene.remove( pm )
+//      m.geometry.dispose()
+//      pm.geometry.dispose()
+//    }
+//    meshes = None
+//    rtScene.remove( axisMesh )
+//    screenMesh.foreach( rtScene.remove( _ ) )
+//    showAxis = false
+//  }
 
   private def makeScreenMesh: Mesh = {
     val plane = new PlaneBufferGeometry( 2, 2 )
@@ -193,13 +195,118 @@ class ThreeScene {
     assembleMesh( plane, shaderMaterial, "screenMesh" )
   }
 
+  private def makeWireFrameMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
+    val customUniforms = js.Dynamic.literal(
+      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
+      "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
+      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+    )
+
+    val attrs = js.Dynamic.literal(
+      "a_color" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array[Float]
+      ),
+      "a_normal" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array[Float]
+      ),
+      "a_pickColor" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
+      ),
+      "a_centerFlag" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
+      )
+    )
+
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.attributes = attrs
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader = Shaders.vertexShader
+    shaderMaterial.fragmentShader = Shaders.fragmentShader
+    shaderMaterial.wireframe = true
+    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
+//    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
+
+    val pickShaderMaterial = new ShaderMaterial
+    pickShaderMaterial.attributes = attrs
+    pickShaderMaterial.uniforms = customUniforms
+    pickShaderMaterial.vertexShader = Shaders.pickVertexShader
+    pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
+
+    val count = m.faces.map( _.vertices.length*3 ).sum
+    val indicesCount = m.faces.map( _.vertices.length*2 ).sum
+    val pickIndicesCount = m.faces.map( f => ( f.vertices.length - 2 )*3 ).sum
+
+    val vertices = new Float32Array( count )
+    val normals = new Float32Array( count )
+    val colors = new Float32Array( count )
+    val pickColors = new Float32Array( count / 3 )
+    val centerFlags = new Float32Array( count / 3 )
+    val indices = new Uint32Array( indicesCount )
+    val pickIndices = new Uint32Array( pickIndicesCount )
+    var offset = 0
+    var indicesOffset = 0
+    var pickIndicesOffset = 0
+
+    for ( i <- m.faces.indices ; f = m.faces( i ) ) {
+      val n = f.seed
+      val pickColor = colorCode( i )
+      val ( r, g, b ) = Colors.intColorToFloatsColors( f.color )
+
+      val triOffset = offset*3
+      val vSize = f.vertices.length
+
+      for ( j <- 0 until vSize ) {
+        vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
+        vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
+        vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
+        normals.set( triOffset+3*j,   n.x.toFloat )
+        normals.set( triOffset+3*j+1, n.y.toFloat )
+        normals.set( triOffset+3*j+2, n.z.toFloat )
+        colors.set( triOffset+3*j,   r )
+        colors.set( triOffset+3*j+1, g )
+        colors.set( triOffset+3*j+2, b )
+        centerFlags.set( offset+j, 0f )
+        pickColors.set( offset+j, pickColor )
+        indices.set( indicesOffset+2*j,   offset+j )
+        indices.set( indicesOffset+2*j+1, offset+( j+1 )%vSize )
+        if ( j < vSize-1 ) {
+          pickIndices.set( pickIndicesOffset + 3 * j, offset )
+          pickIndices.set( pickIndicesOffset + 3 * j + 1, offset + j )
+          pickIndices.set( pickIndicesOffset + 3 * j + 2, offset + j + 1 )
+        }
+      }
+
+      offset = offset + vSize
+      indicesOffset = indicesOffset + vSize*2
+      pickIndicesOffset = pickIndicesOffset + ( vSize - 2 )*3
+    }
+
+    val geom = new MyBufferGeometry()
+    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
+    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
+    geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
+    geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
+    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
+
+    val pickGeom = geom.clone()
+    pickGeom.addAttribute( "index", new BufferAttribute( pickIndices, 1 ) )
+
+    ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
+  }
+
   private def makeMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_highlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
@@ -435,9 +542,9 @@ class ThreeScene {
   }
 
   def colorFace( faceOffset: Int
-                 , faceSize: Int
-                 , color: ( Float, Float, Float )
-                 , centerColor: ( Float, Float, Float ) ): Unit = {
+               , faceSize: Int
+               , color: ( Float, Float, Float )
+               , centerColor: ( Float, Float, Float ) ): Unit = {
 
     for ( ( mesh, _ ) <- meshes ) {
       val attrs = mesh
@@ -493,13 +600,13 @@ class ThreeScene {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
       updateThis( "u_borderWidth", bordersWidth )
-      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0.05,0.05,0.05 ) )
-      updateThis( "u_highlightFlag", ( highlighted % 131072 ).toFloat )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 1,1,1 ) )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       updateThis( "u_mvpMat", mvp )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
 
+    renderer.clearColor()
     renderer.render( scene, dummyCam, renderingTexture )
     updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
     renderer.render( rtScene, dummyCam )
