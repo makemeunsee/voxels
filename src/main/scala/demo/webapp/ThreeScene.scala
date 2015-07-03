@@ -277,8 +277,8 @@ class ThreeScene {
         indices.set( indicesOffset+2*j+1, offset+( j+1 )%vSize )
         if ( j < vSize-1 ) {
           pickIndices.set( pickIndicesOffset + 3 * j, offset )
-          pickIndices.set( pickIndicesOffset + 3 * j + 1, offset + j )
-          pickIndices.set( pickIndicesOffset + 3 * j + 2, offset + j + 1 )
+          pickIndices.set( pickIndicesOffset + 3 * j + 1, offset + j + 1 )
+          pickIndices.set( pickIndicesOffset + 3 * j + 2, offset + j + 2 )
         }
       }
 
