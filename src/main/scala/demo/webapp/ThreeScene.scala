@@ -151,6 +151,7 @@ class ThreeScene {
 
   def addModel( model: VoronoiModel ): Unit = {
     meshes = Some( makeMesh( model ) )
+    updateMeshCulling()
     scene.add( meshes.get._1 )
     pickScene.add( meshes.get._2 )
   }
@@ -167,6 +168,14 @@ class ThreeScene {
 //    screenMesh.foreach( rtScene.remove( _ ) )
 //    showAxis = false
 //  }
+
+  private def updateMeshCulling(): Unit = {
+    for( ( m, pm ) <- meshes ) {
+      val culling = if ( cullback ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
+      m.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
+      pm.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
+    }
+  }
 
   private def makeScreenMesh: Mesh = {
     val plane = new PlaneBufferGeometry( 2, 2 )
@@ -337,14 +346,12 @@ class ThreeScene {
     shaderMaterial.uniforms = customUniforms
     shaderMaterial.vertexShader = Shaders.vertexShader
     shaderMaterial.fragmentShader = Shaders.fragmentShader
-    //    shaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
 
     val pickShaderMaterial = new ShaderMaterial
     pickShaderMaterial.attributes = attrs
     pickShaderMaterial.uniforms = customUniforms
     pickShaderMaterial.vertexShader = Shaders.pickVertexShader
     pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
-    //    pickShaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
 
     val count = m.faces.map( _.vertices.length*3+3 ).sum
     val indicesCount = m.faces.map( _.vertices.length*3 ).sum
@@ -430,7 +437,6 @@ class ThreeScene {
     shaderMaterial.vertexShader = Shaders.axisVertexShader
     shaderMaterial.fragmentShader = Shaders.axisFragmentShader
     shaderMaterial.wireframe = true
-    //    shaderMaterial.side = org.denigma.threejs.THREE.DoubleSide
 
     val count = 18
     val indicesCount = 9
@@ -582,6 +588,14 @@ class ThreeScene {
   def setExplosion( explosionFctr: Float ): Unit = {
     val f = math.min( 100, math.max( 0, explosionFctr ) ) / 100
     explosionFactor = f*f*10
+  }
+
+  private var cullback = true
+
+  @JSExport
+  def toggleCullback(): Unit = {
+    cullback = !cullback
+    updateMeshCulling()
   }
 
   // ******************** rendering ********************
