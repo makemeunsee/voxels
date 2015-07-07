@@ -113,6 +113,19 @@ function appMain() {
         scalaObj.scene.setBordersWidth(ui.value);
     }
 
+    $( "#explosionSlider" ).slider( {
+        orientation: "horizontal",
+        min: 0,
+        max: 100,
+        value: 0,
+        slide: refreshExplosion,
+        change: refreshExplosion
+    });
+
+    function refreshExplosion(evt, ui) {
+        scalaObj.scene.setExplosion(ui.value);
+    }
+
     $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
 
     var takeScreenshot = false;

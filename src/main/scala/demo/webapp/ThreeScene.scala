@@ -307,7 +307,8 @@ class ThreeScene {
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val geom = new MyBufferGeometry()
@@ -575,6 +576,14 @@ class ThreeScene {
     bordersWidth = math.min( 2, math.max( 0, brdrsWdth/10f ) )
   }
 
+  private var explosionFactor = 0f
+
+  @JSExport
+  def setExplosion( explosionFctr: Float ): Unit = {
+    val f = math.min( 100, math.max( 0, explosionFctr ) ) / 100
+    explosionFactor = f*f*10
+  }
+
   // ******************** rendering ********************
 
   private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
@@ -587,6 +596,12 @@ class ThreeScene {
 
   @JSExport
   def pickRender( mouseX: Int, mouseY: Int ): Int = {
+    for ( ( _, m ) <- meshes ) {
+      val updateThis = updateMeshMaterialValue( m ) _
+      updateThis( "u_time", 0f )
+      updateThis( "u_explosionFactor", explosionFactor )
+      updateThis( "u_mvpMat", mvp )
+    }
     renderer.render( pickScene, dummyCam )
     import js.DynamicImplicits._
     val gl = renderer.getContext().asInstanceOf[js.Dynamic]
@@ -596,13 +611,14 @@ class ThreeScene {
 
   @JSExport
   def render( highlighted: Int ): Unit = {
-    for ( ( m, pm ) <- meshes ) {
+    for ( ( m, _ ) <- meshes ) {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_borderWidth", bordersWidth )
-      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 1,1,1 ) )
-      updateThis( "u_faceHighlightFlag", highlighted.toFloat )
+      updateThis( "u_explosionFactor", explosionFactor )
       updateThis( "u_mvpMat", mvp )
+      updateThis( "u_borderWidth", bordersWidth )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0,0,0 ) )
+      updateThis( "u_faceHighlightFlag", highlighted.toFloat )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
 
