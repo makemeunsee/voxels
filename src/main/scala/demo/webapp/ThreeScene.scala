@@ -3,6 +3,7 @@ package demo.webapp
 import demo.Colors
 import geometry.Matrix4
 import geometry.voronoi.{Face, VoronoiModel}
+import maze.Maze
 import org.denigma.threejs._
 
 import scala.scalajs.js
@@ -149,8 +150,8 @@ class ThreeScene {
 
   private var meshes: Option[( Mesh, Mesh )] = None
 
-  def addModel( model: VoronoiModel ): Unit = {
-    meshes = Some( makeMesh( model ) )
+  def addModel( model: VoronoiModel, maze: Maze[Int] ): Unit = {
+    meshes = Some( makeMesh( model, maze ) )
     updateMeshCulling()
     scene.add( meshes.get._1 )
     pickScene.add( meshes.get._2 )
@@ -310,14 +311,18 @@ class ThreeScene {
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
   }
 
-  private def makeMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
+  private def makeMesh( m: VoronoiModel, maze: Maze[Int] ): ( Mesh, Mesh ) = {
+    val ( depthMap, minDepth, maxDepth ) = maze.toDepthMap
+    val depthSpan = maxDepth - minDepth
+
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
       "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val geom = new MyBufferGeometry()
@@ -336,6 +341,10 @@ class ThreeScene {
         "value" -> new Array[Float]
       ),
       "a_centerFlag" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
+      ),
+      "a_depth" -> js.Dynamic.literal(
         "type" -> "f",
         "value" -> new Array[Float]
       )
@@ -361,6 +370,7 @@ class ThreeScene {
     val colors = new Float32Array( count )
     val pickColors = new Float32Array( count / 3 )
     val centerFlags = new Float32Array( count / 3 )
+    val depths = new Float32Array( count / 3 )
     val indices = new Uint32Array( indicesCount )
     var offset = 0
     var indicesOffset = 0
@@ -375,6 +385,8 @@ class ThreeScene {
       val triOffset = offset*3
       val vSize = f.vertices.length
 
+      val d = ( depthMap( i ).toFloat - minDepth ) / depthSpan
+
       for ( j <- 0 until vSize ) {
         vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
         vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
@@ -386,6 +398,7 @@ class ThreeScene {
         colors.set( triOffset+3*j+1, g )
         colors.set( triOffset+3*j+2, b )
         centerFlags.set( offset+j, 0f )
+        depths.set( offset+j, d )
         pickColors.set( offset+j, pickColor )
         indices.set( indicesOffset+3*j,   offset+vSize )
         indices.set( indicesOffset+3*j+1, offset+j )
@@ -401,6 +414,7 @@ class ThreeScene {
       colors.set( triOffset+3*vSize+1, cg )
       colors.set( triOffset+3*vSize+2, cb )
       centerFlags.set( offset+vSize, 1f )
+      depths.set( offset+vSize, d )
       pickColors.set( offset+vSize, pickColor )
 
       offset = offset + vSize + 1
@@ -409,6 +423,7 @@ class ThreeScene {
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
+    geom.addAttribute( "a_depth", new BufferAttribute( depths, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
@@ -590,7 +605,7 @@ class ThreeScene {
     explosionFactor = f*f*10
   }
 
-  private var cullback = true
+  private var cullback = false
 
   @JSExport
   def toggleCullback(): Unit = {
@@ -598,6 +613,12 @@ class ThreeScene {
     updateMeshCulling()
   }
 
+  private var depthScale = 0.5f
+
+  @JSExport
+  def setDepthScale( depthScl: Float ): Unit = {
+    depthScale = math.min( 100, math.max( -100, depthScl ) ) / 100
+  }
   // ******************** rendering ********************
 
   private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
@@ -614,6 +635,7 @@ class ThreeScene {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
       updateThis( "u_explosionFactor", explosionFactor )
+      updateThis( "u_depthScale", depthScale )
       updateThis( "u_mvpMat", mvp )
     }
     renderer.render( pickScene, dummyCam )
@@ -629,6 +651,7 @@ class ThreeScene {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
       updateThis( "u_explosionFactor", explosionFactor )
+      updateThis( "u_depthScale", depthScale )
       updateThis( "u_mvpMat", mvp )
       updateThis( "u_borderWidth", bordersWidth )
       updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0,0,0 ) )

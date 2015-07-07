@@ -1,6 +1,7 @@
 package demo
 
 import scala.language.implicitConversions
+import scala.util.Random
 
 /**
  * Created by markus on 22/06/2015.
@@ -13,7 +14,7 @@ object Colors {
     ( r, g, b )
   }
 
-  def rndColor()( implicit rnd: Rnd ): Int = rnd.rndInt() & WHITE
+  def rndColor()( implicit rnd: Random ): Int = rnd.nextInt() & WHITE
 
   val WHITE = 0xFFFFFF
   val BLACK = 0x000000

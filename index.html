@@ -40,6 +40,8 @@
             <div id="bordersSlider" class="slider"></div>
             <p>Explosion</p>
             <div id="explosionSlider" class="slider"></div>
+            <p>Maze depth scale</p>
+            <div id="depthSlider" class="slider"></div>
         </div>
         <div id="rightColumn" class="gui">
             <input type="color" id="color" value="#ffffff" />
@@ -98,6 +100,7 @@ void main()
 #endif
 
 attribute float a_centerFlag;
+attribute float a_depth;
 attribute vec3 a_normal;
 attribute vec3 a_color;
 attribute float a_pickColor;
@@ -106,6 +109,7 @@ uniform mat4 u_mvpMat;
 uniform float u_time;
 uniform float u_faceHighlightFlag;
 uniform float u_explosionFactor;
+uniform float u_depthScale;
 
 varying vec3 v_color;
 varying float v_centerFlag;
@@ -113,7 +117,8 @@ varying float v_highlightFace;
 
 void main()
 {
-  gl_Position = u_mvpMat * vec4(u_explosionFactor*a_normal + position, 1.0);
+  float d = a_depth * u_depthScale;
+  gl_Position = u_mvpMat * vec4((1.0+d) * (u_explosionFactor*a_normal + position), 1.0);
   v_color = a_color;
   v_centerFlag = a_centerFlag;
   v_highlightFace = 0.0;
@@ -136,11 +141,13 @@ void main()
 #endif
 
 attribute vec3 a_normal;
+attribute vec3 a_depth;
 attribute float a_pickColor;
 
 uniform mat4 u_mvpMat;
 uniform float u_time;
 uniform float u_explosionFactor;
+uniform float u_depthScale;
 
 varying vec3 v_color;
 
@@ -155,7 +162,8 @@ vec3 unpackColor(float f) {
 
 void main()
 {
-  gl_Position = u_mvpMat * vec4(u_explosionFactor*a_normal + position, 1.0);
+  float d = a_depth * u_depthScale;
+  gl_Position = u_mvpMat * vec4((1.0+d) * (u_explosionFactor*a_normal + position), 1.0);
   v_color = unpackColor(a_pickColor);
   // v_color = a_pickColor;
 }</script>

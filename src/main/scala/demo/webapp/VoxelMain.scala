@@ -4,19 +4,21 @@ package demo.webapp
  * Created by markus on 16/02/2015.
  */
 
-import demo.{Colors, Rnd}
+import demo.Colors
 import geometry.Normal3
 import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
+import maze.Maze
 
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation.JSExport
 import scala.scalajs.js.{Dictionary, JSApp}
+import scala.util.Random
 
 object VoxelMain extends JSApp {
 
   private var model: VoronoiModel = CubeModel
-  private implicit var rnd = new Rnd( System.currentTimeMillis() )
+  private implicit var rnd = new Random( System.currentTimeMillis() )
 
   // ******************** init code ********************
 
@@ -24,7 +26,7 @@ object VoxelMain extends JSApp {
 
   @JSExport
   def initRnd( seed: Long ): Unit = {
-    rnd = new Rnd( seed )
+    rnd = new Random( seed )
   }
 
   @JSExport
@@ -33,7 +35,7 @@ object VoxelMain extends JSApp {
 
     // prepare cuts
     val cutNormals = ( 0 until cutCount ).map { _ =>
-      val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.rndUniformDouble(), rnd.rndUniformDouble() )
+      val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.nextDouble(), rnd.nextDouble() )
       Normal3.fromSphericCoordinates( theta, phi )
     }
 
@@ -43,7 +45,10 @@ object VoxelMain extends JSApp {
     val t1 = System.currentTimeMillis()
     println( "cut time", t1 - t0 )
 
-    scene.addModel( model )
+    scene.addModel( model, Maze.depthFirstMaze( model.faces ).get )
+
+    if ( rndColors )
+      rndColor()
   }
 
   // ******************** actual three.js scene ********************
@@ -82,10 +87,7 @@ object VoxelMain extends JSApp {
 
   // ******************** coloring ********************
 
-  private implicit var rndColors = false
-
-  @JSExport
-  def colorsAreRandom(): Boolean = rndColors
+  private implicit var rndColors = true
 
   @JSExport
   def toggleRndColors(): Unit = {

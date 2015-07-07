@@ -83,17 +83,16 @@ function appMain() {
             loadColors(scalaObj.selectFace(highlighted));
         }
     );
-    var rndCols = scalaObj.colorsAreRandom();
-    $("#rndColors").attr("checked", rndCols);
-    $("#rndColors").prop("checked", rndCols);
+    $("#rndColors").attr("checked", true);
+    $("#rndColors").prop("checked", true);
 
     $("#cullback").unbind("click");
     $("#cullback").click(function() {
             scalaObj.scene.toggleCullback();
         }
     );
-    $("#cullback").attr("checked", true);
-    $("#cullback").prop("checked", true);
+    $("#cullback").attr("checked", false);
+    $("#cullback").prop("checked", false);
 
     $( "#downsamplingSlider" ).slider( {
         orientation: "horizontal",
@@ -132,6 +131,19 @@ function appMain() {
 
     function refreshExplosion(evt, ui) {
         scalaObj.scene.setExplosion(ui.value);
+    }
+
+    $( "#depthSlider" ).slider( {
+        orientation: "horizontal",
+        min: -100,
+        max: 100,
+        value: 50,
+        slide: refreshDepth,
+        change: refreshDepth
+    });
+
+    function refreshDepth(evt, ui) {
+        scalaObj.scene.setDepthScale(ui.value);
     }
 
     $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
