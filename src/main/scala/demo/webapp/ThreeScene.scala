@@ -314,6 +314,8 @@ class ThreeScene {
   private def makeMesh( m: VoronoiModel, maze: Maze[Int] ): ( Mesh, Mesh ) = {
     val ( depthMap, minDepth, maxDepth ) = maze.toDepthMap
     val depthSpan = maxDepth - minDepth
+//    def rainbow = Colors.matteoNiccoliRainbow
+    def rainbow = Colors.lessAngryRainbow( 256, m.faces.length.toFloat / 100 ) _
 
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -378,14 +380,15 @@ class ThreeScene {
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
       val n = f.seed
       val c = f.barycenter
+      val uniformD = ( depthMap( i ).toFloat - minDepth ) / depthSpan
+
       val pickColor = colorCode( i )
-      val ( r, g, b ) = Colors.intColorToFloatsColors( f.color )
-      val ( cr, cg, cb ) = Colors.intColorToFloatsColors( f.centerColor )
+      val ( r, g, b ) = rainbow( uniformD ) //Colors.intColorToFloatsColors( f.color )
+      val ( cr, cg, cb ) = ( r, g, b ) //Colors.intColorToFloatsColors( f.centerColor )
 
       val triOffset = offset*3
       val vSize = f.vertices.length
 
-      val d = ( depthMap( i ).toFloat - minDepth ) / depthSpan
 
       for ( j <- 0 until vSize ) {
         vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
@@ -398,7 +401,7 @@ class ThreeScene {
         colors.set( triOffset+3*j+1, g )
         colors.set( triOffset+3*j+2, b )
         centerFlags.set( offset+j, 0f )
-        depths.set( offset+j, d )
+        depths.set( offset+j, uniformD )
         pickColors.set( offset+j, pickColor )
         indices.set( indicesOffset+3*j,   offset+vSize )
         indices.set( indicesOffset+3*j+1, offset+j )
@@ -414,7 +417,7 @@ class ThreeScene {
       colors.set( triOffset+3*vSize+1, cg )
       colors.set( triOffset+3*vSize+2, cb )
       centerFlags.set( offset+vSize, 1f )
-      depths.set( offset+vSize, d )
+      depths.set( offset+vSize, uniformD )
       pickColors.set( offset+vSize, pickColor )
 
       offset = offset + vSize + 1

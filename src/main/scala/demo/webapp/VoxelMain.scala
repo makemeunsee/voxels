@@ -87,7 +87,7 @@ object VoxelMain extends JSApp {
 
   // ******************** coloring ********************
 
-  private implicit var rndColors = true
+  private implicit var rndColors = false
 
   @JSExport
   def toggleRndColors(): Unit = {

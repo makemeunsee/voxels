@@ -83,8 +83,8 @@ function appMain() {
             loadColors(scalaObj.selectFace(highlighted));
         }
     );
-    $("#rndColors").attr("checked", true);
-    $("#rndColors").prop("checked", true);
+    $("#rndColors").attr("checked", false);
+    $("#rndColors").prop("checked", false);
 
     $("#cullback").unbind("click");
     $("#cullback").click(function() {
