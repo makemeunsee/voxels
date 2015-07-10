@@ -76,7 +76,7 @@ object ThreeScene {
 
 import demo.webapp.ThreeScene._
 
-class ThreeScene {
+class ThreeScene( cfg: Config ) {
 
   // ******************** three scene basics ********************
 
@@ -124,7 +124,7 @@ class ThreeScene {
 
   @JSExport
   def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    val speed = 1f / 500f / zoom / ( 1f + explosionFactor )
+    val speed = 1f / 500f / zoom / ( 1f + cfg.safeExplosionFactor )
     modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
     updateMVP()
   }
@@ -136,12 +136,10 @@ class ThreeScene {
   // ******************** axis management ********************
 
   private lazy val axisMesh: Mesh = makeAxisMesh
-  private var showAxis: Boolean = false
+  private var showAxis: Boolean = cfg.`Show axis`
 
-  @JSExport
   def toggleAxis(): Unit = {
-    showAxis = !showAxis
-    if ( showAxis )
+    if ( cfg.`Show axis` )
       rtScene.add( axisMesh )
     else
       rtScene.remove( axisMesh )
@@ -151,29 +149,16 @@ class ThreeScene {
 
   private var meshes: Option[( Mesh, Mesh )] = None
 
-  def addModel( model: VoronoiModel, maze: Maze[Int] ): Unit = {
-    meshes = Some( makeMesh( model, maze ) )
+  def addModel( model: VoronoiModel, maze: Maze[Int], depthData: ( Map[Int, Int], Int ) ): Unit = {
+    meshes = Some( makeMesh( model, maze, depthData ) )
     updateMeshCulling()
     scene.add( meshes.get._1 )
     pickScene.add( meshes.get._2 )
   }
 
-//  def clear(): Unit = {
-//    for ( ( m, pm ) <- meshes ) {
-//      scene.remove( m )
-//      pickScene.remove( pm )
-//      m.geometry.dispose()
-//      pm.geometry.dispose()
-//    }
-//    meshes = None
-//    rtScene.remove( axisMesh )
-//    screenMesh.foreach( rtScene.remove( _ ) )
-//    showAxis = false
-//  }
-
   private def updateMeshCulling(): Unit = {
     for( ( m, pm ) <- meshes ) {
-      val culling = if ( cullback ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
+      val culling = if ( cfg.`Cull back` ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
       m.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
       pm.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
     }
@@ -267,7 +252,7 @@ class ThreeScene {
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
       val n = f.seed
       val pickColor = colorCode( i )
-      val ( r, g, b ) = Colors.intColorToFloatsColors( f.color )
+      val ( r, g, b ) = ( 1f, 1f, 1f )
 
       val triOffset = offset*3
       val vSize = f.vertices.length
@@ -312,11 +297,8 @@ class ThreeScene {
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
   }
 
-  private def makeMesh( m: VoronoiModel, maze: Maze[Int] ): ( Mesh, Mesh ) = {
-    val ( depthMap, minDepth, maxDepth ) = maze.toDepthMap
-    val depthSpan = maxDepth - minDepth
-    def rainbow = Colors.cubeHelixRainbow
-//    def rainbow = Colors.lessAngryRainbow( 256, m.faces.length.toFloat / 100 ) _
+  private def makeMesh( m: VoronoiModel, maze: Maze[Int], depthData: ( Map[Int, Int], Int ) ): ( Mesh, Mesh ) = {
+    val ( depthMap, maxDepth ) = depthData
 
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -381,11 +363,11 @@ class ThreeScene {
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
       val n = f.seed
       val c = f.barycenter
-      val uniformD = ( depthMap( i ).toFloat - minDepth ) / depthSpan
+      val uniformD = depthMap( i ).toFloat / maxDepth
 
       val pickColor = colorCode( i )
-      val ( r, g, b ) = rainbow( uniformD ) //Colors.intColorToFloatsColors( f.color )
-      val ( cr, cg, cb ) = ( r, g, b ) //Colors.intColorToFloatsColors( f.centerColor )
+      val ( r, g, b ) = ( 1f, 1f, 1f )
+      val ( cr, cg, cb ) = ( r, g, b )
 
       val triOffset = offset*3
       val vSize = f.vertices.length
@@ -544,9 +526,8 @@ class ThreeScene {
 
   private var downsampling = 1
 
-  @JSExport
-  def setDownsampling( dwnSmplng: Int ): Unit = {
-    downsampling = math.pow( 2, math.max( 0, math.min( 7, dwnSmplng ) ) ).toInt
+  def udpateDownsampling(): Unit = {
+    downsampling = math.pow( 2, math.max( 0, math.min( 7, cfg.safeDownsamplingFactor ) ) ).toInt
     adjustTexturing( innerWidth, innerHeight )
   }
 
@@ -594,44 +575,10 @@ class ThreeScene {
     }
   }
 
-  private var bordersWidth = 1f
-
-  @JSExport
-  def setBordersWidth( brdrsWdth: Float ): Unit = {
-    bordersWidth = math.min( 2, math.max( 0, brdrsWdth/10f ) )
-  }
-
-  private var explosionFactor = 0f
-
-  @JSExport
-  def setExplosion( explosionFctr: Float ): Unit = {
-    val f = math.min( 100, math.max( 0, explosionFctr ) ) / 100
-    explosionFactor = f*f*10
-  }
-
-  private var cullback = false
-
-  @JSExport
   def toggleCullback(): Unit = {
-    cullback = !cullback
     updateMeshCulling()
   }
 
-  private var depthScale = 0.5f
-
-  @JSExport
-  def setDepthScale( depthScl: Float ): Unit = {
-    depthScale = math.min( 100, math.max( -100, depthScl ) ) / 100
-  }
-
-  private var borderColor = ( 0f, 0f, 0f )
-
-  @JSExport
-  def changeBorderColor( brdrColor: String ): Unit = {
-    try {
-      borderColor = Colors.intColorToFloatsColors( Integer.parseInt( brdrColor.substring( 1 ), 16 ) )
-    } catch { case e: NumberFormatException => () }
-  }
   // ******************** rendering ********************
 
   private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
@@ -647,8 +594,8 @@ class ThreeScene {
     for ( ( _, m ) <- meshes ) {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_explosionFactor", explosionFactor )
-      updateThis( "u_depthScale", depthScale )
+      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+      updateThis( "u_depthScale", cfg.mazeDepthFactor )
       updateThis( "u_mvpMat", mvp )
     }
     renderer.render( pickScene, dummyCam )
@@ -663,11 +610,13 @@ class ThreeScene {
     for ( ( m, _ ) <- meshes ) {
       val updateThis = updateMeshMaterialValue( m ) _
       updateThis( "u_time", 0f )
-      updateThis( "u_explosionFactor", explosionFactor )
-      updateThis( "u_depthScale", depthScale )
+      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+      updateThis( "u_depthScale", cfg.mazeDepthFactor )
       updateThis( "u_mvpMat", mvp )
-      updateThis( "u_borderWidth", bordersWidth )
-      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( borderColor._1,borderColor._2,borderColor._3 ) )
+      updateThis( "u_borderWidth", cfg.safeBordersWidth )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( cfg.`Borders color`( 0 ) / 255f
+                                                                  , cfg.`Borders color`( 1 ) / 255f
+                                                                  , cfg.`Borders color`( 2 ) / 255f ) )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )

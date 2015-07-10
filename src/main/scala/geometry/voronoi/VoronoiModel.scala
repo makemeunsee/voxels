@@ -204,8 +204,6 @@ trait VoronoiModel {
   def faces: Array[Face]
   // mutates the original!
   def cut( ns: Seq[Normal3] ): VoronoiModel
-  // mutates!
-  def updateColor( faceId: Int, color: Int, centerColor: Int ): Unit
 }
 
 import geometry.voronoi.VoronoiModel._
@@ -312,13 +310,5 @@ case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
         closestRec( closestNeighbour )
     }
     closestRec( 0 )
-  }
-
-  // mutates!
-  def updateColor( faceId: Int, color: Int, centerColor: Int ): Unit = {
-    if ( faceId > -1 && faceId < faces.length )
-      faces.update( faceId, faces( faceId ).copy( color = color, centerColor = centerColor ) )
-    else
-      ()
   }
 }

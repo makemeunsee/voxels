@@ -10,12 +10,12 @@ import scala.util.Random
  */
 object Maze {
   @tailrec
-  private def toDepthMap0[T]( at: Seq[Maze[T]], acc: Map[T, Int], min: Int, max: Int ): ( Map[T, Int], Int, Int ) = at match {
+  private def toDepthMap0[T]( at: Seq[Maze[T]], acc: Map[T, Int], max: Int ): ( Map[T, Int], Int) = at match {
     case Nil =>
-      ( acc, min, max )
+      ( acc, max )
     case h :: t =>
       val d = h.depth
-      toDepthMap0( h.branches ++ t, acc + ( ( h.value, d ) ), math.min( min, d ), math.max( max, d ) )
+      toDepthMap0( h.branches ++ t, acc + ( ( h.value, d ) ), math.max( max, d ) )
   }
 
   @tailrec
@@ -76,7 +76,7 @@ trait Maze[T] {
   def size: Int = branches.foldLeft( 1 ){ _ + _.size }
 
   // returns a map of each node and its depth, the min depth, the max depth
-  def toDepthMap: ( Map[T, Int], Int, Int ) = toDepthMap0( Seq( this ), Map.empty, Int.MaxValue, Int.MinValue )
+  def toDepthMap: ( Map[T, Int], Int ) = toDepthMap0( Seq( this ), Map.empty, 0 )
 
   // map each (value, depth) pair to its parent and children
   def relativesMap: Map[( T, Int ), Set[( T, Int )]] = {

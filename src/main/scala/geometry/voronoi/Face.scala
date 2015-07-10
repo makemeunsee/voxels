@@ -1,6 +1,5 @@
 package geometry.voronoi
 
-import demo.Colors
 import geometry.{Normal3, Vector3}
 
 /**
@@ -8,8 +7,6 @@ import geometry.{Normal3, Vector3}
  */
 case class Face( seed: Normal3
                , vertices: Seq[ Vector3 ]
-               , neighbours: Set[ Int ]
-               , color: Int = Colors.WHITE
-               , centerColor: Int = Colors.WHITE ) {
+               , neighbours: Set[ Int ] ) {
   def barycenter: Vector3 = vertices.foldLeft( Vector3( 0, 0, 0 ) )( _ + _ ) / vertices.length
 }

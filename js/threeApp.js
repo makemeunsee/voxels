@@ -43,9 +43,11 @@ function appMain() {
         uiVisible = !uiVisible;
         if ( uiVisible ) {
             $( ".gui" ).show();
+            $( ".dg" ).show();
             stats.domElement.style.display = "block";
         } else {
             $( ".gui" ).hide();
+            $( ".dg" ).hide();
             stats.domElement.style.display = "none";
         }
     }
@@ -69,84 +71,6 @@ function appMain() {
         window.location = window.location.pathname;
     });
 
-    $("#axis").unbind("click");
-    $("#axis").click(function() {
-            scalaObj.scene.toggleAxis();
-        }
-    );
-    $("#axis").attr("checked", false);
-    $("#axis").prop("checked", false);
-
-    $("#cullback").unbind("click");
-    $("#cullback").click(function() {
-            scalaObj.scene.toggleCullback();
-        }
-    );
-    $("#cullback").attr("checked", false);
-    $("#cullback").prop("checked", false);
-
-    $( "#downsamplingSlider" ).slider( {
-        orientation: "horizontal",
-        min: 0,
-        max: 7,
-        value: 0,
-        slide: refreshDownsampling,
-        change: refreshDownsampling
-    });
-
-    function refreshDownsampling(evt, ui) {
-        scalaObj.scene.setDownsampling(ui.value);
-    }
-
-    $( "#bordersSlider" ).slider( {
-        orientation: "horizontal",
-        min: 0,
-        max: 20,
-        value: 10,
-        slide: refreshBordersWidth,
-        change: refreshBordersWidth
-    });
-
-    function refreshBordersWidth(evt, ui) {
-        scalaObj.scene.setBordersWidth(ui.value);
-    }
-
-    $( "#explosionSlider" ).slider( {
-        orientation: "horizontal",
-        min: 0,
-        max: 100,
-        value: 0,
-        slide: refreshExplosion,
-        change: refreshExplosion
-    });
-
-    function refreshExplosion(evt, ui) {
-        scalaObj.scene.setExplosion(ui.value);
-    }
-
-    $( "#depthSlider" ).slider( {
-        orientation: "horizontal",
-        min: -100,
-        max: 100,
-        value: 50,
-        slide: refreshDepth,
-        change: refreshDepth
-    });
-
-    function refreshDepth(evt, ui) {
-        scalaObj.scene.setDepthScale(ui.value);
-    }
-
-    $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
-
-    $("#borderColor").change(function() {
-        scalaObj.scene.changeBorderColor($("#borderColor").prop("value"));
-    });
-    $("#borderColor").attr("value", "#0d0d0d");
-    $("#borderColor").prop("value", "#0d0d0d");
-
-    $( "#radio_colors" ).buttonset();
-
     var takeScreenshot = false;
     function screenshot() {
         takeScreenshot = true;
@@ -157,36 +81,6 @@ function appMain() {
     var toggleFullscreen = THREEx.FullScreen.toggleFct();
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
-
-    $( "#rightColumn" ).hide();
-
-    function showFaceMenu( selectedFace ) {
-        if ( selectedFace > -1 && uiVisible) {
-            $( "#rightColumn" ).show();
-        } else {
-            $( "#rightColumn" ).hide();
-        }
-    }
-
-    $("#color").change(function() {
-        scalaObj.changeFaceColor($("#color").prop("value"));
-    });
-    $("#centerColor").change(function() {
-        scalaObj.changeFaceCenterColor($("#centerColor").prop("value"));
-    });
-
-    function loadColors(selection) {
-        var color = selection.faceColor;
-        var centerColor = selection.faceCenterColor;
-        if (color !== -1) {
-            $("#color").attr("value", "#"+color);
-            $("#color").prop("value", "#"+color);
-        }
-        if (centerColor !== -1) {
-            $("#centerColor").attr("value", "#"+centerColor);
-            $("#centerColor").prop("value", "#"+centerColor);
-        }
-    }
 
     var mainContainer = document.getElementById( 'main' );
 
@@ -247,11 +141,6 @@ function appMain() {
 
     function doubleClick() {
         toggleUI();
-    }
-
-    function clearSelection() {
-        scalaObj.clearSelection();
-        loadDockingOptions( 0 );
     }
 
     function onMouseUp(event) {
@@ -361,8 +250,6 @@ function appMain() {
 
     updateProjection(window.innerWidth, window.innerHeight);
 
-    var pixels = new Uint8Array(4);
-
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
 
@@ -394,9 +281,6 @@ function appMain() {
 
             // pickRender
             highlighted = scalaObj.scene.pickRender(mx,my);
-            var selection = scalaObj.selectFace(highlighted);
-            loadColors(selection);
-            showFaceMenu(selection.faceId);
             clicked = false;
         }
 

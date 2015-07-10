@@ -19,56 +19,14 @@
         <div id="dialog" title="Voronoi sphere">
             <p>Drag to move the view.</p>
             <p>Scroll / pinch to zoom.</p>
-            <p>Pick a face and change its colors.</p>
+            <p>Pick any face to highlight.</p>
             <p>Double click / tap to hide UI.</p>
         </div>
         <div id="topbarLeft" class="gui">
-            <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
-            <input type="checkbox" id="cullback"><label id="cullbackLabel" for="cullback">Cull back faces</label>
-        </div>
-        <div id="topbarRight" class="gui">
+            <button id="showHelp">?</button>
+            <button id="fullscreen">fullscreen</button>
             <button id="reset">reset</button>
             <button id="screenshot">screenshot</button>
-            <button id="fullscreen">fullscreen</button>
-            <button id="showHelp">?</button>
-        </div>
-        <div id="leftColumn" class="gui">
-            <p>Downsampling</p>
-            <div id="downsamplingSlider" class="slider"></div>
-            <p>Borders color</p>
-            <input type="color" id="borderColor" value="#0d0d0d" />
-            <p>Borders width</p>
-            <div id="bordersSlider" class="slider"></div>
-            <p>Explosion</p>
-            <div id="explosionSlider" class="slider"></div>
-            <p>Maze depth scale</p>
-            <div id="depthSlider" class="slider"></div>
-            <div id="radio_colors">
-                <div>
-                    <input type="radio" id="radio_uniform" name="radio_colors" checked="checked">
-                    <label for="radio_uniform" class="radio_colors">Uniform color</label>
-                </div>
-                <div>
-                    <input type="radio" id="radio_random" name="radio_colors">
-                    <label for="radio_random" class="radio_colors">Random colors</label>
-                </div>
-                <div>
-                    <input type="radio" id="radio_cubehelix" name="radio_colors">
-                    <label for="radio_cubehelix" class="radio_colors">Cubehelix rainbow</label>
-                </div>
-                <div>
-                    <input type="radio" id="radio_niccoli" name="radio_colors">
-                    <label for="radio_niccoli" class="radio_colors">Matteo Niccoli's rainbow</label>
-                </div>
-                <div>
-                    <input type="radio" id="radio_lessangry" name="radio_colors">
-                    <label for="radio_lessangry" class="radio_colors">Less angry rainbow</label>
-                </div>
-            </div>
-        </div>
-        <div id="rightColumn" class="gui">
-            <input type="color" id="color" value="#ffffff" />
-            <input type="color" id="centerColor" value="#ffffff" />
         </div>
         
         <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
@@ -221,6 +179,7 @@ void main()
         <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
         <script type="text/javascript" src="js/lib/stats.min.js"></script>
         <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+        <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
         <script type="text/javascript" src="target/scala-2.11/voxels-opt.js"></script>
         <script type="text/javascript" src="js/threeApp.js"></script>
     </body>

@@ -24,17 +24,8 @@ canvas {
     float: left;
 }
 
-.menu {
-    float: left;
-}
-
 #centerView {
     margin: 10px 10px 10px 10px;
-}
-
-li.active {
-    background: #888;
-    color:      #222;
 }
 
 #main {
@@ -51,32 +42,4 @@ li.active {
     opacity: 0.75;
     z-index: 10000;
     padding: 10px 10px 10px 10px;
-}
-
-#leftColumn {
-    margin:10px auto;
-    padding-right: 25px;
-    float:left;
-    clear:left;
-}
-
-#rightColumn {
-    margin:50px auto;
-    width:200px;
-    float:right;
-    clear:right;
-}
-
-.slider {
-    left:15px;
-    width:250px;
-}
-
-#radio_colors {
-    font-size:75%;
-    margin:10px auto;
-}
-
-.radio_colors {
-    width:230px;
 }

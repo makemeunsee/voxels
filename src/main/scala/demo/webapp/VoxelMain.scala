@@ -10,19 +10,69 @@ import geometry.voronoi.VoronoiModel
 import geometry.voronoi.VoronoiModel.CubeModel
 import maze.Maze
 
-import scala.scalajs.js.JSConverters._
+import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
-import scala.scalajs.js.{Dictionary, JSApp}
+import scala.scalajs.js.JSApp
 import scala.util.Random
 
 object VoxelMain extends JSApp {
 
   private var model: VoronoiModel = CubeModel
+  private var maze: Maze[Int] = null // beh
+  private var depthMap: Map[Int, Int] = null // beh
+  private var depthMax = 0
+
   private implicit var rnd = new Random( System.currentTimeMillis() )
+
+  private val config = new Config
+  private val datGUI = new DatGUI
+
+  // ******************** actual three.js scene ********************
+
+  @JSExport
+  val scene = new ThreeScene( config )
 
   // ******************** init code ********************
 
-  def main(): Unit = {}
+  def main(): Unit = {
+    val jsCfg = config.asInstanceOf[js.Dynamic]
+
+    val general = datGUI.addFolder( "General" )
+
+    general
+      .addBoolean( jsCfg, "Show axis" )
+      .onChange { _: Boolean => scene.toggleAxis() }
+    general
+      .addBoolean( jsCfg, "Cull back" )
+      .onChange { _: Boolean => scene.toggleCullback() }
+    general
+      .addRange( jsCfg, "Downsampling", 0, 7 )
+      .onChange { _: Float => scene.udpateDownsampling() }
+    general
+      .addRange( jsCfg, "Explosion", 0, 100 )
+    general
+      .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
+    general
+      .addColor( jsCfg, "Borders color" )
+    general.open()
+
+    val mazeFolder = datGUI.addFolder( "Maze" )
+    mazeFolder
+      .addRange( jsCfg, "Maze depth scaling", -100, 100 )
+      .onChange { v: Float => () }
+    mazeFolder.open()
+
+    val colors = datGUI.addFolder( "Coloring" )
+    colors
+      .addList( jsCfg, "Palette", Config.colorings )
+      .onChange { _: String => applyColors() }
+    colors
+      .addRange( jsCfg, "Rainbow span", 1f, depthMax )
+      .onChange { _: Float => applyColors() }
+    colors.open()
+
+    datGUI.open()
+  }
 
   @JSExport
   def initRnd( seed: Long ): Unit = {
@@ -40,103 +90,74 @@ object VoxelMain extends JSApp {
     }
 
     val t0 = System.currentTimeMillis()
+
     // apply cuts
     model = model.cut( cutNormals )
+
     val t1 = System.currentTimeMillis()
+
+    // generate maze
+    maze = Maze.depthFirstMaze( model.faces ).get
+    val mazeDepthsAndLimits = maze.toDepthMap
+    depthMap = mazeDepthsAndLimits._1
+    depthMax = mazeDepthsAndLimits._2
+
+    val t2 = System.currentTimeMillis()
+
     println( "cut time", t1 - t0 )
+    println( "maze time", t2 - t1 )
 
-    scene.addModel( model, Maze.depthFirstMaze( model.faces ).get )
+    scene.addModel( model, maze, mazeDepthsAndLimits )
 
-    if ( rndColors )
-      rndColor()
-  }
+    config.`Rainbow span` = depthMax
 
-  // ******************** actual three.js scene ********************
-  
-  @JSExport
-  val scene = new ThreeScene
+    applyColors()
 
-  // ******************** face selection management ********************
-
-  // what's currently selected
-  private var selectedFace: Int = -1
-
-  @JSExport
-  def selectFace( colorCode: Int ): Dictionary[String] = {
-    selectedFace = ThreeScene.revertColorCode( colorCode )
-
-    val ( col, cCol ) = {
-      val faces = model.faces
-      if ( selectedFace < faces.length && selectedFace > -1 ) {
-        val face = faces( selectedFace )
-        ( face.color, face.centerColor )
-      } else
-        ( Colors.BLACK, Colors.BLACK )
-    }
-    Map( ( "faceId", selectedFace.toString )
-       , ( "faceColor", "%06x".format( col ) )
-       , ( "faceCenterColor", "%06x".format( cCol ) )
-       )
-      .toJSDictionary
-  }
-
-  @JSExport
-  def clearSelection(): Unit = {
-    selectedFace = -1
+    main()
   }
 
   // ******************** coloring ********************
 
-  private implicit var rndColors = false
-
-  @JSExport
-  def toggleRndColors(): Unit = {
-    rndColors = !rndColors
-    if ( rndColors )
+  private def applyColors(): Unit = config.`Palette` match {
+    case Config.uniforms =>
+      import Colors.floatsToInt
+      color( config.`Uniform color 0`.toSeq, config.`Uniform color 1`.toSeq )
+    case Config.randoms =>
       rndColor()
-    else
-      color( Colors.WHITE )
+    case Config.chRainbow =>
+      rainbow( Colors.cubeHelixRainbow )
+    case Config.niRainbow =>
+      rainbow( Colors.matteoNiccoliRainbow )
+    case Config.laRainbow =>
+      rainbow( Colors.lessAngryRainbow )
+    case _ =>
+      ()
   }
 
   private def rndColor(): Unit = {
-    colorModel( Colors.rndColor, Colors.rndColor )
-  }
-
-  private def color( c: Int ): Unit = {
-    colorModel( () => c, () => c )
-  }
-
-  private def colorModel( color: () => Int, centerColor: () => Int ): Unit = {
     import Colors.intColorToFloatsColors
+    colorModel( { _: ( Int, Int ) => Colors.rndColor() }, { _: ( Int, Int ) => Colors.rndColor() } )
+  }
+
+  private def color( c0: Int, c1: Int ): Unit = {
+    import Colors.intColorToFloatsColors
+    colorModel( { _: ( Int, Int ) => c0 }, { _: ( Int, Int ) => c1 } )
+  }
+
+  private def rainbow( rainbowFct: Float => Float => ( Float, Float, Float ) ): Unit = {
+    val rnbw = rainbowFct( depthMax.toFloat / config.safeRainbowSpan )
+      .compose { idAndDepth: ( Int, Int ) => idAndDepth._2.toFloat / depthMax }
+    colorModel( rnbw , rnbw )
+  }
+
+  private def colorModel( color: ( ( Int, Int ) ) => ( Float, Float, Float )
+                        , centerColor: ( ( Int, Int ) ) => ( Float, Float, Float ) ): Unit = {
     ThreeScene.withOffsetsAndSizes( model.faces )
       .zipWithIndex
-      .foreach { case ( ( _, o, s ), id ) =>
-        val col = color()
-        val cCol = centerColor()
+      .foreach { case ( ( f, o, s ), id ) =>
+        val col = color( ( id, depthMap( id ) ) )
+        val cCol = centerColor( ( id, depthMap( id ) ) )
         scene.colorFace( o, s, col, cCol )
-        model.updateColor( id, col, cCol )
       }
   }
-
-  private def colorFace( faceId: Int, color: Option[Int] = None, centerColor: Option[Int] = None ): Unit = {
-    import Colors.intColorToFloatsColors
-    ThreeScene.withOffsetsAndSizes( model.faces ).lift( faceId ).foreach { case ( f, o, s ) =>
-      val defCols = ( f.color, f.centerColor )
-      val col = color.getOrElse( defCols._1 )
-      val cCol = centerColor.getOrElse( defCols._2 )
-      scene.colorFace( o, s, col, cCol )
-      model.updateColor( faceId, col, cCol )
-    }
-  }
-
-  @JSExport
-  def changeFaceColor( color: String ): Unit = {
-    colorFace( selectedFace, color = Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
-  }
-
-  @JSExport
-  def changeFaceCenterColor( color: String ): Unit = {
-    colorFace( selectedFace, centerColor = Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
-  }
-
 }
