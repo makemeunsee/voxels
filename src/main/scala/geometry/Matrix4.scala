@@ -74,8 +74,7 @@ object Matrix4 {
   }
 
   def orthoMatrixFromScreen( w: Double, h: Double, k: Double ) = {
-    val hh = if ( h < 0 ) 1 else h
-    val aspect = w / hh
+    val aspect = w / h
     val far = 100
     val near = -100
     val right = k * aspect

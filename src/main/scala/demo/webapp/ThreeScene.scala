@@ -95,7 +95,7 @@ class ThreeScene {
   private val zoomMax = 16
   private val zoomMin = 0.0625
   private val zoomSpeed = 1.05
-  private var zoom = 1d
+  private var zoom = 4d/7
 
   @JSExport
   def zoom( delta: Double ): Unit = {
@@ -116,7 +116,7 @@ class ThreeScene {
     println( "viewport", width, height )
     innerWidth = width
     innerHeight = height
-    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1.75 )
+    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1 )
     updateMVP()
 
     adjustTexturing( innerWidth, innerHeight )
@@ -124,7 +124,8 @@ class ThreeScene {
 
   @JSExport
   def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    modelMat = Matrix4.naiveRotMat( deltaX * 0.002, deltaY * 0.002 ) * modelMat
+    val speed = 1f / 500f / zoom / ( 1f + explosionFactor )
+    modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
     updateMVP()
   }
 
