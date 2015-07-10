@@ -77,15 +77,6 @@ function appMain() {
     $("#axis").attr("checked", false);
     $("#axis").prop("checked", false);
 
-    $("#rndColors").unbind("click");
-    $("#rndColors").click(function() {
-            scalaObj.toggleRndColors();
-            loadColors(scalaObj.selectFace(highlighted));
-        }
-    );
-    $("#rndColors").attr("checked", false);
-    $("#rndColors").prop("checked", false);
-
     $("#cullback").unbind("click");
     $("#cullback").click(function() {
             scalaObj.scene.toggleCullback();
@@ -147,6 +138,14 @@ function appMain() {
     }
 
     $( ".ui-slider-handle" ).css( { "width": "0.5em" } );
+
+    $("#borderColor").change(function() {
+        scalaObj.scene.changeBorderColor($("#borderColor").prop("value"));
+    });
+    $("#borderColor").attr("value", "#0d0d0d");
+    $("#borderColor").prop("value", "#0d0d0d");
+
+    $( "#radio_colors" ).buttonset();
 
     var takeScreenshot = false;
     function screenshot() {

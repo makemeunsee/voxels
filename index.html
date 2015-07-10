@@ -24,7 +24,6 @@
         </div>
         <div id="topbarLeft" class="gui">
             <input type="checkbox" id="axis"><label id="axisLabel" for="axis">Show axis</label>
-            <input type="checkbox" id="rndColors"><label id="rndColorsLabel" for="rndColors">Random colors</label>
             <input type="checkbox" id="cullback"><label id="cullbackLabel" for="cullback">Cull back faces</label>
         </div>
         <div id="topbarRight" class="gui">
@@ -36,12 +35,36 @@
         <div id="leftColumn" class="gui">
             <p>Downsampling</p>
             <div id="downsamplingSlider" class="slider"></div>
-            <p>Borders</p>
+            <p>Borders color</p>
+            <input type="color" id="borderColor" value="#0d0d0d" />
+            <p>Borders width</p>
             <div id="bordersSlider" class="slider"></div>
             <p>Explosion</p>
             <div id="explosionSlider" class="slider"></div>
             <p>Maze depth scale</p>
             <div id="depthSlider" class="slider"></div>
+            <div id="radio_colors">
+                <div>
+                    <input type="radio" id="radio_uniform" name="radio_colors" checked="checked">
+                    <label for="radio_uniform" class="radio_colors">Uniform color</label>
+                </div>
+                <div>
+                    <input type="radio" id="radio_random" name="radio_colors">
+                    <label for="radio_random" class="radio_colors">Random colors</label>
+                </div>
+                <div>
+                    <input type="radio" id="radio_cubehelix" name="radio_colors">
+                    <label for="radio_cubehelix" class="radio_colors">Cubehelix rainbow</label>
+                </div>
+                <div>
+                    <input type="radio" id="radio_niccoli" name="radio_colors">
+                    <label for="radio_niccoli" class="radio_colors">Matteo Niccoli's rainbow</label>
+                </div>
+                <div>
+                    <input type="radio" id="radio_lessangry" name="radio_colors">
+                    <label for="radio_lessangry" class="radio_colors">Less angry rainbow</label>
+                </div>
+            </div>
         </div>
         <div id="rightColumn" class="gui">
             <input type="color" id="color" value="#ffffff" />

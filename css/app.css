@@ -71,3 +71,12 @@ li.active {
     left:15px;
     width:250px;
 }
+
+#radio_colors {
+    font-size:75%;
+    margin:10px auto;
+}
+
+.radio_colors {
+    width:230px;
+}

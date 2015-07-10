@@ -315,8 +315,8 @@ class ThreeScene {
   private def makeMesh( m: VoronoiModel, maze: Maze[Int] ): ( Mesh, Mesh ) = {
     val ( depthMap, minDepth, maxDepth ) = maze.toDepthMap
     val depthSpan = maxDepth - minDepth
-//    def rainbow = Colors.matteoNiccoliRainbow
-    def rainbow = Colors.lessAngryRainbow( 256, m.faces.length.toFloat / 100 ) _
+    def rainbow = Colors.cubeHelixRainbow
+//    def rainbow = Colors.lessAngryRainbow( 256, m.faces.length.toFloat / 100 ) _
 
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -623,6 +623,15 @@ class ThreeScene {
   def setDepthScale( depthScl: Float ): Unit = {
     depthScale = math.min( 100, math.max( -100, depthScl ) ) / 100
   }
+
+  private var borderColor = ( 0f, 0f, 0f )
+
+  @JSExport
+  def changeBorderColor( brdrColor: String ): Unit = {
+    try {
+      borderColor = Colors.intColorToFloatsColors( Integer.parseInt( brdrColor.substring( 1 ), 16 ) )
+    } catch { case e: NumberFormatException => () }
+  }
   // ******************** rendering ********************
 
   private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
@@ -658,7 +667,7 @@ class ThreeScene {
       updateThis( "u_depthScale", depthScale )
       updateThis( "u_mvpMat", mvp )
       updateThis( "u_borderWidth", bordersWidth )
-      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( 0,0,0 ) )
+      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( borderColor._1,borderColor._2,borderColor._3 ) )
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
