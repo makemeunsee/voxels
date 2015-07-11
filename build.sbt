@@ -1,6 +1,6 @@
 enablePlugins(ScalaJSPlugin)
 
-name := "Voxels"
+name := "Voronoi sphere"
 
 version := "1.0"
 
