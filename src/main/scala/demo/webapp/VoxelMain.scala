@@ -18,8 +18,8 @@ import scala.util.Random
 object VoxelMain extends JSApp {
 
   private var model: VoronoiModel = CubeModel
-  private var maze: Maze[Int] = null // beh
-  private var depthMap: Map[Int, Int] = null // beh
+  private var maze: Maze[Int] = Maze.empty( -1 )
+  private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
 
   private implicit var rnd = new Random( System.currentTimeMillis() )
@@ -100,7 +100,7 @@ object VoxelMain extends JSApp {
     val t1 = System.currentTimeMillis()
 
     // generate maze
-    maze = Maze.depthFirstMaze( model.faces ).get
+    maze = Maze.depthFirstMaze( model.faces )
     val mazeDepthsAndLimits = maze.toDepthMap
     depthMap = mazeDepthsAndLimits._1
     depthMax = mazeDepthsAndLimits._2
@@ -110,7 +110,7 @@ object VoxelMain extends JSApp {
     println( "cut time", t1 - t0 )
     println( "maze time", t2 - t1 )
 
-    scene.addModel( model, maze, mazeDepthsAndLimits )
+    scene.addModel( model, mazeDepthsAndLimits )
 
     applyColors()
 

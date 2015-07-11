@@ -1,6 +1,5 @@
 package demo.webapp
 
-import demo.Colors
 import geometry.Matrix4
 import geometry.voronoi.{Face, VoronoiModel}
 import maze.Maze
@@ -149,11 +148,12 @@ class ThreeScene( cfg: Config ) {
 
   private var meshes: Option[( Mesh, Mesh )] = None
 
-  def addModel( model: VoronoiModel, maze: Maze[Int], depthData: ( Map[Int, Int], Int ) ): Unit = {
-    meshes = Some( makeMesh( model, maze, depthData ) )
+  def addModel( model: VoronoiModel, depthData: ( Map[Int, Int], Int ) ): Unit = {
+    val ( m, pm ) = makeMesh( model, depthData )
+    meshes = Some( m, pm )
     updateMeshCulling()
-    scene.add( meshes.get._1 )
-    pickScene.add( meshes.get._2 )
+    scene.add( m )
+    pickScene.add( pm )
   }
 
   private def updateMeshCulling(): Unit = {
@@ -297,7 +297,7 @@ class ThreeScene( cfg: Config ) {
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
   }
 
-  private def makeMesh( m: VoronoiModel, maze: Maze[Int], depthData: ( Map[Int, Int], Int ) ): ( Mesh, Mesh ) = {
+  private def makeMesh( m: VoronoiModel, depthData: ( Map[Int, Int], Int ) ): ( Mesh, Mesh ) = {
     val ( depthMap, maxDepth ) = depthData
 
     val customUniforms = js.Dynamic.literal(

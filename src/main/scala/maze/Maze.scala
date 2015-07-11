@@ -27,12 +27,12 @@ object Maze {
       childrenMap( newRem, newAcc )
   }
 
-  def depthFirstMaze( faces: Array[Face] )( implicit rnd: Random ): Option[Maze[Int]] = {
+  def depthFirstMaze( faces: Array[Face] )( implicit rnd: Random ): Maze[Int] = {
     if ( faces.isEmpty )
-      None
+      empty( -1 )
     else {
       val id0 = rnd.nextInt( faces.length )
-      Some( depthFirstMaze0( Set( id0 ), Seq.empty, Seq( ( id0, 0 ) ) )( faces, rnd ) )
+      depthFirstMaze0( Set( id0 ), Seq.empty, Seq( ( id0, 0 ) ) )( faces, rnd )
     }
   }
   @tailrec
@@ -64,6 +64,8 @@ object Maze {
         depthFirstMaze0( newVisited, acc, ( j, depth+1 ) +: ( id, depth ) +: rParents )
       }
   }
+
+  def empty[T]( t: T ): Maze[T] = MazeImpl( t, 0, Seq.empty )
 }
 
 import maze.Maze._

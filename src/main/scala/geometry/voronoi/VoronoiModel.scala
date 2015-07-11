@@ -42,15 +42,15 @@ object VoronoiModel {
     else
       ( p0, p1 )
 
-  private def intersectPlaneAndSegment( planeNormal: Normal3, segment: ( Vector3, Vector3 ) ): Option[Vector3] = {
+  private def intersectPlaneAndSegment( planeNormal: Normal3, segment: ( Vector3, Vector3 ) ): Vector3 = {
     val ( p0, p1 ) = orderPoints( segment._1, segment._2 )
     val d = p1 - p0
     val k = planeNormal.x * d.x + planeNormal.y * d.y + planeNormal.z * d.z
     if ( tolerance >= math.abs( k ) )
-      None
+      throw new Error( "bad cut!")
     else {
       val at = ( planeNormal.x*( planeNormal.x-p0.x ) + planeNormal.y*( planeNormal.y-p0.y ) + planeNormal.z*( planeNormal.z-p0.z ) ) / k
-      Some( p0 + ( d * at ) )
+      p0 + ( d * at )
     }
   }
 
@@ -157,11 +157,11 @@ object VoronoiModel {
             ( allVerts, newVerts )
           case ( ( v0, Below ),( v1, Above ) )     =>
             // cut, keep first and create one, new one on cut edge
-            val newV = intersectPlaneAndSegment( n, ( v0, v1 ) ).get
+            val newV = intersectPlaneAndSegment( n, ( v0, v1 ) )
             ( newV :: v0 :: allVerts, newV :: newVerts )
           case ( ( v0, Above ),( v1, Below ) )     =>
             // cut, keep second and create one, new one on cut edge
-            val newV = intersectPlaneAndSegment( n, ( v0, v1 ) ).get
+            val newV = intersectPlaneAndSegment( n, ( v0, v1 ) )
             ( v1 :: newV :: allVerts, newV :: newVerts )
           case ( ( v0, Below ),( v1, Below ) )     =>
             // keep both, no cut edge
