@@ -524,10 +524,7 @@ class ThreeScene( cfg: Config ) {
 
   // ******************** special effects ********************
 
-  private var downsampling = 1
-
   def udpateDownsampling(): Unit = {
-    downsampling = math.pow( 2, math.max( 0, math.min( 7, cfg.safeDownsamplingFactor ) ) ).toInt
     adjustTexturing( innerWidth, innerHeight )
   }
 
@@ -545,6 +542,7 @@ class ThreeScene( cfg: Config ) {
   }
 
   private def adjustTexturing( w: Int, h: Int ): Unit = {
+    val downsampling = cfg.safeDownsamplingFactor
     renderingTexture = makeTexture( w / downsampling, h / downsampling )
   }
 
