@@ -87,7 +87,9 @@ class ThreeScene( cfg: Config ) {
 
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
-//  renderer.setClearColor( new org.denigma.threejs.Color( 0.7, 0.7, 0.9 ) )
+  renderer.setClearColor( new org.denigma.threejs.Color( cfg.`Background color`( 0 ) /255f
+                                                       , cfg.`Background color`( 1 ) /255f
+                                                       , cfg.`Background color`( 2 ) /255f ) )
 
   // ******************** view management ********************
 
@@ -523,6 +525,12 @@ class ThreeScene( cfg: Config ) {
   }
 
   // ******************** special effects ********************
+
+  def setBackground( color: Int ): Unit = {
+    import demo.Colors.intColorToFloatsColors
+    val ( r, g, b ): ( Float, Float, Float ) = color
+    renderer.setClearColor( new org.denigma.threejs.Color( r, g, b ) )
+  }
 
   def udpateDownsampling(): Unit = {
     adjustTexturing( innerWidth, innerHeight )

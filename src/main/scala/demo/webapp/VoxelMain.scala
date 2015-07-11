@@ -46,6 +46,9 @@ object VoxelMain extends JSApp {
       .addBoolean( jsCfg, "Cull back" )
       .onChange { _: Boolean => scene.toggleCullback() }
     general
+      .addColor( jsCfg, "Background color" )
+      .onChange { a: js.Array[Float] => scene.setBackground( Colors.floatsToInt( a ) ) }
+    general
       .addRange( jsCfg, "Downsampling", 0, 7 )
       .onChange { _: Float => scene.udpateDownsampling() }
     general

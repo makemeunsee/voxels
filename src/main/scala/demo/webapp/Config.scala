@@ -38,6 +38,8 @@ class Config {
   @JSExport
   var `Cull back`: Boolean = false
 
+  @JSExport
+  var `Background color`: js.Array[Float] = Colors.BLACK
 
   // 0 <= downsampling <= 7
   @JSExport
@@ -70,7 +72,7 @@ class Config {
 
   // -100 <= mazeDepthScale <= 100
   @JSExport
-  var `Maze depth scaling`: Int = -25
+  var `Maze depth scaling`: Int = 0
   def mazeDepthFactor: Float = math.min( 100, math.max( -100, `Maze depth scaling` ) ).toFloat / 100
 
   @JSExport
