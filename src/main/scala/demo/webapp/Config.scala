@@ -77,9 +77,9 @@ class Config {
   var `Palette` = laRainbow
 
   @JSExport
-  var `Uniform color 0`: js.Array[Float] = Colors.WHITE
+  var `Color 0`: js.Array[Float] = Colors.WHITE
   @JSExport
-  var `Uniform color 1`: js.Array[Float] = Colors.WHITE
+  var `Color 1`: js.Array[Float] = Colors.WHITE
 
   // 0.1 <= rainbow span <= 2
   @JSExport

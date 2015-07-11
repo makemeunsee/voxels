@@ -18,5 +18,8 @@ class DatGUI() {
   def addColor( container: js.Any, name: String ): DatController[js.Array[Float]] = js.native
   def addFolder( name: String ): DatGUI = js.native
 
+  def remove( controller: DatController[_] ): js.Any = js.native
+
   def open(): js.Any = js.native
+  def close(): js.Any = js.native
 }

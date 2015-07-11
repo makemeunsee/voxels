@@ -63,16 +63,13 @@ object VoxelMain extends JSApp {
     mazeFolder.open()
 
     val colors = datGUI.addFolder( "Coloring" )
-    colors
-      .addList( jsCfg, "Palette", Config.colorings )
-      .onChange { _: String => applyColors() }
-    colors
-      .addRange( jsCfg, "Rainbow span", 0.01f, 2f, 0.01f )
-      .onChange { _: Float => applyColors() }
-    colors
-      .addBoolean( jsCfg, "Reverse palette" )
-      .onChange { _: Boolean => applyColors() }
     colors.open()
+    val colorsParams = datGUI.addFolder( "Coloring parameters" )
+    colorsParams.open()
+
+    implicit val paletteController = colors.addList( jsCfg, "Palette", Config.colorings )
+
+    applyColors( colorsParams, Seq.empty )
 
     datGUI.open()
   }
@@ -112,27 +109,55 @@ object VoxelMain extends JSApp {
 
     scene.addModel( model, mazeDepthsAndLimits )
 
-    applyColors()
-
     main()
   }
 
   // ******************** coloring ********************
 
-  private def applyColors(): Unit = config.`Palette` match {
-    case Config.uniforms =>
-      import Colors.floatsToInt
-      color( config.`Uniform color 0`.toSeq, config.`Uniform color 1`.toSeq )
-    case Config.randoms =>
-      rndColor()
-    case Config.chRainbow =>
-      rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
-    case Config.niRainbow =>
-      rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
-    case Config.laRainbow =>
-      rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
-    case _ =>
-      ()
+  private def rainbowControllers( colorParams: DatGUI
+                                , jsCfg: js.Dynamic
+                                , reversePalette: Boolean
+                                , rainbowFct: Float => Float => ( Float, Float, Float ) )
+                                ( implicit paletteController: DatController[String] ): Seq[DatController[_]] = {
+    val spanController = colorParams.addRange( jsCfg, "Rainbow span", 0.01f, 2f, 0.01f )
+    val reverseController = colorParams.addBoolean( jsCfg, "Reverse palette" )
+    val newControllers = Seq( spanController, reverseController )
+    spanController.onChange{ _: Float => rainbow( reversePalette )( rainbowFct ) }
+    reverseController.onChange{ _: Boolean => rainbow( reversePalette )( rainbowFct ) }
+    newControllers
+  }
+
+  private def applyColors( colorParams: DatGUI
+                         , colorControllers: Seq[DatController[_]] )
+                         ( implicit paletteController: DatController[String] ): Unit = {
+    val jsCfg = config.asInstanceOf[js.Dynamic]
+    val newControllers = config.`Palette` match {
+      case Config.uniforms =>
+        import Colors.floatsToInt
+        color( config.`Color 0`.toSeq, config.`Color 1`.toSeq )
+        val col0Controller = colorParams.addColor( jsCfg, "Color 0" )
+        val col1Controller = colorParams.addColor( jsCfg, "Color 1" )
+        val result = Seq( col0Controller, col1Controller )
+        col0Controller.onChange { _: js.Array[Float] => color( config.`Color 0`.toSeq, config.`Color 1`.toSeq ) }
+        col1Controller.onChange { _: js.Array[Float] => color( config.`Color 0`.toSeq, config.`Color 1`.toSeq ) }
+        result
+      case Config.randoms =>
+        rndColor()
+        Seq.empty
+      case Config.chRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
+        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.cubeHelixRainbow )
+      case Config.niRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
+        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.matteoNiccoliRainbow )
+      case Config.laRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
+        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.lessAngryRainbow )
+      case _ =>
+        Seq.empty
+    }
+    colorControllers.foreach( colorParams.remove )
+    paletteController.onChange { _: String => applyColors( colorParams, newControllers ) }
   }
 
   private def rndColor(): Unit = {
