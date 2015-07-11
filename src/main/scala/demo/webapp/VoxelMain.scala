@@ -114,23 +114,22 @@ object VoxelMain extends JSApp {
 
   // ******************** coloring ********************
 
-  private def rainbowControllers( colorParams: DatGUI
+  private def rainbowControllers( rainbowFct: Float => Float => ( Float, Float, Float ) )
+                                ( implicit colorParams: DatGUI
                                 , jsCfg: js.Dynamic
-                                , reversePalette: Boolean
-                                , rainbowFct: Float => Float => ( Float, Float, Float ) )
-                                ( implicit paletteController: DatController[String] ): Seq[DatController[_]] = {
+                                , paletteController: DatController[String] ): Seq[DatController[_]] = {
     val spanController = colorParams.addRange( jsCfg, "Rainbow span", 0.01f, 2f, 0.01f )
     val reverseController = colorParams.addBoolean( jsCfg, "Reverse palette" )
     val newControllers = Seq( spanController, reverseController )
-    spanController.onChange{ _: Float => rainbow( reversePalette )( rainbowFct ) }
-    reverseController.onChange{ _: Boolean => rainbow( reversePalette )( rainbowFct ) }
+    spanController.onChange{ _: Float => rainbow( config.`Reverse palette` )( rainbowFct ) }
+    reverseController.onChange{ _: Boolean => rainbow( config.`Reverse palette` )( rainbowFct ) }
     newControllers
   }
 
   // apply color palette and dynamically load relevant parameters in the gui
   private def applyColors( colorControllers: Seq[DatController[_]] )
                          ( implicit colorParams: DatGUI, paletteController: DatController[String] ): Unit = {
-    val jsCfg = config.asInstanceOf[js.Dynamic]
+    implicit val jsCfg = config.asInstanceOf[js.Dynamic]
 
     // palette has change, remove all parameters from the gui
     colorControllers.foreach( colorParams.remove )
@@ -153,15 +152,15 @@ object VoxelMain extends JSApp {
 
       case Config.chRainbow =>
         rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
-        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.cubeHelixRainbow )
+        rainbowControllers( Colors.cubeHelixRainbow )
 
       case Config.niRainbow =>
         rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
-        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.matteoNiccoliRainbow )
+        rainbowControllers( Colors.matteoNiccoliRainbow )
 
       case Config.laRainbow =>
         rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
-        rainbowControllers( colorParams, jsCfg, config.`Reverse palette`, Colors.lessAngryRainbow )
+        rainbowControllers( Colors.lessAngryRainbow )
 
       case _ =>
         Seq.empty
