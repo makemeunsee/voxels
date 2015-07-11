@@ -179,8 +179,8 @@ object VoxelMain extends JSApp {
     val preSpinTranslation = translationMatrix( from.negate )
     val postSpinTranslation = translationMatrix( from )
     val spinRotation = rotationMatrix( ( sourceFace1.vertices.head - from ).normalize
-      , ( targetFace.vertices.head - to ).normalize
-      , Some( targetN ) )
+                                     , ( targetFace.vertices.head - to ).normalize
+                                     , Some( targetN ) )
     // spin shift (rotation variations)
     val bonusSpinRotation = rotationMatrix( rot*2*math.Pi/sourceFace.vertices.length, nx, ny, nz )
 
