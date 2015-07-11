@@ -81,8 +81,11 @@ class Config {
   @JSExport
   var `Uniform color 1`: js.Array[Float] = Colors.WHITE
 
-  // 1 <= rainbow span
+  // 0.1 <= rainbow span <= 2
   @JSExport
-  var `Rainbow span`: Int = 10
-  def safeRainbowSpan: Int = math.max( 1, `Rainbow span` )
+  var `Rainbow span`: Float = 1f
+  def safeRainbowSpan: Float = math.max( 0.01f, math.min( 2, `Rainbow span` ) )
+
+  @JSExport
+  var `Reverse palette`: Boolean = false
 }

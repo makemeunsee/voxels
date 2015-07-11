@@ -36,7 +36,7 @@ object Colors {
   private def cyclicInterpolation( interpolator0: Float => ( Float, Float, Float ), interpolator1: Option[Float => ( Float, Float, Float )] = None )
                                  ( freq: Float )
                                  ( at: Float ): ( Float, Float, Float ) = {
-    val a = at * freq
+    val a = ( at * freq ) / 2
     val b = a - a.toInt
     if ( b < 0.5f )
       interpolator0( 2*b )
@@ -64,11 +64,11 @@ object Colors {
   }
 
   // less angry rainbow, from: http://bl.ocks.org/mbostock/310c99e53880faec2434
-  private def lessAngry0 = cubeHelixInterpolationFct( 1, -100, 0.75f, 0.35f, 80,  1.5f,  0.8f) _
-  private def lessAngry1 = cubeHelixInterpolationFct( 1, 80,   1.5f,  0.8f,  260, 0.75f, 0.3f) _
-  def lessAngryRainbow = cyclicInterpolation( lessAngry0, Some( lessAngry1 ) ) _
+  private val lessAngry0 = cubeHelixInterpolationFct( 1, -100, 0.75f, 0.35f, 80,  1.5f,  0.8f) _
+  private val lessAngry1 = cubeHelixInterpolationFct( 1, 80,   1.5f,  0.8f,  260, 0.75f, 0.3f) _
+  def lessAngryRainbow = ( cyclicInterpolation( lessAngry0, Some( lessAngry1 ) ) _ ).compose { freq: Float => freq * 2 }
 
-  val cubeHelixRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, -240, 0.5f, 1, 300, 0.5f, 0 ) _ ) _
+  val cubeHelixRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, -240, 0.5f, 1, 300, 0.5f, 0 ) ) _
 
-  val matteoNiccoliRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, 300, 5f/12, 0.1f, 60, 25f/24, 0.9f ) _ ) _
+  val matteoNiccoliRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, 300, 5f/12, 0.1f, 60, 25f/24, 0.9f ) ) _
 }

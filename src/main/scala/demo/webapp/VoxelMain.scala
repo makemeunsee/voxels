@@ -67,8 +67,11 @@ object VoxelMain extends JSApp {
       .addList( jsCfg, "Palette", Config.colorings )
       .onChange { _: String => applyColors() }
     colors
-      .addRange( jsCfg, "Rainbow span", 1f, depthMax )
+      .addRange( jsCfg, "Rainbow span", 0.01f, 2f, 0.01f )
       .onChange { _: Float => applyColors() }
+    colors
+      .addBoolean( jsCfg, "Reverse palette" )
+      .onChange { _: Boolean => applyColors() }
     colors.open()
 
     datGUI.open()
@@ -109,8 +112,6 @@ object VoxelMain extends JSApp {
 
     scene.addModel( model, maze, mazeDepthsAndLimits )
 
-    config.`Rainbow span` = depthMax
-
     applyColors()
 
     main()
@@ -125,11 +126,11 @@ object VoxelMain extends JSApp {
     case Config.randoms =>
       rndColor()
     case Config.chRainbow =>
-      rainbow( Colors.cubeHelixRainbow )
+      rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
     case Config.niRainbow =>
-      rainbow( Colors.matteoNiccoliRainbow )
+      rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
     case Config.laRainbow =>
-      rainbow( Colors.lessAngryRainbow )
+      rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
     case _ =>
       ()
   }
@@ -144,8 +145,9 @@ object VoxelMain extends JSApp {
     colorModel( { _: ( Int, Int ) => c0 }, { _: ( Int, Int ) => c1 } )
   }
 
-  private def rainbow( rainbowFct: Float => Float => ( Float, Float, Float ) ): Unit = {
-    val rnbw = rainbowFct( depthMax.toFloat / config.safeRainbowSpan )
+  private def rainbow( reverse: Boolean )( rainbowFct: Float => Float => ( Float, Float, Float ) ): Unit = {
+    val rnbw = rainbowFct( 1f / config.safeRainbowSpan )
+      .compose { f: Float => if( reverse ) 1f - f else f }
       .compose { idAndDepth: ( Int, Int ) => idAndDepth._2.toFloat / depthMax }
     colorModel( rnbw , rnbw )
   }
