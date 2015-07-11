@@ -9,7 +9,7 @@ import geometry.{Vector3, Normal3, Matrix4}
 object Voxel {
   type Vertex = Vector3
 
-  case class Face( vertices: List[Vertex]
+  case class Face( vertices: Seq[Vertex]
                  , faceType: FaceType
                  ) {
     assert( vertices.length > 2 )
@@ -29,8 +29,8 @@ trait VoxelStandard {
   def name: String = getClass.getSimpleName
   def faceCount = facesStructure.size
   def verticesCount = vertices.size
-  def vertices: List[Vertex]
-  def facesStructure: List[( List[Int], FaceType, Seq[Int] )]
+  def vertices: Seq[Vertex]
+  def facesStructure: Seq[( Seq[Int], FaceType, Seq[Int] )]
   def scale = {
     val vertsIds = facesStructure.head
     ( vertices( vertsIds._1.head ) - vertices( vertsIds._1.tail.head ) ).norm
