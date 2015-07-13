@@ -66,6 +66,51 @@ object Maze {
   }
 
   def empty[T]( t: T ): Maze[T] = MazeImpl( t, 0, Seq.empty )
+
+  // walk randomly until a visited cell is reached
+  // upon a loop, it is erased, and walking continues
+  @tailrec
+  def randomWalk( faces: Array[Face], visited: Set[Int], acc: Seq[Int] )
+                ( implicit rnd: Random ): Seq[Int] = acc match {
+    // reached a visited cell
+    case h :: _ if visited.contains( h ) =>
+      acc
+
+    case h :: t =>
+      val maybeI = t.find( h == _ )
+      val ( options, newAcc ) = maybeI match {
+        // loop, erase it and go on
+        case Some( i ) =>
+          ( faces( h ).neighbours.toSeq, t.drop( i ) )
+        // no loop
+        case None =>
+          ( faces( h ).neighbours.toSeq, acc )
+      }
+      // take another step
+      val newStep = options( rnd.nextInt( options.length ) )
+      randomWalk( faces, visited, newStep +: newAcc )
+
+    case _ =>
+      throw new Error( "Illegal argument" )
+  }
+
+  @tailrec
+  private def wilsonMazeRec( faces: Array[Face], visited: Set[Int], notVisited: Set[Int], maze: Maze[Int] )( implicit rnd: Random ): Maze[Int] =
+    if ( notVisited.isEmpty )
+      maze
+    else {
+      val nextCell = notVisited.head
+      val newPath = randomWalk( faces, visited, Seq( nextCell ) )
+      // slow because of maze.plug: O( size of maze )
+      wilsonMazeRec( faces, visited ++ newPath, notVisited -- newPath, maze.plug( newPath ) )
+    }
+
+  def wilsonMaze( faces: Array[Face] )( implicit rnd: Random ): Maze[Int] = {
+    val l = faces.length
+    val first = rnd.nextInt( l )
+    wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, MazeImpl( first, 0, Seq.empty ) )
+  }
+
 }
 
 import maze.Maze._
@@ -76,6 +121,8 @@ trait Maze[T] {
   def branches: Seq[Maze[T]]
 
   def size: Int = branches.foldLeft( 1 ){ _ + _.size }
+
+  def plug( branch: Seq[T] ): Maze[T]
 
   // returns a map of each node and its depth, the min depth, the max depth
   def toDepthMap: ( Map[T, Int], Int ) = toDepthMap0( Seq( this ), Map.empty, 0 )
@@ -91,7 +138,39 @@ trait Maze[T] {
       }
     }
   }
-
 }
 
-private case class MazeImpl[T]( value: T, depth: Int, branches: Seq[Maze[T]] ) extends Maze[T]
+//TODO: mutable maze
+
+private case class MazeImpl[T]( value: T, depth: Int, branches: Seq[Maze[T]] ) extends Maze[T] {
+  def plug( branch: Seq[T] ): Maze[T] = branch match {
+    // plug nothing, returns self
+    case Nil =>
+      this
+    // plug just 1 element, returns self
+    case h :: Nil =>
+      this
+    // plug an actual branch, find the plug point and add the branch
+    case h :: t if value == h =>
+      // plug the branch here
+      copy( branches = toMaze( depth+1, t, Seq.empty ) +: branches )
+    case _ =>
+      // look further to plug the branch
+      copy( branches = branches.reverse.map( _.plug( branch) ) )
+  }
+
+  @tailrec
+  private def toMaze( depth: Int, branch: Seq[T], acc: Seq[MazeImpl[T]] ): Maze[T] = branch match {
+    // dont accept empty branches
+    case Nil =>
+      throw new Error( "Illegal argument" )
+    // on the last element of the branch, link the maze nodes together
+    case h :: Nil =>
+      acc.foldLeft( MazeImpl( h, depth, Seq.empty ) ) { case ( child, parent ) =>
+        parent.copy( branches = Seq( child ) )
+      }
+    // turn each branch element into a disconnected maze node
+    case h :: t =>
+      toMaze( depth+1, t, MazeImpl( h, depth, Seq.empty ) +: acc )
+  }
+}

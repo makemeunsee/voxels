@@ -100,7 +100,7 @@ object VoxelMain extends JSApp {
     val t1 = System.currentTimeMillis()
 
     // generate maze
-    maze = Maze.depthFirstMaze( model.faces )
+    maze = Maze.wilsonMaze( model.faces )
     val mazeDepthsAndLimits = maze.toDepthMap
     depthMap = mazeDepthsAndLimits._1
     depthMax = mazeDepthsAndLimits._2
