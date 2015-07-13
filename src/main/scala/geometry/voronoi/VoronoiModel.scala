@@ -187,8 +187,8 @@ object VoronoiModel {
     ( Normal3( 0,  -1, 0 ),  Set( 2, 5, 3, 4 ) ),
     ( Normal3( 1,  0,  0 ),  Set( 0, 4, 1, 5 ) ),
     ( Normal3( -1, 0,  0 ),  Set( 0, 4, 1, 5 ) ),
-    ( Normal3( 0,  0,  1 ),  Set( 0, 3, 1, 5 ) ),
-    ( Normal3( 0,  0,  -1 ), Set( 0, 3, 1, 5 ) )
+    ( Normal3( 0,  0,  1 ),  Set( 0, 3, 1, 2 ) ),
+    ( Normal3( 0,  0,  -1 ), Set( 0, 3, 1, 2 ) )
   )
 
   private val cubeFaces = cube
