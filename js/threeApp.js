@@ -281,6 +281,7 @@ function appMain() {
 
             // pickRender
             highlighted = scalaObj.scene.pickRender(mx,my);
+            scalaObj.faceInfo( highlighted );
             clicked = false;
         }
 

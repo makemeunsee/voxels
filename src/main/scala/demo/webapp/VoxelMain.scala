@@ -101,6 +101,7 @@ object VoxelMain extends JSApp {
 
     // generate maze
     maze = Maze.wilsonMaze( model.faces )
+//    println( maze.toNiceString() )
     val mazeDepthsAndLimits = maze.toDepthMap
     depthMap = mazeDepthsAndLimits._1
     depthMax = mazeDepthsAndLimits._2
@@ -113,6 +114,16 @@ object VoxelMain extends JSApp {
     scene.addModel( model, mazeDepthsAndLimits )
 
     main()
+  }
+
+  @JSExport
+  def faceInfo( id: Int ): Unit = {
+    val trueId = ThreeScene.revertColorCode( id )
+    model.faces.lift( trueId ).foreach { f =>
+      println( s"Face id: $trueId" )
+      println( s"Face depth: ${depthMap( trueId )}" )
+      println( s"Face neighbours: ${f.neighbours}" )
+    }
   }
 
   // ******************** coloring ********************

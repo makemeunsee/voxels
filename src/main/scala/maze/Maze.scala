@@ -45,14 +45,14 @@ object Maze {
       if ( explorable.isEmpty ) {
         val newAcc = acc match {
           case Nil =>
-            Seq( MazeImpl( id, depth, Seq.empty ) )
+            Seq( ImmutableMaze( id, depth, Seq.empty ) )
           case _   =>
             val ( tails, parallelBranches ) = acc.partition( m => m.depth == depth+1 )
             tails match {
               case Nil =>
-                MazeImpl( id, depth, Seq.empty ) +: acc
+                ImmutableMaze( id, depth, Seq.empty ) +: acc
               case _ =>
-                MazeImpl( id, depth, tails ) +: parallelBranches
+                ImmutableMaze( id, depth, tails ) +: parallelBranches
             }
         }
         depthFirstMaze0( visited, newAcc, rParents )
@@ -65,7 +65,7 @@ object Maze {
       }
   }
 
-  def empty[T]( t: T ): Maze[T] = MazeImpl( t, 0, Seq.empty )
+  def empty[T]( t: T ): Maze[T] = ImmutableMaze( t, 0, Seq.empty )
 
   // walk randomly until a visited cell is reached
   // upon a loop, it is erased, and walking continues
@@ -101,14 +101,13 @@ object Maze {
     else {
       val nextCell = notVisited.head
       val newPath = randomWalk( faces, visited, Seq( nextCell ) )
-      // slow because of maze.plug: O( size of maze )
       wilsonMazeRec( faces, visited ++ newPath, notVisited -- newPath, maze.plug( newPath ) )
     }
 
   def wilsonMaze( faces: Array[Face] )( implicit rnd: Random ): Maze[Int] = {
     val l = faces.length
     val first = rnd.nextInt( l )
-    wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, MazeImpl( first, 0, Seq.empty ) )
+    wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, new MutableMaze( first ) )
   }
 
 }
@@ -138,39 +137,8 @@ trait Maze[T] {
       }
     }
   }
-}
 
-//TODO: mutable maze
-
-private case class MazeImpl[T]( value: T, depth: Int, branches: Seq[Maze[T]] ) extends Maze[T] {
-  def plug( branch: Seq[T] ): Maze[T] = branch match {
-    // plug nothing, returns self
-    case Nil =>
-      this
-    // plug just 1 element, returns self
-    case h :: Nil =>
-      this
-    // plug an actual branch, find the plug point and add the branch
-    case h :: t if value == h =>
-      // plug the branch here
-      copy( branches = toMaze( depth+1, t, Seq.empty ) +: branches )
-    case _ =>
-      // look further to plug the branch
-      copy( branches = branches.reverse.map( _.plug( branch) ) )
-  }
-
-  @tailrec
-  private def toMaze( depth: Int, branch: Seq[T], acc: Seq[MazeImpl[T]] ): Maze[T] = branch match {
-    // dont accept empty branches
-    case Nil =>
-      throw new Error( "Illegal argument" )
-    // on the last element of the branch, link the maze nodes together
-    case h :: Nil =>
-      acc.foldLeft( MazeImpl( h, depth, Seq.empty ) ) { case ( child, parent ) =>
-        parent.copy( branches = Seq( child ) )
-      }
-    // turn each branch element into a disconnected maze node
-    case h :: t =>
-      toMaze( depth+1, t, MazeImpl( h, depth, Seq.empty ) +: acc )
+  def toNiceString( indent: Int = 0 ): String = {
+    s"${"\t"*indent}( $value, $depth )${branches.map( b => s"\n${"\t"*indent}${b.toNiceString( indent+1 )}" ).mkString}"
   }
 }
