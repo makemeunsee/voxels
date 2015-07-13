@@ -77,8 +77,7 @@ object Maze {
       acc
 
     case h :: t =>
-      val maybeI = t.find( h == _ )
-      val ( options, newAcc ) = maybeI match {
+      val ( options, newAcc ) = t.find( h == _ ) match {
         // loop, erase it and go on
         case Some( i ) =>
           ( faces( h ).neighbours.toSeq, t.drop( i ) )
@@ -139,6 +138,6 @@ trait Maze[T] {
   }
 
   def toNiceString( indent: Int = 0 ): String = {
-    s"${"\t"*indent}( $value, $depth )${branches.map( b => s"\n${"\t"*indent}${b.toNiceString( indent+1 )}" ).mkString}"
+    s"${"*"*indent}( $value, $depth )${branches.map( b => s"|${"*"*indent}${b.toNiceString( indent+1 )}" ).mkString}"
   }
 }
