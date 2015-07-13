@@ -20,11 +20,16 @@ function appMain() {
                                       document.getElementById('shader-axis-vs').innerHTML,
                                       document.getElementById('shader-axis-fs').innerHTML);
 
+    // TODO: move url params to GUI
+
     var cuts = getURLParameter("cuts") || 2000;
     console.log("cuts:\t", cuts);
 
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
+
+    var mazeType = getURLParameter("type") || "wilson";
+    console.log("maze type:\t", mazeType);
 
     scalaObj.initRnd(seed);
 
@@ -262,7 +267,7 @@ function appMain() {
 
     document.body.appendChild( stats.domElement );
 
-    scalaObj.loadModel(cuts);
+    scalaObj.loadModel(cuts,mazeType);
 
     main();
 

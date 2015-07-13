@@ -83,7 +83,7 @@ object VoxelMain extends JSApp {
   }
 
   @JSExport
-  def loadModel( cutCount: Int ): Unit = {
+  def loadModel( cutCount: Int, mazeType: String ): Unit = {
     println( "start" )
 
     // prepare cuts
@@ -100,7 +100,10 @@ object VoxelMain extends JSApp {
     val t1 = System.currentTimeMillis()
 
     // generate maze
-    maze = Maze.wilsonMaze( model.faces )
+    maze = mazeType.toLowerCase match {
+      case "depthfirst" => Maze.depthFirstMaze( model.faces)
+      case _ => Maze.wilsonMaze( model.faces )
+    }
 //    println( maze.toNiceString() )
     val mazeDepthsAndLimits = maze.toDepthMap
     depthMap = mazeDepthsAndLimits._1
