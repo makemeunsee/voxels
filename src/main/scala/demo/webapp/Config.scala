@@ -16,12 +16,14 @@ object Config {
 
   val uniforms = "Uniform colors"
   val randoms = "Random colors"
+  val randoms2 = "Random colors (flat)"
   val chRainbow = "Cubehelix rainbow"
   val niRainbow = "Niccoli's rainbow"
   val laRainbow = "Less Angry rainbow"
   val colorings: js.Array[String] =
     Array( uniforms
          , randoms
+         , randoms2
          , chRainbow
          , niRainbow
          , laRainbow
@@ -54,6 +56,13 @@ class Config {
     f*f*10f
   }
 
+  @JSExport
+  var `Thickness`: Float = 5f
+  def safeCellThickness: Float =  {
+    val f = math.max( 0, math.min( 25, `Thickness` ) ) / 25
+    f * f
+  }
+
   // 0 <= bordersWidth <= 2
   @JSExport
   var `Borders width`: Float = 1f
@@ -72,7 +81,7 @@ class Config {
 
   // -100 <= mazeDepthScale <= 100
   @JSExport
-  var `Maze depth scaling`: Int = 0
+  var `Maze depth scaling`: Int = 50
   def mazeDepthFactor: Float = math.min( 100, math.max( -100, `Maze depth scaling` ) ).toFloat / 100
 
   @JSExport

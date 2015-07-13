@@ -2,7 +2,6 @@ package demo.webapp
 
 import geometry.Matrix4
 import geometry.voronoi.{Face, VoronoiModel}
-import maze.Maze
 import org.denigma.threejs._
 
 import scala.scalajs.js
@@ -49,7 +48,7 @@ object ThreeScene {
   def withOffsetsAndSizes( faces: Iterable[Face] ): Seq[( Face, Int, Int )] = {
     faces.foldLeft( ( 0, List.empty[( Face, Int, Int )] ) ) { case ( ( offset, acc ), f ) =>
       // counting the centers which is automatically added to the meshes
-      val l = f.vertices.length + 1
+      val l = 2 * ( f.vertices.length + 1 )
       val newOffset = offset + l
       ( newOffset, ( f, offset, l ) :: acc )
     }._2.reverse
@@ -96,7 +95,7 @@ class ThreeScene( cfg: Config ) {
   private val zoomMax = 16
   private val zoomMin = 0.0625
   private val zoomSpeed = 1.05
-  private var zoom = 1d
+  private var zoom = 0.7d
 
   @JSExport
   def zoom( delta: Double ): Unit = {
@@ -137,7 +136,6 @@ class ThreeScene( cfg: Config ) {
   // ******************** axis management ********************
 
   private lazy val axisMesh: Mesh = makeAxisMesh
-  private var showAxis: Boolean = cfg.`Show axis`
 
   def toggleAxis(): Unit = {
     if ( cfg.`Show axis` )
@@ -150,8 +148,8 @@ class ThreeScene( cfg: Config ) {
 
   private var meshes: Option[( Mesh, Mesh )] = None
 
-  def addModel( model: VoronoiModel, depthData: ( Map[Int, Int], Int ) ): Unit = {
-    val ( m, pm ) = makeMesh( model, depthData )
+  def addModel( model: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
+    val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
     meshes = Some( m, pm )
     updateMeshCulling()
     scene.add( m )
@@ -199,7 +197,9 @@ class ThreeScene( cfg: Config ) {
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val attrs = js.Dynamic.literal(
@@ -299,9 +299,7 @@ class ThreeScene( cfg: Config ) {
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
   }
 
-  private def makeMesh( m: VoronoiModel, depthData: ( Map[Int, Int], Int ) ): ( Mesh, Mesh ) = {
-    val ( depthMap, maxDepth ) = depthData
-
+  private def makeMesh( m: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
       "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
@@ -309,7 +307,8 @@ class ThreeScene( cfg: Config ) {
       "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
       "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_thickness" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
     )
 
     val geom = new MyBufferGeometry()
@@ -334,6 +333,10 @@ class ThreeScene( cfg: Config ) {
       "a_depth" -> js.Dynamic.literal(
         "type" -> "f",
         "value" -> new Array[Float]
+      ),
+      "a_topFace" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
       )
     )
 
@@ -349,8 +352,8 @@ class ThreeScene( cfg: Config ) {
     pickShaderMaterial.vertexShader = Shaders.pickVertexShader
     pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
 
-    val count = m.faces.map( _.vertices.length*3+3 ).sum
-    val indicesCount = m.faces.map( _.vertices.length*3 ).sum
+    val count = 2*m.faces.map( _.vertices.length*3+3 ).sum
+    val indicesCount = m.faces.map( _.vertices.length*12 ).sum
 
     val vertices = new Float32Array( count )
     val normals = new Float32Array( count )
@@ -358,14 +361,14 @@ class ThreeScene( cfg: Config ) {
     val pickColors = new Float32Array( count / 3 )
     val centerFlags = new Float32Array( count / 3 )
     val depths = new Float32Array( count / 3 )
+    val topFlags = new Float32Array( count / 3 )
     val indices = new Uint32Array( indicesCount )
     var offset = 0
     var indicesOffset = 0
 
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
       val n = f.seed
-      val c = f.barycenter
-      val uniformD = depthMap( i ).toFloat / maxDepth
+      val uniformD = depthsMap( i ).toFloat / depthMax
 
       val pickColor = colorCode( i )
       val ( r, g, b ) = ( 1f, 1f, 1f )
@@ -374,39 +377,89 @@ class ThreeScene( cfg: Config ) {
       val triOffset = offset*3
       val vSize = f.vertices.length
 
+      // edge vertices
 
       for ( j <- 0 until vSize ) {
         vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
         vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
         vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
+        vertices.set( triOffset+3*(j+vSize),   f.vertices( j ).x.toFloat )
+        vertices.set( triOffset+3*(j+vSize)+1, f.vertices( j ).y.toFloat )
+        vertices.set( triOffset+3*(j+vSize)+2, f.vertices( j ).z.toFloat )
         normals.set( triOffset+3*j,   n.x.toFloat )
         normals.set( triOffset+3*j+1, n.y.toFloat )
         normals.set( triOffset+3*j+2, n.z.toFloat )
+        normals.set( triOffset+3*(j+vSize),   n.x.toFloat )
+        normals.set( triOffset+3*(j+vSize)+1, n.y.toFloat )
+        normals.set( triOffset+3*(j+vSize)+2, n.z.toFloat )
         colors.set( triOffset+3*j,   r )
         colors.set( triOffset+3*j+1, g )
         colors.set( triOffset+3*j+2, b )
-        centerFlags.set( offset+j, 0f )
-        depths.set( offset+j, uniformD )
-        pickColors.set( offset+j, pickColor )
-        indices.set( indicesOffset+3*j,   offset+vSize )
-        indices.set( indicesOffset+3*j+1, offset+j )
-        indices.set( indicesOffset+3*j+2, offset+( j+1 )%vSize )
-      }
-      vertices.set( triOffset+3*vSize,   c.x.toFloat )
-      vertices.set( triOffset+3*vSize+1, c.y.toFloat )
-      vertices.set( triOffset+3*vSize+2, c.z.toFloat )
-      normals.set( triOffset+3*vSize,   n.x.toFloat )
-      normals.set( triOffset+3*vSize+1, n.y.toFloat )
-      normals.set( triOffset+3*vSize+2, n.z.toFloat )
-      colors.set( triOffset+3*vSize,   cr )
-      colors.set( triOffset+3*vSize+1, cg )
-      colors.set( triOffset+3*vSize+2, cb )
-      centerFlags.set( offset+vSize, 1f )
-      depths.set( offset+vSize, uniformD )
-      pickColors.set( offset+vSize, pickColor )
+        colors.set( triOffset+3*(j+vSize),   r )
+        colors.set( triOffset+3*(j+vSize)+1, g )
+        colors.set( triOffset+3*(j+vSize)+2, b )
+        centerFlags.set( offset+j,   0f )
+        centerFlags.set( offset+j+vSize, 0f )
+        depths.set( offset+j,       uniformD )
+        depths.set( offset+j+vSize, uniformD )
+        pickColors.set( offset+j,       pickColor )
+        pickColors.set( offset+j+vSize, pickColor )
+        topFlags.set( offset+j,       1f )
+        topFlags.set( offset+j+vSize, 0f )
 
-      offset = offset + vSize + 1
-      indicesOffset = indicesOffset + vSize*3
+        // top triangle
+        indices.set( indicesOffset+12*j,   offset+2*vSize )
+        indices.set( indicesOffset+12*j+1, offset+j )
+        indices.set( indicesOffset+12*j+2, offset+( j+1 )%vSize )
+
+        // bottom triangle
+        indices.set( indicesOffset+12*j+3, offset+2*vSize+1 )
+        indices.set( indicesOffset+12*j+4, offset+vSize+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+5, offset+vSize+j )
+
+        // side triangle 1
+        indices.set( indicesOffset+12*j+6, offset+j )
+        indices.set( indicesOffset+12*j+7, offset+vSize+j )
+        indices.set( indicesOffset+12*j+8, offset+( j+1 )%vSize )
+
+        // side triangle 2
+        indices.set( indicesOffset+12*j+9,  offset+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+10, offset+vSize+j )
+        indices.set( indicesOffset+12*j+11, offset+vSize+( j+1 )%vSize )
+      }
+
+      val c = f.barycenter
+
+      // centers, one per face
+      vertices.set( triOffset+6*vSize,   c.x.toFloat )
+      vertices.set( triOffset+6*vSize+1, c.y.toFloat )
+      vertices.set( triOffset+6*vSize+2, c.z.toFloat )
+      vertices.set( triOffset+6*vSize+3, c.x.toFloat )
+      vertices.set( triOffset+6*vSize+4, c.y.toFloat )
+      vertices.set( triOffset+6*vSize+5, c.z.toFloat )
+      normals.set( triOffset+6*vSize,   n.x.toFloat )
+      normals.set( triOffset+6*vSize+1, n.y.toFloat )
+      normals.set( triOffset+6*vSize+2, n.z.toFloat )
+      normals.set( triOffset+6*vSize+3, n.x.toFloat )
+      normals.set( triOffset+6*vSize+4, n.y.toFloat )
+      normals.set( triOffset+6*vSize+5, n.z.toFloat )
+      colors.set( triOffset+6*vSize,   cr )
+      colors.set( triOffset+6*vSize+1, cg )
+      colors.set( triOffset+6*vSize+2, cb )
+      colors.set( triOffset+6*vSize+3, cr )
+      colors.set( triOffset+6*vSize+4, cg )
+      colors.set( triOffset+6*vSize+5, cb )
+      centerFlags.set( offset+2*vSize,   1f )
+      centerFlags.set( offset+2*vSize+1, 1f )
+      depths.set( offset+2*vSize,   uniformD )
+      depths.set( offset+2*vSize+1, uniformD )
+      pickColors.set( offset+2*vSize,   pickColor )
+      pickColors.set( offset+2*vSize+1, pickColor )
+      topFlags.set( offset+2*vSize,   1f )
+      topFlags.set( offset+2*vSize+1, 0f )
+
+      offset = offset + 2 * ( vSize + 1 )
+      indicesOffset = indicesOffset + vSize*12
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
@@ -415,6 +468,7 @@ class ThreeScene( cfg: Config ) {
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
+    geom.addAttribute( "a_topFace", new BufferAttribute( topFlags, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( geom, pickShaderMaterial, "pickMesh" ) )
@@ -572,8 +626,14 @@ class ThreeScene( cfg: Config ) {
         colorData.update( 3*faceOffset+3*i,   color._1 )
         colorData.update( 3*faceOffset+3*i+1, color._2 )
         colorData.update( 3*faceOffset+3*i+2, color._3 )
+        colorData.update( 3*faceOffset+3*(i+faceSize-1),   color._1 )
+        colorData.update( 3*faceOffset+3*(i+faceSize-1)+1, color._2 )
+        colorData.update( 3*faceOffset+3*(i+faceSize-1)+2, color._3 )
       }
       // apply specific color at face center offset
+      colorData.update( 3*faceOffset+3*faceSize-6, centerColor._1 )
+      colorData.update( 3*faceOffset+3*faceSize-5, centerColor._2 )
+      colorData.update( 3*faceOffset+3*faceSize-4, centerColor._3 )
       colorData.update( 3*faceOffset+3*faceSize-3, centerColor._1 )
       colorData.update( 3*faceOffset+3*faceSize-2, centerColor._2 )
       colorData.update( 3*faceOffset+3*faceSize-1, centerColor._3 )
@@ -602,6 +662,7 @@ class ThreeScene( cfg: Config ) {
       updateThis( "u_time", 0f )
       updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
       updateThis( "u_depthScale", cfg.mazeDepthFactor )
+      updateThis( "u_thickness", cfg.safeCellThickness )
       updateThis( "u_mvpMat", mvp )
     }
     renderer.render( pickScene, dummyCam )
@@ -618,6 +679,7 @@ class ThreeScene( cfg: Config ) {
       updateThis( "u_time", 0f )
       updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
       updateThis( "u_depthScale", cfg.mazeDepthFactor )
+      updateThis( "u_thickness", cfg.safeCellThickness )
       updateThis( "u_mvpMat", mvp )
       updateThis( "u_borderWidth", cfg.safeBordersWidth )
       updateThis( "u_borderColor", new org.denigma.threejs.Vector3( cfg.`Borders color`( 0 ) / 255f

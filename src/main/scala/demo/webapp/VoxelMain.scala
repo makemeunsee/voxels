@@ -51,13 +51,19 @@ object VoxelMain extends JSApp {
     general
       .addRange( jsCfg, "Downsampling", 0, 7 )
       .onChange { _: Float => scene.udpateDownsampling() }
-    general
-      .addRange( jsCfg, "Explosion", 0, 100 )
-    general
-      .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
-    general
-      .addColor( jsCfg, "Borders color" )
     general.open()
+
+    val cells = datGUI.addFolder( "Cells" )
+
+    cells
+      .addRange( jsCfg, "Explosion", 0, 100 )
+    cells
+      .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
+    cells
+      .addColor( jsCfg, "Borders color" )
+    cells
+      .addRange( jsCfg, "Thickness", 0, 25 )
+    cells.open()
 
     val mazeFolder = datGUI.addFolder( "Maze" )
     mazeFolder
@@ -114,7 +120,7 @@ object VoxelMain extends JSApp {
     println( "cut time", t1 - t0 )
     println( "maze time", t2 - t1 )
 
-    scene.addModel( model, mazeDepthsAndLimits )
+    scene.addModel( model, depthMap, depthMax )
 
     main()
   }
@@ -164,6 +170,10 @@ object VoxelMain extends JSApp {
         result
 
       case Config.randoms =>
+        fullRndColor()
+        Seq.empty
+
+      case Config.randoms2 =>
         rndColor()
         Seq.empty
 
@@ -186,30 +196,41 @@ object VoxelMain extends JSApp {
     paletteController.onChange { _: String => applyColors( newControllers ) }
   }
 
+  private def fullRndColor(): Unit = {
+    import Colors.intColorToFloatsColors
+    colorModel( { _: ( Int, Int ) => Colors.rndColor() }, Some { _: ( Int, Int ) => Colors.rndColor() } )
+  }
+
   private def rndColor(): Unit = {
     import Colors.intColorToFloatsColors
-    colorModel( { _: ( Int, Int ) => Colors.rndColor() }, { _: ( Int, Int ) => Colors.rndColor() } )
+    colorModel( { _: ( Int, Int ) => Colors.rndColor() } )
   }
 
   private def color( c0: Int, c1: Int ): Unit = {
     import Colors.intColorToFloatsColors
-    colorModel( { _: ( Int, Int ) => c0 }, { _: ( Int, Int ) => c1 } )
+    colorModel( { _: ( Int, Int ) => c0 }, Some { _: ( Int, Int ) => c1 } )
   }
 
   private def rainbow( reverse: Boolean )( rainbowFct: Float => Float => ( Float, Float, Float ) ): Unit = {
     val rnbw = rainbowFct( 1f / config.safeRainbowSpan )
       .compose { f: Float => if( reverse ) 1f - f else f }
       .compose { idAndDepth: ( Int, Int ) => idAndDepth._2.toFloat / depthMax }
-    colorModel( rnbw , rnbw )
+    colorModel( rnbw )
   }
 
   private def colorModel( color: ( ( Int, Int ) ) => ( Float, Float, Float )
-                        , centerColor: ( ( Int, Int ) ) => ( Float, Float, Float ) ): Unit = {
+                        , centerColor: Option[( ( Int, Int ) ) => ( Float, Float, Float )] = None ): Unit = {
     ThreeScene.withOffsetsAndSizes( model.faces )
       .zipWithIndex
       .foreach { case ( ( f, o, s ), id ) =>
-        val col = color( ( id, depthMap( id ) ) )
-        val cCol = centerColor( ( id, depthMap( id ) ) )
+        val d = depthMap( id )
+        val col = color( ( id, d ) )
+        val cCol = centerColor match {
+          case Some( fct ) =>
+            fct( ( id, d ) )
+          case _ =>
+            col
+        }
         scene.colorFace( o, s, col, cCol )
       }
   }
