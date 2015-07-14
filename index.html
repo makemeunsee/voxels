@@ -185,7 +185,33 @@ void main()
   gl_Position = u_mvpMat * vec4(position, 1.0);
   v_color = a_color;
 }</script>
+        <script id="shader-maze-fs" type="x-shader/x-fragment">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+  #endif
 
+uniform vec3 u_color;
+
+void main()
+{
+  gl_FragColor = vec4 (u_color, 1.0);
+}</script>
+        <script id="shader-maze-vs" type="x-shader/x-vertex">#ifdef GL_ES
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+attribute float a_depth;
+attribute vec3 a_normal;
+
+uniform mat4 u_mvpMat;
+uniform float u_time;
+uniform float u_explosionFactor;
+uniform float u_depthScale;
+
+void main()
+{
+  float d = a_depth * u_depthScale;
+  gl_Position = u_mvpMat * vec4((1.0+d) * (u_explosionFactor*a_normal + position), 1.0);
+}</script>
         <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
         <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
         <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>

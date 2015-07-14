@@ -11,7 +11,7 @@ import scala.util.Random
  */
 object Maze {
   @tailrec
-  private def toDepthMap0[T]( at: Seq[Maze[T]], acc: Map[T, Int], max: Int ): ( Map[T, Int], Int) = at match {
+  private def toDepthMap0[T]( at: Seq[Maze[T]], acc: Map[T, Int] = Map.empty[T, Int], max: Int = -1 ): ( Map[T, Int], Int ) = at match {
     case Nil =>
       ( acc, max )
     case h :: t =>
@@ -20,7 +20,8 @@ object Maze {
   }
 
   @tailrec
-  private def childrenMap[T]( remaining: Seq[Maze[T]], acc: Map[( T, Int ), Set[( T, Int )]] ): Map[( T, Int ), Set[( T, Int )]] = remaining match {
+  private def childrenMap[T]( remaining: Seq[Maze[T]]
+                            , acc: Map[( T, Int ), Set[( T, Int )]] = Map.empty[( T, Int ), Set[( T, Int )]] ): Map[( T, Int ), Set[( T, Int )]] = remaining match {
     case Nil => acc
     case h :: t =>
       val newRem = h.branches ++ t
@@ -182,20 +183,10 @@ trait Maze[T] {
 
   def plug( branch: Seq[T] ): Maze[T]
 
-  // returns a map of each node and its depth, the min depth, the max depth
-  def toDepthMap: ( Map[T, Int], Int ) = toDepthMap0( Seq( this ), Map.empty, 0 )
+  // returns a map of each node and its depth, the max depth
+  def metrics: ( Map[T, Int], Int ) = toDepthMap0( Seq( this ) )
 
-  // map each (value, depth) pair to its parent and children
-  def relativesMap: Map[( T, Int ), Set[( T, Int )]] = {
-    val children = childrenMap( Seq( this ), Map.empty: Map[( T, Int ), Set[( T, Int )]] )
-    children.foldLeft( children ) { case ( oldNeighboursMap, ( parent, itsChildren ) ) =>
-      // add the parent of each child in the global neighbour map
-      itsChildren.foldLeft( oldNeighboursMap ) { case ( neighboursMap, v ) =>
-        val oldNeighbours = neighboursMap.getOrElse( v, Set.empty: Set[( T, Int )] )
-        neighboursMap.updated( v, oldNeighbours + parent )
-      }
-    }
-  }
+  def childrenMap: Map[( T, Int ), Set[( T, Int )]] = Maze.childrenMap( Seq( this ) )
 
   def toNiceString( indent: Int = 0 ): String = {
     s"${"*"*indent}( $value, $depth )${branches.map( b => s"|${"*"*indent}${b.toNiceString( indent+1 )}" ).mkString}"

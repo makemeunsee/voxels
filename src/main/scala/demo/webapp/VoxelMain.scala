@@ -67,6 +67,8 @@ object VoxelMain extends JSApp {
 
     val mazeFolder = datGUI.addFolder( "Maze" )
     mazeFolder
+      .addColor( jsCfg, "Maze path color" )
+    mazeFolder
       .addRange( jsCfg, "Maze depth scaling", -100, 100 )
       .onChange { v: Float => () }
     mazeFolder.open()
@@ -113,16 +115,16 @@ object VoxelMain extends JSApp {
       case _ => Maze.wilsonMaze( model.faces )
     }
 //    println( maze.toNiceString() )
-    val mazeDepthsAndLimits = maze.toDepthMap
-    depthMap = mazeDepthsAndLimits._1
-    depthMax = mazeDepthsAndLimits._2
+    val mazeMetrics = maze.metrics
+    depthMap = mazeMetrics._1
+    depthMax = mazeMetrics._2
 
     val t2 = System.currentTimeMillis()
 
     println( "cut time", t1 - t0 )
     println( "maze time", t2 - t1 )
 
-    scene.addModel( model, depthMap, depthMax )
+    scene.addModel( model, maze, depthMap, depthMax )
 
     main()
   }

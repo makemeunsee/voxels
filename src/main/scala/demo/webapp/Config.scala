@@ -75,9 +75,9 @@ class Config {
   /*
   @JSExport
   var drawMaze: Boolean = false
-  @JSExport
-  var mazeColor: Int = 0x00ff00
   */
+  @JSExport
+  var `Maze path color`: js.Array[Float] = Colors.GREEN
 
   // -100 <= mazeDepthScale <= 100
   @JSExport

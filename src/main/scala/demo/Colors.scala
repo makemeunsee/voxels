@@ -28,6 +28,7 @@ object Colors {
   val WHITE = 0xFFFFFF
   val BLACK = 0x000000
   val RED = 0xFF0000
+  val GREEN = 0x00FF00
   val LIGHT_BLACK = 0x0d0d0d
 
   // hues: how many hues in the rainbow

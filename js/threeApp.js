@@ -18,7 +18,9 @@ function appMain() {
                                       document.getElementById('shader-pick-vs').innerHTML,
                                       document.getElementById('shader-pick-fs').innerHTML,
                                       document.getElementById('shader-axis-vs').innerHTML,
-                                      document.getElementById('shader-axis-fs').innerHTML);
+                                      document.getElementById('shader-axis-fs').innerHTML,
+                                      document.getElementById('shader-maze-vs').innerHTML,
+                                      document.getElementById('shader-maze-fs').innerHTML);
 
     // TODO: move url params to GUI
 

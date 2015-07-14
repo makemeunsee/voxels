@@ -2,6 +2,7 @@ package demo.webapp
 
 import geometry.Matrix4
 import geometry.voronoi.{Face, VoronoiModel}
+import maze.Maze
 import org.denigma.threejs._
 
 import scala.scalajs.js
@@ -70,126 +71,8 @@ object ThreeScene {
     )
     r
   }
-}
 
-import demo.webapp.ThreeScene._
-
-class ThreeScene( cfg: Config ) {
-
-  // ******************** three scene basics ********************
-
-  // dummy cam as projections are handled manually
-  private val dummyCam = new Camera
-  private val scene = new Scene
-  private val pickScene = new Scene
-  private val rtScene = new Scene
-
-  @JSExport
-  val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
-  renderer.setClearColor( new org.denigma.threejs.Color( cfg.`Background color`( 0 ) /255f
-                                                       , cfg.`Background color`( 1 ) /255f
-                                                       , cfg.`Background color`( 2 ) /255f ) )
-
-  // ******************** view management ********************
-
-  private val zoomMax = 16
-  private val zoomMin = 0.0625
-  private val zoomSpeed = 1.05
-  private var zoom = 0.7d
-
-  @JSExport
-  def zoom( delta: Double ): Unit = {
-    zoom = Math.min( Math.max( zoom * Math.pow( zoomSpeed, delta ), zoomMin ), zoomMax )
-    updateMVP()
-  }
-
-  private var projMat = Matrix4.unit
-  private val viewMat = Matrix4.unit
-  private var modelMat = Matrix4.naiveRotMat( 0.5, 0.3 )
-  private var mvp = Matrix4.unit
-
-  private var innerWidth: Int = 0
-  private var innerHeight: Int = 0
-
-  @JSExport
-  def updateViewport( width: Int, height: Int ): Unit = {
-    println( "viewport", width, height )
-    innerWidth = width
-    innerHeight = height
-    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1 )
-    updateMVP()
-
-    adjustTexturing( innerWidth, innerHeight )
-  }
-
-  @JSExport
-  def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    val speed = 1f / 500f / zoom / ( 1f + cfg.safeExplosionFactor )
-    modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
-    updateMVP()
-  }
-
-  private def updateMVP(): Unit = {
-    mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat
-  }
-
-  // ******************** axis management ********************
-
-  private lazy val axisMesh: Mesh = makeAxisMesh
-
-  def toggleAxis(): Unit = {
-    if ( cfg.`Show axis` )
-      rtScene.add( axisMesh )
-    else
-      rtScene.remove( axisMesh )
-  }
-
-  // ******************** mesh management ********************
-
-  private var meshes: Option[( Mesh, Mesh )] = None
-
-  def addModel( model: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
-    val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
-    meshes = Some( m, pm )
-    updateMeshCulling()
-    scene.add( m )
-    pickScene.add( pm )
-  }
-
-  private def updateMeshCulling(): Unit = {
-    for( ( m, pm ) <- meshes ) {
-      val culling = if ( cfg.`Cull back` ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
-      m.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
-      pm.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
-    }
-  }
-
-  private def makeScreenMesh: Mesh = {
-    val plane = new PlaneBufferGeometry( 2, 2 )
-
-    val customUniforms = js.Dynamic.literal(
-      "texture" -> js.Dynamic.literal("type" -> "t", "value" -> renderingTexture )
-    )
-    val shaderMaterial = new ShaderMaterial
-    shaderMaterial.uniforms = customUniforms
-    shaderMaterial.vertexShader =
-      """varying vec2 vUv;
-        |void main() {
-        |    vUv = position.xy;
-        |    gl_Position = vec4( 2.0*position-1.0, 1.0 );
-        |}
-      """.stripMargin
-    shaderMaterial.fragmentShader =
-      """uniform sampler2D texture;
-        |varying vec2 vUv;
-        |void main(){
-        |    gl_FragColor = texture2D( texture, vUv );
-        |}
-      """.stripMargin
-    shaderMaterial.depthWrite = false
-
-    assembleMesh( plane, shaderMaterial, "screenMesh" )
-  }
+  // ******************** mesh building functions ********************
 
   private def makeWireFrameMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
     val customUniforms = js.Dynamic.literal(
@@ -228,7 +111,7 @@ class ThreeScene( cfg: Config ) {
     shaderMaterial.fragmentShader = Shaders.fragmentShader
     shaderMaterial.wireframe = true
     // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
-//    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
+    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
 
     val pickShaderMaterial = new ShaderMaterial
     pickShaderMaterial.attributes = attrs
@@ -474,6 +357,125 @@ class ThreeScene( cfg: Config ) {
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( geom, pickShaderMaterial, "pickMesh" ) )
   }
 
+  private def junction( face0: Face, face1: Face ): geometry.Vector3 = {
+    face0.vertices.intersect( face1.vertices ) match {
+      case v0 :: v1 :: Nil =>
+        ( v0 + v1 ) * 0.5
+      case _ =>
+        throw new Error( "Illegal argument" )
+    }
+  }
+
+  private def makeMazeMesh( m: VoronoiModel, flatMaze: Map[( Int, Int ), Set[( Int, Int )]], depthMax: Int ): Mesh = {
+    val customUniforms = js.Dynamic.literal(
+      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
+      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_color" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector3() )
+    )
+
+    val geom = new MyBufferGeometry()
+
+    val attrs = js.Dynamic.literal(
+      "a_normal" -> js.Dynamic.literal(
+        "type" -> "v3",
+        "value" -> new Array[Float]
+      ),
+      "a_depth" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
+      )
+    )
+
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.attributes = attrs
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader = Shaders.mazeVertexShader
+    shaderMaterial.fragmentShader = Shaders.mazeFragmentShader
+    shaderMaterial.wireframe = true
+    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
+    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
+
+    val size = flatMaze.size
+    // each maze node has 1 parent, except the root of the maze
+    val relations = size - 1
+    // there are as many vertices as node, plus 1 for each relation (the junction point)
+    val count = 3*( relations + size )
+    // there 2 segments = 4 indices for each relation
+    val indicesCount = 4 * relations
+
+    val id: ( () => Int ) = {
+      var counter = 0
+      () => {
+        counter = counter+1
+        counter-1
+      }
+    }
+
+    // assign an indice to each node and each relation
+    val mazeWithIndices = flatMaze.map { case ( p, children ) =>
+      ( p._1, ( p._2, id(), children.map { case child =>
+        ( child._1, id() )
+      } ) )
+    }
+
+    val vertices = new Float32Array( count )
+    val normals = new Float32Array( count )
+    val depths = new Float32Array( count / 3 )
+    val indices = new Uint32Array( indicesCount )
+
+    var indicesOffset = 0
+
+    for ( ( node, ( d, id, children ) ) <- mazeWithIndices ) {
+      val f = m.faces( node )
+      val n = f.seed
+      val uniformD = d.toFloat / depthMax
+
+      // face center point
+      val bary = f.barycenter * 1.01
+      vertices.set( id*3,   bary.x.toFloat )
+      vertices.set( id*3+1, bary.y.toFloat )
+      vertices.set( id*3+2, bary.z.toFloat )
+
+      normals.set( id*3,   n.x.toFloat )
+      normals.set( id*3+1, n.y.toFloat )
+      normals.set( id*3+2, n.z.toFloat )
+
+      depths.set( id, uniformD )
+
+      for( ( child, relationId ) <- children ) {
+        val ( _, childId, _ ) = mazeWithIndices( child )
+
+        // junction point
+        val j = junction( f, m.faces( child ) ) * 1.01
+        vertices.set( relationId*3,   j.x.toFloat )
+        vertices.set( relationId*3+1, j.y.toFloat )
+        vertices.set( relationId*3+2, j.z.toFloat )
+
+        normals.set( relationId*3,   n.x.toFloat )
+        normals.set( relationId*3+1, n.y.toFloat )
+        normals.set( relationId*3+2, n.z.toFloat )
+
+        depths.set( relationId, uniformD )
+
+        indices.set( indicesOffset, id )
+        indices.set( indicesOffset+1, relationId )
+        indices.set( indicesOffset+2, relationId )
+        indices.set( indicesOffset+3, childId )
+
+        indicesOffset += 4
+      }
+    }
+
+    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.addAttribute( "a_depth", new BufferAttribute( depths, 1 ) )
+    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
+    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
+
+    assembleMesh( geom, shaderMaterial, "mazeMesh" )
+  }
+
   private def makeAxisMesh: Mesh = {
     val customUniforms = js.Dynamic.literal(
       "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() )
@@ -576,6 +578,130 @@ class ThreeScene( cfg: Config ) {
     mesh.frustumCulled = false
     mesh.name = name
     mesh
+  }
+}
+
+import demo.webapp.ThreeScene._
+
+class ThreeScene( cfg: Config ) {
+
+  // ******************** three scene basics ********************
+
+  // dummy cam as projections are handled manually
+  private val dummyCam = new Camera
+  private val scene = new Scene
+  private val pickScene = new Scene
+  private val rtScene = new Scene
+
+  @JSExport
+  val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
+  renderer.setClearColor( new org.denigma.threejs.Color( cfg.`Background color`( 0 ) /255f
+                                                       , cfg.`Background color`( 1 ) /255f
+                                                       , cfg.`Background color`( 2 ) /255f ) )
+
+  // ******************** view management ********************
+
+  private val zoomMax = 16
+  private val zoomMin = 0.0625
+  private val zoomSpeed = 1.05
+  private var zoom = 0.7d
+
+  @JSExport
+  def zoom( delta: Double ): Unit = {
+    zoom = Math.min( Math.max( zoom * Math.pow( zoomSpeed, delta ), zoomMin ), zoomMax )
+    updateMVP()
+  }
+
+  private var projMat = Matrix4.unit
+  private val viewMat = Matrix4.unit
+  private var modelMat = Matrix4.naiveRotMat( 0.5, 0.3 )
+  private var mvp = Matrix4.unit
+
+  private var innerWidth: Int = 0
+  private var innerHeight: Int = 0
+
+  @JSExport
+  def updateViewport( width: Int, height: Int ): Unit = {
+    println( "viewport", width, height )
+    innerWidth = width
+    innerHeight = height
+    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1 )
+    updateMVP()
+
+    adjustTexturing( innerWidth, innerHeight )
+  }
+
+  @JSExport
+  def rotateView( deltaX: Int, deltaY: Int ): Unit = {
+    val speed = 1f / 500f / zoom / ( 1f + cfg.safeExplosionFactor )
+    modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
+    updateMVP()
+  }
+
+  private def updateMVP(): Unit = {
+    mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat
+  }
+
+  // ******************** axis management ********************
+
+  private lazy val axisMesh: Mesh = makeAxisMesh
+
+  def toggleAxis(): Unit = {
+    if ( cfg.`Show axis` )
+      rtScene.add( axisMesh )
+    else
+      rtScene.remove( axisMesh )
+  }
+
+  // ******************** mesh management ********************
+
+  private var meshes: Option[( Mesh, Mesh )] = None
+  private var mazeMesh: Option[Mesh] = None
+
+  def addModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
+    val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
+    val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
+    mazeMesh = Some( mm )
+    meshes = Some( m, pm )
+    updateMeshCulling()
+    scene.add( m )
+    scene.add( mm )
+    pickScene.add( pm )
+  }
+
+  private def updateMeshCulling(): Unit = {
+    for( ( m, pm ) <- meshes ) {
+      val culling = if ( cfg.`Cull back` ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
+      m.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
+      pm.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
+    }
+  }
+
+  private def makeScreenMesh: Mesh = {
+    val plane = new PlaneBufferGeometry( 2, 2 )
+
+    val customUniforms = js.Dynamic.literal(
+      "texture" -> js.Dynamic.literal("type" -> "t", "value" -> renderingTexture )
+    )
+    val shaderMaterial = new ShaderMaterial
+    shaderMaterial.uniforms = customUniforms
+    shaderMaterial.vertexShader =
+      """varying vec2 vUv;
+        |void main() {
+        |    vUv = position.xy;
+        |    gl_Position = vec4( 2.0*position-1.0, 1.0 );
+        |}
+      """.stripMargin
+    shaderMaterial.fragmentShader =
+      """uniform sampler2D texture;
+        |varying vec2 vUv;
+        |void main(){
+        |    gl_FragColor = texture2D( texture, vUv );
+        |}
+      """.stripMargin
+    shaderMaterial.depthWrite = false
+
+    assembleMesh( plane, shaderMaterial, "screenMesh" )
   }
 
   // ******************** special effects ********************
@@ -688,6 +814,16 @@ class ThreeScene( cfg: Config ) {
       updateThis( "u_faceHighlightFlag", highlighted.toFloat )
     }
     updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
+    for( mm <- mazeMesh ) {
+      val updateThis = updateMeshMaterialValue( mm ) _
+      updateThis( "u_time", 0f )
+      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+      updateThis( "u_depthScale", cfg.mazeDepthFactor )
+      updateThis( "u_mvpMat", mvp )
+      updateThis( "u_color", new org.denigma.threejs.Vector3( cfg.`Maze path color`( 0 ) / 255f
+                                                            , cfg.`Maze path color`( 1 ) / 255f
+                                                            , cfg.`Maze path color`( 2 ) / 255f ) )
+    }
 
     renderer.clearColor()
     renderer.render( scene, dummyCam, renderingTexture )
