@@ -28,7 +28,7 @@ function appMain() {
     var seed = getURLParameter("seed") || Math.random().toString().slice(2);
     console.log("seed:\t", seed);
 
-    var mazeType = getURLParameter("type") || "wilson";
+    var mazeType = getURLParameter("mazetype") || "wilson";
     console.log("maze type:\t", mazeType);
 
     scalaObj.initRnd(seed);

@@ -3,6 +3,7 @@ package maze
 import geometry.voronoi.Face
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.util.Random
 
 /**
@@ -27,6 +28,7 @@ object Maze {
       childrenMap( newRem, newAcc )
   }
 
+  // randomized depth first traversal
   def depthFirstMaze( faces: Array[Face] )( implicit rnd: Random ): Maze[Int] = {
     if ( faces.isEmpty )
       empty( -1 )
@@ -110,34 +112,62 @@ object Maze {
   }
 
   @tailrec
-  private def randomTraversalRec( faces: Array[Face], visited: Set[Int], options: Seq[( Int, Int )], maze: Maze[Int] )
+  private def randomTraversalRec( faces: Array[Face], visited: Set[Int], options: mutable.Buffer[( Int, Int )], maze: Maze[Int] )
                                 ( implicit rnd: Random ): Maze[Int] = {
     if ( options.isEmpty )
       maze
     else {
-      val i = rnd.nextInt( options.size )
+      val l = options.size
+      val i = rnd.nextInt( l )
       val ( from, to ) = options( i )
-      // slowness here
-      val optionsClean = options.take( i ) ++ options.drop( i+1 )
+      options( i ) = options.last
+      options.remove( l - 1 )
       if ( visited.contains( to ) )
-        randomTraversalRec( faces, visited, optionsClean, maze )
+        randomTraversalRec( faces, visited, options, maze )
       else {
         val newMaze = maze.plug( Seq( from, to ) )
-        val newOptions =
-          ( faces( to ).neighbours - from ).foldLeft( optionsClean ) { case ( acc, n ) =>
-            ( to, n ) +: acc
-          }
-        randomTraversalRec( faces, visited + to, newOptions, newMaze )
+        ( faces( to ).neighbours - from ).foreach { n =>
+          options += ( ( to, n ) )
+        }
+        randomTraversalRec( faces, visited + to, options, newMaze )
       }
     }
   }
 
-  // slow
   def randomTraversal( faces: Array[Face] )
                      ( implicit rnd: Random ): Maze[Int] = {
     val l = faces.length
     val first = rnd.nextInt( l )
-    randomTraversalRec( faces, Set( first ), faces( first ).neighbours.map( ( first, _ ) ).toSeq, new MutableMaze( first ) )
+    randomTraversalRec( faces, Set( first ), faces( first ).neighbours.map( ( first, _ ) ).toBuffer, new MutableMaze( first ) )
+  }
+
+  private def primRec( faces: Array[Face], visited: Set[Int], heap: mutable.PriorityQueue[( Int, ( Int, Int ) )], maze: Maze[Int] )
+                     ( implicit rnd: Random ): Maze[Int] = {
+    if ( heap.isEmpty )
+      maze
+    else {
+      val ( _, ( from, to ) ) = heap.dequeue()
+      if ( visited.contains( to ) )
+        primRec( faces, visited, heap, maze )
+      else {
+        ( faces( to ).neighbours - from ).foreach { n =>
+          heap.enqueue( ( rnd.nextInt(), ( to, n ) ) )
+        }
+        primRec( faces, visited + to, heap, maze.plug( Seq( from, to ) ) )
+      }
+    }
+  }
+
+  def prim( faces: Array[Face] )
+          ( implicit rnd: Random ): Maze[Int] = {
+    val l = faces.length
+    val first = rnd.nextInt( l )
+    implicit def heapOrdering[T <: ( Int, ( Int, Int ) )]: Ordering[T] = Ordering.by( _._1 )
+    val heap = new mutable.PriorityQueue[( Int, (Int, Int) )]
+    faces( first ).neighbours.foreach { to =>
+      heap.enqueue( ( rnd.nextInt(), ( first, to ) ) )
+    }
+    primRec( faces, Set( first ), heap, new MutableMaze( first ) )
   }
 }
 
