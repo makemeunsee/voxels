@@ -108,6 +108,7 @@ object VoxelMain extends JSApp {
     // generate maze
     maze = mazeType.toLowerCase match {
       case "depthfirst" => Maze.depthFirstMaze( model.faces)
+      case "randomtraversal" => Maze.randomTraversal( model.faces )
       case _ => Maze.wilsonMaze( model.faces )
     }
 //    println( maze.toNiceString() )

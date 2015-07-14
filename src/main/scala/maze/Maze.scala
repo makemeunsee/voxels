@@ -109,6 +109,36 @@ object Maze {
     wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, new MutableMaze( first ) )
   }
 
+  @tailrec
+  private def randomTraversalRec( faces: Array[Face], visited: Set[Int], options: Seq[( Int, Int )], maze: Maze[Int] )
+                                ( implicit rnd: Random ): Maze[Int] = {
+    if ( options.isEmpty )
+      maze
+    else {
+      val i = rnd.nextInt( options.size )
+      val ( from, to ) = options( i )
+      // slowness here
+      val optionsClean = options.take( i ) ++ options.drop( i+1 )
+      if ( visited.contains( to ) )
+        randomTraversalRec( faces, visited, optionsClean, maze )
+      else {
+        val newMaze = maze.plug( Seq( from, to ) )
+        val newOptions =
+          ( faces( to ).neighbours - from ).foldLeft( optionsClean ) { case ( acc, n ) =>
+            ( to, n ) +: acc
+          }
+        randomTraversalRec( faces, visited + to, newOptions, newMaze )
+      }
+    }
+  }
+
+  // slow
+  def randomTraversal( faces: Array[Face] )
+                     ( implicit rnd: Random ): Maze[Int] = {
+    val l = faces.length
+    val first = rnd.nextInt( l )
+    randomTraversalRec( faces, Set( first ), faces( first ).neighbours.map( ( first, _ ) ).toSeq, new MutableMaze( first ) )
+  }
 }
 
 import maze.Maze._
