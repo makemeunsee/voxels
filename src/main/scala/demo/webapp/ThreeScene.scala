@@ -235,6 +235,10 @@ object ThreeScene {
     pickShaderMaterial.vertexShader = Shaders.pickVertexShader
     pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
 
+    // 0 = cullback
+    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "side" )( 0 )
+    pickShaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "side" )( 0 )
+
     val count = 2*m.faces.map( _.vertices.length*3+3 ).sum
     val indicesCount = m.faces.map( _.vertices.length*12 ).sum
 
@@ -671,21 +675,12 @@ class ThreeScene( cfg: Config ) {
     val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
     mazeMesh = Some( mm )
     meshes = Some( m, pm )
-    updateMeshCulling()
     if ( cfg.`Draw cells` ) {
       scene.add( m )
       pickScene.add( pm )
     }
     if ( cfg.`Draw path` )
       scene.add( mm )
-  }
-
-  private def updateMeshCulling(): Unit = {
-    for( ( m, pm ) <- meshes ) {
-      val culling = if ( cfg.`Cull back` ) 0 else 2 // 2 = org.denigma.threejs.THREE.DoubleSide
-      m.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
-      pm.material.asInstanceOf[js.Dynamic].updateDynamic( "side" )( culling )
-    }
   }
 
   private def makeScreenMesh: Mesh = {
@@ -790,10 +785,6 @@ class ThreeScene( cfg: Config ) {
       colorData.update( 3*faceOffset+3*faceSize-1, centerColor._3 )
       colorAttr.updateDynamic( "needsUpdate" )( true )
     }
-  }
-
-  def toggleCullback(): Unit = {
-    updateMeshCulling()
   }
 
   // ******************** rendering ********************

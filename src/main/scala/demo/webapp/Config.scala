@@ -38,9 +38,6 @@ class Config {
   var `Show axis`: Boolean = false
 
   @JSExport
-  var `Cull back`: Boolean = false
-
-  @JSExport
   var `Background color`: js.Array[Float] = Colors.BLACK
 
   // 0 <= downsampling <= 7

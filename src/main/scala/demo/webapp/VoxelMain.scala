@@ -104,9 +104,6 @@ object VoxelMain extends JSApp {
       .addBoolean( jsCfg, "Show axis" )
       .onChange { _: Boolean => scene.toggleAxis() }
     general
-      .addBoolean( jsCfg, "Cull back" )
-      .onChange { _: Boolean => scene.toggleCullback() }
-    general
       .addColor( jsCfg, "Background color" )
       .onChange { a: js.Array[Float] => scene.setBackground( Colors.floatsToInt( a ) ) }
     general
