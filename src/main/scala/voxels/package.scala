@@ -21,8 +21,8 @@ package object voxels {
     SquareCupola ::
     RhombicPrism ::
     Nil ++
-    List( 3, 5, 6, 8 ).map( RegularPrism ) ++ // 4-prism = cube
-    List( 4, 5, 6, 8 ).map( AntiPrism ) ++ // 3-antiprism = octahedron
+    Seq( 3, 5, 6, 8 ).map( RegularPrism ) ++ // 4-prism = cube
+    Seq( 4, 5, 6, 8 ).map( AntiPrism ) ++ // 3-antiprism = octahedron
     ( SquarePyramid :: PentagonalPyramid :: Nil )
   ).zipWithIndex.map { case ( v, i ) => ( i, v ) }: _* )
 

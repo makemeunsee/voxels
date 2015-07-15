@@ -141,40 +141,40 @@ object VoronoiModel {
     def toPlane = toCutPlane( n ) _
     val cutInfo = face.vertices.map( v => ( v, toPlane( v ) ) )
     val afterCut = cyclicConsecutivePairs( cutInfo )
-      .foldLeft( List.empty[Vector3], List.empty[Vector3]  ) { case ( ( allVerts, newVerts ), ( vi0, vi1 ) ) =>
+      .foldLeft( Seq.empty[Vector3], Seq.empty[Vector3]  ) { case ( ( allVerts, newVerts ), ( vi0, vi1 ) ) =>
         ( vi0, vi1 ) match {
           case ( ( v0, OnPlane ), ( v1, OnPlane ) ) =>
             // both on the plane -> both on edge, both kept
-            ( v1 :: v0 :: allVerts, v1 :: v0 :: newVerts )
+            ( v1 +: v0 +: allVerts, v1 +: v0 +: newVerts )
           case ( ( v0, OnPlane ), ( _, Above ) ) =>
             // only keep the one on the plane
-            ( v0 :: allVerts, v0 :: newVerts )
+            ( v0 +: allVerts, v0 +: newVerts )
           case ( ( _, Above ),( v1, OnPlane ) )   =>
             // only keep the one on the plane
-            ( v1 :: allVerts, v1 :: newVerts )
+            ( v1 +: allVerts, v1 +: newVerts )
           case ( ( _, Above ),( _, Above ) )       =>
             // discard both, no cut edge
             ( allVerts, newVerts )
           case ( ( v0, Below ),( v1, Above ) )     =>
             // cut, keep first and create one, new one on cut edge
             val newV = intersectPlaneAndSegment( n, ( v0, v1 ) )
-            ( newV :: v0 :: allVerts, newV :: newVerts )
+            ( newV +: v0 +: allVerts, newV +: newVerts )
           case ( ( v0, Above ),( v1, Below ) )     =>
             // cut, keep second and create one, new one on cut edge
             val newV = intersectPlaneAndSegment( n, ( v0, v1 ) )
-            ( v1 :: newV :: allVerts, newV :: newVerts )
+            ( v1 +: newV +: allVerts, newV +: newVerts )
           case ( ( v0, Below ),( v1, Below ) )     =>
             // keep both, no cut edge
-            ( v1 :: v0 :: allVerts, newVerts )
+            ( v1 +: v0 +: allVerts, newVerts )
           case ( ( v0, Below ),( v1, OnPlane ) )   =>
             // keep both, first on cut edge
-            ( v1 :: v0 :: allVerts, v1 :: newVerts )
+            ( v1 +: v0 +: allVerts, v1 +: newVerts )
           case ( ( v0, OnPlane ),( v1, Below ) )   =>
             // keep both, second on cut edge
-            ( v1 :: v0 :: allVerts, v0 :: newVerts )
+            ( v1 +: v0 +: allVerts, v0 +: newVerts )
         }
       }
-    val edgePoints = removeDuplicates( afterCut._2.reverse )
+    val edgePoints = removeDuplicates( afterCut._2 )
     val newNeighbours = if ( edgePoints.isEmpty ) face.neighbours else face.neighbours + newFaceId
     val newVertices = cyclicRemoveConsecutiveDuplicates( afterCut._1.reverse )
     ( Face( face.seed, newVertices, newNeighbours ), edgePoints )
@@ -282,7 +282,7 @@ case class VoronoiModelImpl( faces: Array[Face] ) extends VoronoiModel {
       else
         doCuts( n
               , newFaceId
-              , t ++ face.neighbours.filterNot( j => t.contains( j ) || visited.contains( j ) )
+              , t ++ face.neighbours.diff( visited )
               , visited + i
               , ( i, newFace, newPoints ) +: acc )
     }

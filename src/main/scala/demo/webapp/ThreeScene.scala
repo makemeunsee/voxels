@@ -47,11 +47,11 @@ object ThreeScene {
 
   // zip faces of a voxel with their offset and size as in the meshes data buffers
   def withOffsetsAndSizes( faces: Iterable[Face] ): Seq[( Face, Int, Int )] = {
-    faces.foldLeft( ( 0, List.empty[( Face, Int, Int )] ) ) { case ( ( offset, acc ), f ) =>
+    faces.foldLeft( ( 0, Seq.empty[( Face, Int, Int )] ) ) { case ( ( offset, acc ), f ) =>
       // counting the centers which is automatically added to the meshes
       val l = 2 * ( f.vertices.length + 1 )
       val newOffset = offset + l
-      ( newOffset, ( f, offset, l ) :: acc )
+      ( newOffset, ( f, offset, l ) +: acc )
     }._2.reverse
   }
 
