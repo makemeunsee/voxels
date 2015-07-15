@@ -57,6 +57,9 @@ class Config {
   }
 
   @JSExport
+  var `Draw cells`: Boolean = true
+
+  @JSExport
   var `Thickness`: Float = 5f
   def safeCellThickness: Float =  {
     val f = math.max( 0, math.min( 25, `Thickness` ) ) / 25
@@ -72,12 +75,11 @@ class Config {
   @JSExport
   var `Borders color`: js.Array[Float] = Colors.LIGHT_BLACK
 
-  /*
   @JSExport
-  var drawMaze: Boolean = false
-  */
+  var `Draw path`: Boolean = false
+
   @JSExport
-  var `Maze path color`: js.Array[Float] = Colors.GREEN
+  var `Path color`: js.Array[Float] = Colors.GREEN
 
   // -100 <= mazeDepthScale <= 100
   @JSExport
@@ -94,8 +96,11 @@ class Config {
 
   // 0.1 <= rainbow span <= 2
   @JSExport
-  var `Rainbow span`: Float = 1f
-  def safeRainbowSpan: Float = math.max( 0.01f, math.min( 2, `Rainbow span` ) )
+  var `Rainbow span`: Float = 100f
+  def safeRainbowSpan: Float = {
+    val f = math.max( 1f, math.min( 100f, `Rainbow span` ) ) / 100
+    f * f
+  }
 
   @JSExport
   var `Reverse palette`: Boolean = false

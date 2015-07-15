@@ -105,7 +105,7 @@ void main()
       t = u_thickness;
   }
   float d = a_depth * u_depthScale;
-  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor+t)*a_normal + position), 1.0);
+  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor-t)*a_normal + position), 1.0);
   v_color = a_color;
   v_centerFlag = a_centerFlag;
   v_highlightFace = 0.0;
@@ -156,7 +156,7 @@ void main()
       t = u_thickness;
   }
   float d = a_depth * u_depthScale;
-  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor+t)*a_normal + position), 1.0);
+  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor-t)*a_normal + position), 1.0);
   v_color = unpackColor(a_pickColor);
   // v_color = a_pickColor;
 }</script>
@@ -199,7 +199,8 @@ void main()
 #extension GL_OES_standard_derivatives : enable
 #endif
 
-attribute float a_depth;
+attribute float a_depth0;
+attribute float a_depth1;
 attribute vec3 a_normal;
 
 uniform mat4 u_mvpMat;
@@ -209,7 +210,12 @@ uniform float u_depthScale;
 
 void main()
 {
-  float d = a_depth * u_depthScale;
+  float d = 0.0;
+  if ( u_depthScale > 0.0 ) {
+      d = a_depth1 * u_depthScale;
+  } else {
+      d = a_depth0 * u_depthScale;
+  }
   gl_Position = u_mvpMat * vec4((1.0+d) * (u_explosionFactor*a_normal + position), 1.0);
 }</script>
         <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>

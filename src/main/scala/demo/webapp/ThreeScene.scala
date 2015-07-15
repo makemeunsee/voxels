@@ -382,7 +382,11 @@ object ThreeScene {
         "type" -> "v3",
         "value" -> new Array[Float]
       ),
-      "a_depth" -> js.Dynamic.literal(
+      "a_depth0" -> js.Dynamic.literal(
+        "type" -> "f",
+        "value" -> new Array[Float]
+      ),
+      "a_depth1" -> js.Dynamic.literal(
         "type" -> "f",
         "value" -> new Array[Float]
       )
@@ -416,13 +420,14 @@ object ThreeScene {
     // assign an indice to each node and each relation
     val mazeWithIndices = flatMaze.map { case ( p, children ) =>
       ( p._1, ( p._2, id(), children.map { case child =>
-        ( child._1, id() )
+        ( child._1, child._2, id() )
       } ) )
     }
 
     val vertices = new Float32Array( count )
     val normals = new Float32Array( count )
-    val depths = new Float32Array( count / 3 )
+    val depths0 = new Float32Array( count / 3 )
+    val depths1 = new Float32Array( count / 3 )
     val indices = new Uint32Array( indicesCount )
 
     var indicesOffset = 0
@@ -433,7 +438,7 @@ object ThreeScene {
       val uniformD = d.toFloat / depthMax
 
       // face center point
-      val bary = f.barycenter * 1.01
+      val bary = f.barycenter * 1.001
       vertices.set( id*3,   bary.x.toFloat )
       vertices.set( id*3+1, bary.y.toFloat )
       vertices.set( id*3+2, bary.z.toFloat )
@@ -442,13 +447,14 @@ object ThreeScene {
       normals.set( id*3+1, n.y.toFloat )
       normals.set( id*3+2, n.z.toFloat )
 
-      depths.set( id, uniformD )
+      depths0.set( id, uniformD )
+      depths1.set( id, uniformD )
 
-      for( ( child, relationId ) <- children ) {
+      for( ( child, childD, relationId ) <- children ) {
         val ( _, childId, _ ) = mazeWithIndices( child )
 
         // junction point
-        val j = junction( f, m.faces( child ) ) * 1.01
+        val j = junction( f, m.faces( child ) ) * 1.001
         vertices.set( relationId*3,   j.x.toFloat )
         vertices.set( relationId*3+1, j.y.toFloat )
         vertices.set( relationId*3+2, j.z.toFloat )
@@ -457,7 +463,8 @@ object ThreeScene {
         normals.set( relationId*3+1, n.y.toFloat )
         normals.set( relationId*3+2, n.z.toFloat )
 
-        depths.set( relationId, uniformD )
+        depths0.set( relationId, uniformD )
+        depths1.set( relationId, childD.toFloat / depthMax )
 
         indices.set( indicesOffset, id )
         indices.set( indicesOffset+1, relationId )
@@ -469,7 +476,8 @@ object ThreeScene {
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
-    geom.addAttribute( "a_depth", new BufferAttribute( depths, 1 ) )
+    geom.addAttribute( "a_depth0", new BufferAttribute( depths0, 1 ) )
+    geom.addAttribute( "a_depth1", new BufferAttribute( depths1, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
@@ -664,9 +672,12 @@ class ThreeScene( cfg: Config ) {
     mazeMesh = Some( mm )
     meshes = Some( m, pm )
     updateMeshCulling()
-    scene.add( m )
-    scene.add( mm )
-    pickScene.add( pm )
+    if ( cfg.`Draw cells` ) {
+      scene.add( m )
+      pickScene.add( pm )
+    }
+    if ( cfg.`Draw path` )
+      scene.add( mm )
   }
 
   private def updateMeshCulling(): Unit = {
@@ -705,6 +716,20 @@ class ThreeScene( cfg: Config ) {
   }
 
   // ******************** special effects ********************
+
+  def toggleMazePath(): Unit = {
+    if ( cfg.`Draw path` )
+      mazeMesh.foreach( scene.add )
+    else
+      mazeMesh.foreach( scene.remove )
+  }
+
+  def toggleCells(): Unit = {
+    if ( cfg.`Draw cells` )
+      meshes.foreach { case ( m, pm ) => scene.add( m ) ; pickScene.add( pm ) }
+    else
+      meshes.foreach { case ( m, pm ) => scene.remove( m ) ; pickScene.remove( pm ) }
+  }
 
   def setBackground( color: Int ): Unit = {
     import demo.Colors.intColorToFloatsColors
@@ -783,47 +808,55 @@ class ThreeScene( cfg: Config ) {
 
   @JSExport
   def pickRender( mouseX: Int, mouseY: Int ): Int = {
-    for ( ( _, m ) <- meshes ) {
-      val updateThis = updateMeshMaterialValue( m ) _
-      updateThis( "u_time", 0f )
-      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-      updateThis( "u_depthScale", cfg.mazeDepthFactor )
-      updateThis( "u_thickness", cfg.safeCellThickness )
-      updateThis( "u_mvpMat", mvp )
-    }
-    renderer.render( pickScene, dummyCam )
-    import js.DynamicImplicits._
-    val gl = renderer.getContext().asInstanceOf[js.Dynamic]
-    gl.readPixels( mouseX, innerHeight - mouseY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels )
-    256 * 256 * pixels( 0 ) + 256 * pixels( 1 ) + pixels( 2 )
+    if ( cfg.`Draw cells` ) {
+      for ( ( _, m ) <- meshes ) {
+        val updateThis = updateMeshMaterialValue( m ) _
+        updateThis( "u_time", 0f )
+        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+        updateThis( "u_depthScale", cfg.mazeDepthFactor )
+        updateThis( "u_thickness", cfg.safeCellThickness )
+        updateThis( "u_mvpMat", mvp )
+      }
+      renderer.render( pickScene, dummyCam )
+      import js.DynamicImplicits._
+      val gl = renderer.getContext().asInstanceOf[js.Dynamic]
+      gl.readPixels( mouseX, innerHeight - mouseY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels )
+      256 * 256 * pixels( 0 ) + 256 * pixels( 1 ) + pixels( 2 )
+    } else
+      0
   }
 
   @JSExport
   def render( highlighted: Int ): Unit = {
-    for ( ( m, _ ) <- meshes ) {
-      val updateThis = updateMeshMaterialValue( m ) _
-      updateThis( "u_time", 0f )
-      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-      updateThis( "u_depthScale", cfg.mazeDepthFactor )
-      updateThis( "u_thickness", cfg.safeCellThickness )
-      updateThis( "u_mvpMat", mvp )
-      updateThis( "u_borderWidth", cfg.safeBordersWidth )
-      updateThis( "u_borderColor", new org.denigma.threejs.Vector3( cfg.`Borders color`( 0 ) / 255f
-                                                                  , cfg.`Borders color`( 1 ) / 255f
-                                                                  , cfg.`Borders color`( 2 ) / 255f ) )
-      updateThis( "u_faceHighlightFlag", highlighted.toFloat )
-    }
-    updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
-    for( mm <- mazeMesh ) {
-      val updateThis = updateMeshMaterialValue( mm ) _
-      updateThis( "u_time", 0f )
-      updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-      updateThis( "u_depthScale", cfg.mazeDepthFactor )
-      updateThis( "u_mvpMat", mvp )
-      updateThis( "u_color", new org.denigma.threejs.Vector3( cfg.`Maze path color`( 0 ) / 255f
-                                                            , cfg.`Maze path color`( 1 ) / 255f
-                                                            , cfg.`Maze path color`( 2 ) / 255f ) )
-    }
+    if ( cfg.`Draw cells` )
+      for ( ( m, _ ) <- meshes ) {
+        val updateThis = updateMeshMaterialValue( m ) _
+        updateThis( "u_time", 0f )
+        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+        updateThis( "u_depthScale", cfg.mazeDepthFactor )
+        updateThis( "u_thickness", cfg.safeCellThickness )
+        updateThis( "u_mvpMat", mvp )
+        updateThis( "u_borderWidth", cfg.safeBordersWidth )
+        updateThis( "u_borderColor", new org.denigma.threejs.Vector3( cfg.`Borders color`( 0 ) / 255f
+                                                                    , cfg.`Borders color`( 1 ) / 255f
+                                                                    , cfg.`Borders color`( 2 ) / 255f ) )
+        updateThis( "u_faceHighlightFlag", highlighted.toFloat )
+      }
+
+    if ( cfg.`Show axis` )
+      updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
+
+    if ( cfg.`Draw path` )
+      for( mm <- mazeMesh ) {
+        val updateThis = updateMeshMaterialValue( mm ) _
+        updateThis( "u_time", 0f )
+        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
+        updateThis( "u_depthScale", cfg.mazeDepthFactor )
+        updateThis( "u_mvpMat", mvp )
+        updateThis( "u_color", new org.denigma.threejs.Vector3( cfg.`Path color`( 0 ) / 255f
+                                                              , cfg.`Path color`( 1 ) / 255f
+                                                              , cfg.`Path color`( 2 ) / 255f ) )
+      }
 
     renderer.clearColor()
     renderer.render( scene, dummyCam, renderingTexture )
