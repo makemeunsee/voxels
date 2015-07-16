@@ -294,25 +294,25 @@ object ThreeScene {
         topFlags.set( offset+j,       1f )
         topFlags.set( offset+j+vSize, 0f )
 
-        // top triangle
-        indices.set( indicesOffset+12*j,   offset+2*vSize )
-        indices.set( indicesOffset+12*j+1, offset+j )
-        indices.set( indicesOffset+12*j+2, offset+( j+1 )%vSize )
-
         // bottom triangle
+        indices.set( indicesOffset+12*j,   offset+2*vSize )
+        indices.set( indicesOffset+12*j+1, offset+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+2, offset+j )
+
+        // top triangle
         indices.set( indicesOffset+12*j+3, offset+2*vSize+1 )
-        indices.set( indicesOffset+12*j+4, offset+vSize+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+5, offset+vSize+j )
+        indices.set( indicesOffset+12*j+4, offset+vSize+j )
+        indices.set( indicesOffset+12*j+5, offset+vSize+( j+1 )%vSize )
 
         // side triangle 1
         indices.set( indicesOffset+12*j+6, offset+j )
-        indices.set( indicesOffset+12*j+7, offset+vSize+j )
-        indices.set( indicesOffset+12*j+8, offset+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+7, offset+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+8, offset+vSize+j )
 
         // side triangle 2
         indices.set( indicesOffset+12*j+9,  offset+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+10, offset+vSize+j )
-        indices.set( indicesOffset+12*j+11, offset+vSize+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+10, offset+vSize+( j+1 )%vSize )
+        indices.set( indicesOffset+12*j+11, offset+vSize+j )
       }
 
       val c = f.barycenter
@@ -607,9 +607,10 @@ class ThreeScene( cfg: Config ) {
 
   @JSExport
   val renderer = new WebGLRenderer( ReadableWebGLRendererParameters )
-  renderer.setClearColor( new org.denigma.threejs.Color( cfg.`Background color`( 0 ) /255f
-                                                       , cfg.`Background color`( 1 ) /255f
-                                                       , cfg.`Background color`( 2 ) /255f ) )
+  import demo.Colors.jsStringToFloats
+  renderer.setClearColor( new org.denigma.threejs.Color( cfg.`Background color`._1
+                                                       , cfg.`Background color`._2
+                                                       , cfg.`Background color`._3 ) )
 
   // ******************** view management ********************
 
@@ -828,9 +829,9 @@ class ThreeScene( cfg: Config ) {
         updateThis( "u_thickness", cfg.safeCellThickness )
         updateThis( "u_mvpMat", mvp )
         updateThis( "u_borderWidth", cfg.safeBordersWidth )
-        updateThis( "u_borderColor", new org.denigma.threejs.Vector3( cfg.`Borders color`( 0 ) / 255f
-                                                                    , cfg.`Borders color`( 1 ) / 255f
-                                                                    , cfg.`Borders color`( 2 ) / 255f ) )
+        import demo.Colors.jsStringToFloats
+        val ( r, g, b ): ( Float, Float, Float ) = cfg.`Borders color`
+        updateThis( "u_borderColor", new org.denigma.threejs.Vector3( r, g, b ) )
         updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       }
 
@@ -844,9 +845,9 @@ class ThreeScene( cfg: Config ) {
         updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
         updateThis( "u_depthScale", cfg.mazeDepthFactor )
         updateThis( "u_mvpMat", mvp )
-        updateThis( "u_color", new org.denigma.threejs.Vector3( cfg.`Path color`( 0 ) / 255f
-                                                              , cfg.`Path color`( 1 ) / 255f
-                                                              , cfg.`Path color`( 2 ) / 255f ) )
+        import demo.Colors.jsStringToFloats
+        val ( r, g, b ): ( Float, Float, Float ) = cfg.`Path color`
+        updateThis( "u_color", new org.denigma.threejs.Vector3( r, g, b ) )
       }
 
     renderer.clearColor()

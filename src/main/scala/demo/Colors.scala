@@ -7,20 +7,17 @@ import scala.util.Random
  * Created by markus on 22/06/2015.
  */
 object Colors {
+  implicit def colorIntToJsString( color: Int) : String = String.format( "#%06X", new Integer( color ) )
+
+  implicit def jsStringToColor( color: String) : Int = Integer.parseInt( color.substring( 1 ), 16 )
+
+  implicit val jsStringToFloats = ( jsStringToColor _ ).andThen( intColorToFloatsColors )
+
   implicit def intColorToFloatsColors( c: Int ): ( Float, Float, Float ) = {
     val r = ( ( c >> 16 ) & 0xff ).toFloat / 255f
     val g = ( ( c >> 8 ) & 0xff ).toFloat / 255f
     val b = ( c & 0xff ).toFloat / 255f
     ( r, g, b )
-  }
-
-  implicit def floatsToInt( c: Seq[Float] ): Int = c( 0 ).toInt * 256 * 256 + c( 1 ).toInt * 256 + c( 2 ).toInt
-
-  implicit def intColorToIntColors( c: Int ): Array[Int] = {
-    val r = ( c >> 16 ) & 0xff
-    val g = ( c >> 8 ) & 0xff
-    val b = c & 0xff
-    Array( r, g, b )
   }
 
   def rndColor()( implicit rnd: Random ): Int = rnd.nextInt() & WHITE

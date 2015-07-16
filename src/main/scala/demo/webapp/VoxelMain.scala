@@ -12,7 +12,7 @@ import maze.Maze
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
-import scala.scalajs.js.JSApp
+import scala.scalajs.js.{JSON, JSApp}
 import scala.util.Random
 
 object VoxelMain extends JSApp {
@@ -25,7 +25,7 @@ object VoxelMain extends JSApp {
   private implicit var rnd = new Random( System.currentTimeMillis() )
 
   private val config = new Config
-  private val datGUI = new DatGUI
+  private val datGUI = new DatGUI( js.Dynamic.literal( "load" -> JSON.parse( Config.presets ), "preset" -> "Default" ) )
 
   // ******************** actual three.js scene ********************
 
@@ -49,6 +49,7 @@ object VoxelMain extends JSApp {
   // apply color palette and dynamically load relevant parameters in the gui
   private def applyColors( colorControllers: Seq[DatController[_]] )
                          ( implicit colorParams: DatGUI, paletteController: DatController[String] ): Unit = {
+
     implicit val jsCfg = config.asInstanceOf[js.Dynamic]
 
     // palette has change, remove all parameters from the gui
@@ -57,13 +58,13 @@ object VoxelMain extends JSApp {
     val newControllers = config.`Palette` match {
 
       case Config.uniforms =>
-        import Colors.floatsToInt
-        color( config.`Color 0`.toSeq, config.`Color 1`.toSeq )
+        import Colors.jsStringToColor
+        color( config.`Color 0`, config.`Color 1` )
         val col0Controller = colorParams.addColor( jsCfg, "Color 0" )
         val col1Controller = colorParams.addColor( jsCfg, "Color 1" )
         val result = Seq( col0Controller, col1Controller )
-        col0Controller.onChange { _: js.Array[Float] => color( config.`Color 0`.toSeq, config.`Color 1`.toSeq ) }
-        col1Controller.onChange { _: js.Array[Float] => color( config.`Color 0`.toSeq, config.`Color 1`.toSeq ) }
+        col0Controller.onChange { _: String => color( config.`Color 0`, config.`Color 1` ) }
+        col1Controller.onChange { _: String => color( config.`Color 0`, config.`Color 1` ) }
         result
 
       case Config.randoms =>
@@ -98,6 +99,8 @@ object VoxelMain extends JSApp {
   def main(): Unit = {
     val jsCfg = config.asInstanceOf[js.Dynamic]
 
+    datGUI.remember( jsCfg )
+
     val general = datGUI.addFolder( "General" )
 
     general
@@ -105,7 +108,7 @@ object VoxelMain extends JSApp {
       .onChange { _: Boolean => scene.toggleAxis() }
     general
       .addColor( jsCfg, "Background color" )
-      .onChange { a: js.Array[Float] => scene.setBackground( Colors.floatsToInt( a ) ) }
+      .onChange { a: String => scene.setBackground( Colors.jsStringToColor( a ) ) }
     general
       .addRange( jsCfg, "Downsampling", 0, 7 )
       .onChange { _: Float => scene.udpateDownsampling() }
@@ -147,6 +150,7 @@ object VoxelMain extends JSApp {
     applyColors( Seq.empty )
 
     datGUI.open()
+
   }
 
   @JSExport
