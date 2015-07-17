@@ -673,13 +673,21 @@ class ThreeScene( cfg: Config ) {
 
   def addModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
     val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
-    val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
-    mazeMesh = Some( mm )
     meshes = Some( m, pm )
     if ( cfg.`Draw cells` ) {
       scene.add( m )
       pickScene.add( pm )
     }
+    setMaze( model, maze, depthMax )
+  }
+
+  def setMaze( model: VoronoiModel, maze: Maze[Int], depthMax: Int ): Unit = {
+    mazeMesh.foreach { m =>
+      scene.remove( m )
+      m.geometry.dispose()
+    }
+    val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
+    mazeMesh = Some( mm )
     if ( cfg.`Draw path` )
       scene.add( mm )
   }
@@ -755,10 +763,28 @@ class ThreeScene( cfg: Config ) {
     renderingTexture = makeTexture( w / downsampling, h / downsampling )
   }
 
-  def colorFace( faceOffset: Int
-               , faceSize: Int
-               , color: ( Float, Float, Float )
-               , centerColor: ( Float, Float, Float ) ): Unit = {
+  def updateFaceDepth( faceOffset: Int
+                     , faceSize: Int
+                     , uniformDepth: Float ): Unit = {
+    for ( ( mesh, _ ) <- meshes ) {
+      val attrs = mesh
+        .geometry.asInstanceOf[MyBufferGeometry]
+        .attributes
+      val attr = attrs
+        .asInstanceOf[scala.scalajs.js.Dynamic]
+        .selectDynamic( "a_depth" )
+      val data = attr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
+      for ( i <- 0 until faceSize )
+        data.update( faceOffset + i, uniformDepth )
+
+      attr.updateDynamic( "needsUpdate" )( true )
+    }
+  }
+
+  def updateFaceColor( faceOffset: Int
+                     , faceSize: Int
+                     , color: ( Float, Float, Float )
+                     , centerColor: ( Float, Float, Float ) ): Unit = {
 
     for ( ( mesh, _ ) <- meshes ) {
       val attrs = mesh
@@ -769,13 +795,10 @@ class ThreeScene( cfg: Config ) {
         .selectDynamic( "a_color" )
       val colorData = colorAttr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
       // apply color until face center offset
-      ( 0 until faceSize-1 ).foreach { i =>
+      ( 0 until faceSize-2 ).foreach { i =>
         colorData.update( 3*faceOffset+3*i,   color._1 )
         colorData.update( 3*faceOffset+3*i+1, color._2 )
         colorData.update( 3*faceOffset+3*i+2, color._3 )
-        colorData.update( 3*faceOffset+3*(i+faceSize-1),   color._1 )
-        colorData.update( 3*faceOffset+3*(i+faceSize-1)+1, color._2 )
-        colorData.update( 3*faceOffset+3*(i+faceSize-1)+2, color._3 )
       }
       // apply specific color at face center offset
       colorData.update( 3*faceOffset+3*faceSize-6, centerColor._1 )

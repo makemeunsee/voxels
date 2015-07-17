@@ -13,6 +13,7 @@ import scala.scalajs.js.annotation.JSExport
  * Created by markus on 10/07/15.
  */
 object Config {
+
   val uniforms = "Uniform colors"
   val randoms = "Random colors"
   val randoms2 = "Random colors (flat)"
@@ -26,6 +27,17 @@ object Config {
          , chRainbow
          , niRainbow
          , laRainbow
+         ).toJSArray
+
+  val wilson = "Wilson's"
+  val depthFirst = "Depth first"
+  val prim = "Prim's"
+  val rndTraversal = "Random traversal"
+  val mazeTypes: js.Array[String] =
+    Array( wilson
+         , depthFirst
+         , prim
+         , rndTraversal
          ).toJSArray
 
   val presets = """{
@@ -235,7 +247,10 @@ case class Config (
   @(JSExport @field) 
   var `Borders color`: String = Colors.colorIntToJsString( Colors.LIGHT_BLACK ),
 
-  @(JSExport @field) 
+  @(JSExport @field)
+  var `Maze type`: String = Config.prim,
+
+  @(JSExport @field)
   var `Draw path`: Boolean = false,
 
   @(JSExport @field) 

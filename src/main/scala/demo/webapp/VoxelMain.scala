@@ -17,12 +17,14 @@ import scala.util.Random
 
 object VoxelMain extends JSApp {
 
+  private var seed: Long = 0
   private var model: VoronoiModel = CubeModel
   private var maze: Maze[Int] = Maze.empty( -1 )
   private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
 
-  private implicit var rnd = new Random( System.currentTimeMillis() )
+  private implicit var rnd = new Random( 0 )
+  initRnd( System.currentTimeMillis().toString )
 
   private val config = new Config
   private val datGUI = new DatGUI( js.Dynamic.literal( "load" -> JSON.parse( Config.presets ), "preset" -> "Default" ) )
@@ -36,8 +38,8 @@ object VoxelMain extends JSApp {
 
   private def rainbowControllers( rainbowFct: Float => Float => ( Float, Float, Float ) )
                                 ( implicit colorParams: DatGUI
-                                  , jsCfg: js.Dynamic
-                                  , paletteController: DatController[String] ): Seq[DatController[_]] = {
+                                , jsCfg: js.Dynamic
+                                , paletteController: DatController[String] ): Seq[DatController[_]] = {
     val spanController = colorParams.addRange( jsCfg, "Rainbow span", 1f, 100f )
     val reverseController = colorParams.addBoolean( jsCfg, "Reverse palette" )
     val newControllers = Seq( spanController, reverseController )
@@ -47,8 +49,8 @@ object VoxelMain extends JSApp {
   }
 
   // apply color palette and dynamically load relevant parameters in the gui
-  private def applyColors( colorControllers: Seq[DatController[_]] )
-                         ( implicit colorParams: DatGUI, paletteController: DatController[String] ): Unit = {
+  private def updateColorControllers( colorControllers: Seq[DatController[_]] )
+                                    ( implicit colorParams: DatGUI, paletteController: DatController[String] ): Unit = {
 
     implicit val jsCfg = config.asInstanceOf[js.Dynamic]
 
@@ -58,48 +60,45 @@ object VoxelMain extends JSApp {
     val newControllers = config.`Palette` match {
 
       case Config.uniforms =>
-        import Colors.jsStringToColor
-        color( config.`Color 0`, config.`Color 1` )
         val col0Controller = colorParams.addColor( jsCfg, "Color 0" )
         val col1Controller = colorParams.addColor( jsCfg, "Color 1" )
         val result = Seq( col0Controller, col1Controller )
+        import Colors.jsStringToColor
         col0Controller.onChange { _: String => color( config.`Color 0`, config.`Color 1` ) }
         col1Controller.onChange { _: String => color( config.`Color 0`, config.`Color 1` ) }
         result
 
       case Config.randoms =>
-        fullRndColor()
         Seq.empty
 
       case Config.randoms2 =>
-        rndColor()
         Seq.empty
 
       case Config.chRainbow =>
-        rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
         rainbowControllers( Colors.cubeHelixRainbow )
 
       case Config.niRainbow =>
-        rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
         rainbowControllers( Colors.matteoNiccoliRainbow )
 
       case Config.laRainbow =>
-        rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
         rainbowControllers( Colors.lessAngryRainbow )
 
       case _ =>
         Seq.empty
     }
     // update palette controller with new parameter controllers
-    paletteController.onChange { _: String => applyColors( newControllers ) }
+    paletteController.onChange { _: String =>
+      applyColors()
+      updateColorControllers( newControllers )
+    }
   }
 
   // ******************** init code ********************
 
-  def main(): Unit = {
-    val jsCfg = config.asInstanceOf[js.Dynamic]
+  // scala.js wants it...
+  def main(): Unit = {}
 
-    datGUI.remember( jsCfg )
+  def initDatGUI( jsCfg: js.Dynamic ): Unit = {
 
     val general = datGUI.addFolder( "General" )
 
@@ -131,6 +130,9 @@ object VoxelMain extends JSApp {
 
     val mazeFolder = datGUI.addFolder( "Maze" )
     mazeFolder
+      .addList( jsCfg, "Maze type", Config.mazeTypes )
+      .onChange { _: String => reloadMaze() }
+    mazeFolder
       .addBoolean( jsCfg, "Draw path" )
       .onChange { _: Boolean => scene.toggleMazePath() }
     mazeFolder
@@ -147,20 +149,57 @@ object VoxelMain extends JSApp {
 
     implicit val paletteController = colors.addList( jsCfg, "Palette", Config.colorings )
 
-    applyColors( Seq.empty )
+    updateColorControllers( Seq.empty )
 
     datGUI.open()
-
   }
 
   @JSExport
-  def initRnd( seed: Long ): Unit = {
+  def initRnd( seedStr : String ): Unit = {
+    seed = seedStr.hashCode
+    println( s"seed: $seed from string: $seedStr" )
     rnd = new Random( seed )
   }
 
+  private def reloadMaze(): Unit = {
+    genMaze()
+    applyMaze()
+  }
+
+  private def genMaze(): Unit = {
+    // always use the original random to generate the maze => get the same mazes
+    val mazeRnd = new Random( seed )
+    // generate maze
+    maze = config.`Maze type` match {
+      case Config.depthFirst =>   Maze.depthFirstMaze( model.faces )( mazeRnd )
+      case Config.rndTraversal => Maze.randomTraversal( model.faces )( mazeRnd )
+      case Config.prim =>         Maze.prim( model.faces )( mazeRnd )
+      case _ =>                   Maze.wilsonMaze( model.faces )( mazeRnd )
+    }
+    //    println( maze.toNiceString() )
+    val mazeMetrics = maze.metrics
+    depthMap = mazeMetrics._1
+    depthMax = mazeMetrics._2
+  }
+
+  def applyMaze(): Unit = {
+    ThreeScene.withOffsetsAndSizes( model.faces )
+      .zipWithIndex
+      .foreach { case ( ( f, o, s ), id ) =>
+        scene.updateFaceDepth( o, s, depthMap( id ).toFloat / depthMax )
+      }
+
+    scene.setMaze( model, maze, depthMax )
+    applyColors()
+  }
+
   @JSExport
-  def loadModel( cutCount: Int, mazeType: String ): Unit = {
+  def loadModel( cutCount: Int ): Unit = {
     println( "start" )
+
+    // load config template
+    val jsCfg = config.asInstanceOf[js.Dynamic]
+    datGUI.remember( jsCfg )
 
     // prepare cuts
     val cutNormals = ( 0 until cutCount ).map { _ =>
@@ -175,17 +214,7 @@ object VoxelMain extends JSApp {
 
     val t1 = System.currentTimeMillis()
 
-    // generate maze
-    maze = mazeType.toLowerCase match {
-      case "depthfirst" => Maze.depthFirstMaze( model.faces)
-      case "randomtraversal" => Maze.randomTraversal( model.faces )
-      case "prim" => Maze.prim( model.faces )
-      case _ => Maze.wilsonMaze( model.faces )
-    }
-//    println( maze.toNiceString() )
-    val mazeMetrics = maze.metrics
-    depthMap = mazeMetrics._1
-    depthMax = mazeMetrics._2
+    genMaze()
 
     val t2 = System.currentTimeMillis()
 
@@ -193,8 +222,9 @@ object VoxelMain extends JSApp {
     println( "maze time", t2 - t1 )
 
     scene.addModel( model, maze, depthMap, depthMax )
+    applyColors()
 
-    main()
+    initDatGUI( jsCfg )
   }
 
   @JSExport
@@ -208,6 +238,33 @@ object VoxelMain extends JSApp {
   }
 
   // ******************** coloring ********************
+
+  private def applyColors(): Unit = {
+    config.`Palette` match {
+
+      case Config.uniforms =>
+        import Colors.jsStringToColor
+        color( config.`Color 0`, config.`Color 1` )
+
+      case Config.randoms =>
+        fullRndColor()
+
+      case Config.randoms2 =>
+        rndColor()
+
+      case Config.chRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.cubeHelixRainbow )
+
+      case Config.niRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.matteoNiccoliRainbow )
+
+      case Config.laRainbow =>
+        rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
+
+      case _ =>
+        ()
+    }
+  }
 
   private def fullRndColor(): Unit = {
     import Colors.intColorToFloatsColors
@@ -244,7 +301,7 @@ object VoxelMain extends JSApp {
           case _ =>
             col
         }
-        scene.colorFace( o, s, col, cCol )
+        scene.updateFaceColor( o, s, col, cCol )
       }
   }
 }

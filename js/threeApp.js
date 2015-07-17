@@ -27,13 +27,11 @@ function appMain() {
     var cuts = getURLParameter("cuts") || 2000;
     console.log("cuts:\t", cuts);
 
-    var seed = getURLParameter("seed") || Math.random().toString().slice(2);
-    console.log("seed:\t", seed);
+    var seed = getURLParameter("seed");
 
-    var mazeType = getURLParameter("mazetype") || "wilson";
-    console.log("maze type:\t", mazeType);
-
-    scalaObj.initRnd(seed);
+    if ( seed ) {
+      scalaObj.initRnd(seed);
+    }
 
     // help dialog
     $(function() {
@@ -269,7 +267,7 @@ function appMain() {
 
     document.body.appendChild( stats.domElement );
 
-    scalaObj.loadModel(cuts,mazeType);
+    scalaObj.loadModel(cuts);
 
     main();
 
