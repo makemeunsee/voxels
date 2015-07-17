@@ -80,16 +80,17 @@ object Maze {
       acc
 
     case h :: t =>
-      val ( options, newAcc ) = t.find( h == _ ) match {
-        // loop, erase it and go on
-        case Some( i ) =>
-          ( faces( h ).neighbours.toSeq, t.drop( i ) )
+      val newAcc = t.indexOf( h ) match {
         // no loop
-        case None =>
-          ( faces( h ).neighbours.toSeq, acc )
+        case -1 =>
+          acc
+        // loop, erase it and go on
+        case i =>
+          t.drop( i )
       }
       // take another step
-      val newStep = options( rnd.nextInt( options.length ) )
+      val options = faces( h ).neighbours.toSeq
+      val newStep = options.toSeq( rnd.nextInt( options.length ) )
       randomWalk( faces, visited, newStep +: newAcc )
 
     case _ =>
