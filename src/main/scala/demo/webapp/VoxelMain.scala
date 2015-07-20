@@ -7,18 +7,22 @@ package demo.webapp
 import demo.Colors
 import geometry.Normal3
 import geometry.voronoi.VoronoiModel
-import geometry.voronoi.VoronoiModel.CubeModel
 import maze.Maze
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.{JSName, JSExport}
 import scala.scalajs.js.{JSON, JSApp}
 import scala.util.Random
+
+@JSName("jQuery")
+object JQuery extends js.Object {
+  def apply(x: String): js.Dynamic = js.native
+}
 
 object VoxelMain extends JSApp {
 
   private var seed: Long = 0
-  private var model: VoronoiModel = CubeModel
+  private val model: VoronoiModel = VoronoiModel.cubeModel
   private var maze: Maze[Int] = Maze.empty( -1 )
   private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
@@ -194,37 +198,70 @@ object VoxelMain extends JSApp {
   }
 
   @JSExport
-  def loadModel( cutCount: Int ): Unit = {
-    println( "start" )
+  def loadModel( cutCount: Int
+               , continuator: js.Function1[js.Function0[_], _]
+               , continuation: js.Function0[_] ): Unit = {
+    import js.DynamicImplicits._
 
-    // load config template
+    val progressBar = JQuery( "#progressbar" )
+    val progressLabel = JQuery( "#progress-label" )
     val jsCfg = config.asInstanceOf[js.Dynamic]
-    datGUI.remember( jsCfg )
 
-    // prepare cuts
-    val cutNormals = ( 0 until cutCount ).map { _ =>
-      val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.nextDouble(), rnd.nextDouble() )
-      Normal3.fromSphericCoordinates( theta, phi )
+    var cutNormals: Seq[( Normal3 )] = Seq.empty
+
+    val colors: js.Function0[_] = () => {
+      applyColors()
+      initDatGUI( jsCfg )
+
+      progressBar.progressbar( "value", 100 )
+      progressLabel.text( s"Loading... (color scheme) - 100 %" )
+
+      continuator( continuation )
     }
 
-    val t0 = System.currentTimeMillis()
+    val intoScene: js.Function0[_] = () => {
+      scene.addModel( model, maze, depthMap, depthMax )
+      progressBar.progressbar( "value", 97 )
+      progressLabel.text( s"Loading... (meshes) - 97 %" )
+      continuator( colors )
+    }
 
-    // apply cuts
-    model = model.cut( cutNormals )
+    val mazeGen: js.Function0[_] = () => {
+      genMaze()
+      progressBar.progressbar( "value", 92 )
+      progressLabel.text( s"Loading... (maze) - 92 %" )
+      continuator( intoScene )
+    }
 
-    val t1 = System.currentTimeMillis()
+    val cuts: js.Function0[_] = () => {
+      model.cut( cutNormals, { ( i, nextCut ) =>
+        if ( i % 50 == 0 ) {
+          val v = 85*i/cutNormals.length
+          progressBar.progressbar( "value", v )
+          progressLabel.text( s"Loading... (generating cells) - $v %" )
+          continuator( () => nextCut )
+        } else
+          nextCut
+      }, mazeGen )
+    }
 
-    genMaze()
+    val prepare: js.Function0[_] = () => {
+      // load config template
+      datGUI.remember( jsCfg )
 
-    val t2 = System.currentTimeMillis()
+      // prepare cuts
+      cutNormals = ( 0 until cutCount ).map { _ =>
+        val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.nextDouble(), rnd.nextDouble() )
+        Normal3.fromSphericCoordinates( theta, phi )
+      }
 
-    println( "cut time", t1 - t0 )
-    println( "maze time", t2 - t1 )
+      progressBar.progressbar( "value", 0 )
+      progressLabel.text( "Loading... (cuts) - 0 %" )
 
-    scene.addModel( model, maze, depthMap, depthMax )
-    applyColors()
+      continuator( cuts )
+    }
 
-    initDatGUI( jsCfg )
+    prepare()
   }
 
   @JSExport

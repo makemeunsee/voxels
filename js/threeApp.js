@@ -87,7 +87,12 @@ function appMain() {
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
 
-    var mainContainer = document.getElementById( 'main' );
+    $( "#progressbar" ).progressbar( { value: false,
+                                       change: function() {},
+                                       complete: function() {}
+                                     } );
+
+    var mainContainer = $( "#main" )[0];
 
     // pinch detection (and more)
     var mc = new Hammer(mainContainer);
@@ -227,16 +232,8 @@ function appMain() {
         pause();
     });
 
-    reset();
 //    var then = Date.now();
     var running = true;
-
-
-    // Functions ---
-
-    // Reset game to original state
-    function reset() {
-    }
 
     // Pause and unpause
     function pause() {
@@ -254,7 +251,6 @@ function appMain() {
     // canvas & webgl context code
 
     updateProjection(window.innerWidth, window.innerHeight);
-
     renderer.setSize( window.innerWidth, window.innerHeight );
     mainContainer.appendChild( canvas );
 
@@ -267,9 +263,24 @@ function appMain() {
 
     document.body.appendChild( stats.domElement );
 
-    scalaObj.loadModel(cuts);
+    // show placeholder
+    $( "#progressbar" ).show();
+    // and hide everything else while loading
+    toggleUI();
+    $( "#main" ).hide();
 
-    main();
+    function continuation() {
+        // once loaded, hide the placeholder
+        $( "#progressbar" ).hide();
+        // and show everything else
+        toggleUI();
+        $( "#main" ).show();
+
+        // start the rendering loop
+        main();
+    }
+
+    scalaObj.loadModel(cuts, requestAnimFrame, continuation);
 
     // The main game loop
     function main() {

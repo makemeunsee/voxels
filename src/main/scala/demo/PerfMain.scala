@@ -1,7 +1,7 @@
 package demo
 
 import geometry.Normal3
-import geometry.voronoi.VoronoiModel.CubeModel
+import geometry.voronoi.VoronoiModel.cubeModel
 import maze.Maze
 
 import scala.util.Random
@@ -20,12 +20,13 @@ object PerfMain {
     }
 
     // 'warm up', sic
-    CubeModel.cut( cutNormals )
+    cubeModel.cut( cutNormals )
 
     val t0 = System.currentTimeMillis()
 
-    ( 0 until 9 ) foreach { i => println( i ) ; CubeModel.cut( cutNormals ) }
-    val model = CubeModel.cut( cutNormals )
+    ( 0 until 9 ) foreach { i => println( i ) ; cubeModel.cut( cutNormals ) }
+    val model = cubeModel
+    model.cut( cutNormals )
 
     val t1 = System.currentTimeMillis()
 
