@@ -47,7 +47,7 @@ object Config {
                   |  "remembered": {
                   |    "Default": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -67,7 +67,7 @@ object Config {
                   |    },
                   |    "path": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -87,7 +87,7 @@ object Config {
                   |    },
                   |    "flat": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -107,7 +107,7 @@ object Config {
                   |    },
                   |    "pixels": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#000000",
                   |        "Downsampling": 3,
                   |        "Explosion": 0,
@@ -127,7 +127,7 @@ object Config {
                   |    },
                   |    "deep": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -147,7 +147,7 @@ object Config {
                   |    },
                   |    "bright": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#ffffff",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -167,7 +167,7 @@ object Config {
                   |    },
                   |    "path2": {
                   |      "0": {
-                  |        "Show axis": false,
+                  |        "Show axes": false,
                   |        "Background color": "#ffffff",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
@@ -225,7 +225,7 @@ case class Config (
   var `Count (!slow!)`: String = "2000",
 
   @(JSExport @field)
-  var `Show axis`: Boolean = false,
+  var `Show axes`: Boolean = false,
 
   @(JSExport @field) 
   var `Background color`: String = Colors.colorIntToJsString( Colors.BLACK ),

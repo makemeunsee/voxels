@@ -660,7 +660,7 @@ class ThreeScene( cfg: Config ) {
   private lazy val axisMesh: Mesh = makeAxisMesh
 
   def toggleAxis(): Unit = {
-    if ( cfg.`Show axis` )
+    if ( cfg.`Show axes` )
       rtScene.add( axisMesh )
     else
       rtScene.remove( axisMesh )
@@ -864,7 +864,7 @@ class ThreeScene( cfg: Config ) {
         updateThis( "u_faceHighlightFlag", highlighted.toFloat )
       }
 
-    if ( cfg.`Show axis` )
+    if ( cfg.`Show axes` )
       updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
 
     if ( cfg.`Draw path` )

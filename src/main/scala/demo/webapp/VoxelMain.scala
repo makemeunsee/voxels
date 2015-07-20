@@ -122,7 +122,7 @@ object VoxelMain extends JSApp {
           ()
       }
     general
-      .addBoolean( jsCfg, "Show axis" )
+      .addBoolean( jsCfg, "Show axes" )
       .onChange { _: Boolean => scene.toggleAxis() }
     general
       .addColor( jsCfg, "Background color" )
