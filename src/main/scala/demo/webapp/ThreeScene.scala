@@ -671,7 +671,13 @@ class ThreeScene( cfg: Config ) {
   private var meshes: Option[( Mesh, Mesh )] = None
   private var mazeMesh: Option[Mesh] = None
 
-  def addModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
+  def setModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
+    meshes.foreach { case ( oldM, oldPm ) =>
+      scene.remove( oldM )
+      pickScene.remove( oldPm )
+      oldM.geometry.dispose()
+      oldPm.geometry.dispose()
+    }
     val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
     meshes = Some( m, pm )
     if ( cfg.`Draw cells` ) {

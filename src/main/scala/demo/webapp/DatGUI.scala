@@ -10,6 +10,8 @@ import scala.scalajs.js
 @scala.scalajs.js.annotation.RawJSType
 class DatGUI( obj: js.Dynamic ) {
   @scala.scalajs.js.annotation.JSName("add")
+  def addString( container: js.Any, name: String ): DatController[String] = js.native
+  @scala.scalajs.js.annotation.JSName("add")
   def addBoolean( container: js.Any, name: String ): DatController[Boolean] = js.native
   @scala.scalajs.js.annotation.JSName("add")
   def addRange( container: js.Any, name: String, min: Float, max: Float, step: Float = 1f ): DatController[Float] = js.native

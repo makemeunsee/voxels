@@ -11,7 +11,7 @@ import scala.util.Random
  */
 object PerfMain {
   def main ( args: Array[String] ) {
-    implicit val rnd = new Random( 0 )
+    val rnd = new Random( 0 )
     val cutCount = 10000
 
     val cutNormals = ( 0 until cutCount ).map { _ =>
@@ -31,7 +31,7 @@ object PerfMain {
     val t1 = System.currentTimeMillis()
 
     // generate maze
-    Maze.depthFirstMaze( model.faces, continuation = { maze =>
+    Maze.depthFirstMaze( rnd )( model.faces, continuation = { maze =>
   //    val maze = Maze.prim( model.faces)
   //    val maze = Maze.wilsonMaze( model.faces)
   //    val maze = Maze.randomTraversal( model.faces)

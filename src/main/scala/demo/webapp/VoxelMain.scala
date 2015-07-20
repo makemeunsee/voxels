@@ -12,7 +12,7 @@ import maze.Maze
 import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSName, JSExport}
 import scala.scalajs.js.{JSON, JSApp}
-import scala.util.Random
+import scala.util.{Failure, Success, Random}
 
 @JSName("jQuery")
 object JQuery extends js.Object {
@@ -21,17 +21,18 @@ object JQuery extends js.Object {
 
 object VoxelMain extends JSApp {
 
-  private var seed: Long = 0
-  private val model: VoronoiModel = VoronoiModel.cubeModel
+  private var model: VoronoiModel = VoronoiModel.cubeModel
   private var maze: Maze[Int] = Maze.empty( -1 )
   private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
 
-  private implicit var rnd = new Random( 0 )
-  initRnd( System.currentTimeMillis().toString )
-
   private val config = new Config
   private val datGUI = new DatGUI( js.Dynamic.literal( "load" -> JSON.parse( Config.presets ), "preset" -> "Default" ) )
+  private var cutCount = config.safeCutCount
+  private var seed: Long = 0
+  private implicit var iRnd = new Random( 0 )
+  initRnd( config.`Seed (!slow!)` )
+
 
   // ******************** actual three.js scene ********************
 
@@ -102,11 +103,24 @@ object VoxelMain extends JSApp {
   // scala.js wants it...
   def main(): Unit = {}
 
-  def initDatGUI( jsCfg: js.Dynamic
-                , continuator: js.Function1[js.Function0[_], _] ): Unit = {
+  def setupDatGUI( jsCfg: js.Dynamic
+                 , uiToggler: js.Function1[Boolean, _]
+                 , continuator: js.Function1[js.Function0[_], _]
+                 , continuation: js.Function0[_] ): Unit = {
 
     val general = datGUI.addFolder( "General" )
 
+    general
+      .addString( jsCfg, "Seed (!slow!)" )
+      .onFinishChange { str: String =>
+        if ( initRnd( str ) ) {
+          loadModel( uiToggler
+                   , continuator
+                   , continuation
+                   , initDatGUI = false )
+        } else
+          ()
+      }
     general
       .addBoolean( jsCfg, "Show axis" )
       .onChange { _: Boolean => scene.toggleAxis() }
@@ -125,6 +139,22 @@ object VoxelMain extends JSApp {
     cells
       .addBoolean( jsCfg, "Draw cells" )
       .onChange { _: Boolean => scene.toggleCells() }
+    cells
+      .addString( jsCfg, "Count (!slow!)" )
+      .onFinishChange { _: String =>
+        config.cutCount match {
+          case Success( c ) =>
+            if ( c != cutCount )
+              loadModel( uiToggler
+                       , continuator
+                       , continuation
+                       , initDatGUI = false )
+          case Failure( _ ) =>
+            import scala.scalajs.js.Dynamic.global
+            global.alert( "Positive integer expected!" )
+            ()
+        }
+      }
     cells
       .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
     cells
@@ -146,7 +176,6 @@ object VoxelMain extends JSApp {
           reloadMaze( { ( i, nextStep: ( () => _ ) ) =>
             if ( i % step == 0 ) {
               val v = 100*i/size
-              println(v)
               progressBar.progressbar( "value", v )
               progressLabel.text( s"Regenerating maze - $v %" )
               continuator( nextStep )
@@ -178,11 +207,17 @@ object VoxelMain extends JSApp {
     datGUI.open()
   }
 
-  @JSExport
-  def initRnd( seedStr : String ): Unit = {
-    seed = seedStr.hashCode
-    println( s"seed: $seed from string: $seedStr" )
-    rnd = new Random( seed )
+  private def initRnd( seedStr : String ): Boolean = {
+    val newSeed: Long =
+      try java.lang.Long.parseLong( seedStr )
+      catch { case e: NumberFormatException => seedStr.hashCode }
+    if ( newSeed != seed ) {
+      seed = newSeed
+      println( s"seed: $seed from string: $seedStr" )
+      iRnd = new Random( seed )
+      true
+    } else
+      false
   }
 
   private def reloadMaze( progressHandler: ( Int, () => Unit ) => Unit = { ( _: Int, eval: ( () => Unit ) ) => eval() }
@@ -198,7 +233,7 @@ object VoxelMain extends JSApp {
   private def genMazeStructure[T]( progressHandler: ( Int, () => T ) => T
                                  , continuation: Maze[Int] => T ): T = {
     // always use the original random to generate the maze => get the same mazes
-    implicit val rnd = new Random( seed )
+    val rnd = new Random( seed )
     // generate maze
     val mazeGenerator = config.`Maze type` match {
       case Config.wilson       => Maze.wilsonMaze[T] _
@@ -206,7 +241,7 @@ object VoxelMain extends JSApp {
       case Config.prim         => Maze.prim[T] _
       case _ =>                   Maze.depthFirstMaze[T] _
     }
-    mazeGenerator( model.faces, progressHandler, { result => maze = result ; continuation( result ) } )
+    mazeGenerator( rnd )( model.faces, progressHandler, { result => maze = result ; continuation( result ) } )
     //    println( maze.toNiceString() )
   }
 
@@ -228,29 +263,44 @@ object VoxelMain extends JSApp {
   }
 
   @JSExport
-  def loadModel( cutCount: Int
+  def loadModel( uiToggler: js.Function1[Boolean, _]
                , continuator: js.Function1[js.Function0[_], _]
-               , continuation: js.Function0[_] ): Unit = {
-    import js.DynamicImplicits._
+               , continuation: js.Function0[_]
+               , initDatGUI: Boolean = true  ): Unit = {
 
+    // reset model
+    model = VoronoiModel.cubeModel
+
+    cutCount = config.safeCutCount
+    println( s"cut count $cutCount" )
+
+    import js.DynamicImplicits._
     val progressBar = JQuery( "#progressbar" )
     val progressLabel = JQuery( "#progress-label" )
+
+    uiToggler( false )
+    progressBar.show()
+
     val jsCfg = config.asInstanceOf[js.Dynamic]
 
     var cutNormals: Seq[( Normal3 )] = Seq.empty
 
     val colors: js.Function0[_] = () => {
       applyColors()
-      initDatGUI( jsCfg, continuator )
+      if ( initDatGUI )
+        setupDatGUI( jsCfg, uiToggler, continuator, continuation )
 
       progressBar.progressbar( "value", 100 )
       progressLabel.text( s"Loading... (color scheme) - 100 %" )
+
+      progressBar.hide()
+      uiToggler( true )
 
       continuator( continuation )
     }
 
     val intoScene: js.Function0[_] = () => {
-      scene.addModel( model, maze, depthMap, depthMax )
+      scene.setModel( model, maze, depthMap, depthMax )
       progressBar.progressbar( "value", 99 )
       progressLabel.text( s"Loading... (meshes) - 99 %" )
       continuator( colors )
@@ -295,6 +345,7 @@ object VoxelMain extends JSApp {
       // load config template
       datGUI.remember( jsCfg )
 
+      val rnd = new Random( seed )
       // prepare cuts
       cutNormals = ( 0 until cutCount ).map { _ =>
         val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.nextDouble(), rnd.nextDouble() )

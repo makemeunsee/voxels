@@ -8,6 +8,7 @@ import scala.language.implicitConversions
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.annotation.JSExport
+import scala.util.Try
 
 /**
  * Created by markus on 10/07/15.
@@ -218,6 +219,12 @@ object Config {
 case class Config (
 
   @(JSExport @field)
+  var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
+
+  @(JSExport @field)
+  var `Count (!slow!)`: String = "2000",
+
+  @(JSExport @field)
   var `Show axis`: Boolean = false,
 
   @(JSExport @field) 
@@ -276,6 +283,11 @@ case class Config (
   var `Reverse palette`: Boolean = false
 ) {
 
+  def safeCutCount: Int = cutCount.getOrElse( 994 )
+
+  def cutCount: Try[Int] =
+    Try( math.min( 10000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
+
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
 
   def safeExplosionFactor: Float = {
@@ -286,7 +298,7 @@ case class Config (
   def safeBordersWidth = math.min( 2f, math.max( 0f, `Borders width` ) )
 
   def safeCellThickness: Float =  {
-  val f = math.max( 0, math.min( 25, `Thickness` ) ) / 25
+    val f = math.max( 0, math.min( 25, `Thickness` ) ) / 25
     f * f
   }
 
@@ -296,5 +308,4 @@ case class Config (
     val f = math.max( 1f, math.min( 100f, `Rainbow span` ) ) / 100
     f * f
   }
-
 }

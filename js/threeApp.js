@@ -22,17 +22,6 @@ function appMain() {
                                       document.getElementById('shader-maze-vs').innerHTML,
                                       document.getElementById('shader-maze-fs').innerHTML);
 
-    // TODO: move url params to GUI
-
-    var cuts = getURLParameter("cuts") || 2000;
-    console.log("cuts:\t", cuts);
-
-    var seed = getURLParameter("seed");
-
-    if ( seed ) {
-      scalaObj.initRnd(seed);
-    }
-
     // help dialog
     $(function() {
         $( "#dialog" ).dialog({
@@ -43,10 +32,11 @@ function appMain() {
     });
 
     var uiVisible = true;
-    function toggleUI() {
-        console.log("toggling ui");
-        uiVisible = !uiVisible;
-        if ( uiVisible ) {
+    function toggleUI( show ) {
+        if ( show === undefined ) {
+            show = !uiVisible;
+        }
+        if ( show ) {
             $( ".gui" ).show();
             $( ".dg" ).show();
             stats.domElement.style.display = "block";
@@ -55,6 +45,7 @@ function appMain() {
             $( ".dg" ).hide();
             stats.domElement.style.display = "none";
         }
+        uiVisible = show;
     }
 
     // jqueryui widgets
@@ -263,24 +254,7 @@ function appMain() {
 
     document.body.appendChild( stats.domElement );
 
-    // show placeholder
-    $( "#progressbar" ).show();
-    // and hide everything else while loading
-    toggleUI();
-    $( "#main" ).hide();
-
-    function continuation() {
-        // once loaded, hide the placeholder
-        $( "#progressbar" ).hide();
-        // and show everything else
-        toggleUI();
-        $( "#main" ).show();
-
-        // start the rendering loop
-        main();
-    }
-
-    scalaObj.loadModel(cuts, requestAnimFrame, continuation);
+    scalaObj.loadModel(toggleUI, requestAnimFrame, main);
 
     // The main game loop
     function main() {

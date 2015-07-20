@@ -61,9 +61,10 @@ object Maze {
       }
   }
   // randomized depth first traversal
-  def depthFirstMaze[T]( faces: Array[Face]
+  def depthFirstMaze[T]( rnd: Random )
+                       ( faces: Array[Face]
                        , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
-                       , continuation: Maze[Int] => T )( implicit rnd: Random ): T = {
+                       , continuation: Maze[Int] => T ): T = {
     if ( faces.isEmpty )
       continuation( empty( -1 ) )
     else {
@@ -115,9 +116,10 @@ object Maze {
     }
   }
 
-  def wilsonMaze[T]( faces: Array[Face]
+  def wilsonMaze[T]( rnd: Random )
+                   ( faces: Array[Face]
                    , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
-                   , continuation: Maze[Int] => T )( implicit rnd: Random ): T = {
+                   , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
     progressHandler( 0, () => wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, new MutableMaze( first ) ) ( rnd, progressHandler, continuation ) )
@@ -148,9 +150,10 @@ object Maze {
     }
   }
 
-  def randomTraversal[T]( faces: Array[Face]
+  def randomTraversal[T]( rnd: Random )
+                        ( faces: Array[Face]
                         , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
-                        , continuation: Maze[Int] => T )( implicit rnd: Random ): T = {
+                        , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
     randomTraversalRec( faces
@@ -181,12 +184,13 @@ object Maze {
     }
   }
 
-  def prim[T]( faces: Array[Face]
+  def prim[T]( rnd: Random )
+             ( faces: Array[Face]
              , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
-             , continuation: Maze[Int] => T )( implicit rnd: Random ): T = {
+             , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
-    implicit def heapOrdering[T <: ( Int, ( Int, Int ) )]: Ordering[T] = Ordering.by( _._1 )
+    implicit def heapOrdering[A <: ( Int, ( Int, Int ) )]: Ordering[A] = Ordering.by( _._1 )
     val heap = new mutable.PriorityQueue[( Int, (Int, Int) )]
     faces( first ).neighbours.foreach { to =>
       heap.enqueue( ( rnd.nextInt(), ( first, to ) ) )
