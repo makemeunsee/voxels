@@ -226,7 +226,7 @@ object VoxelMain extends JSApp {
 
   // ******************** coloring ********************
 
-  private implicit var rndColors = false
+  private implicit var rndColors = true
 
   private def colorsForStd( std: VoxelStandard ): Seq[( Int, Int )] = {
     if ( rndColors ) ( 0 until std.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )

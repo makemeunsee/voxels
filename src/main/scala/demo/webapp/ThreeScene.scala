@@ -87,7 +87,7 @@ class ThreeScene {
   private val zoomMax = 16
   private val zoomMin = 0.0625
   private val zoomSpeed = 1.05
-  private var zoom = 1d
+  private var zoom = 0.2d
 
   @JSExport
   def zoom( delta: Double ): Unit = {
