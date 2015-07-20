@@ -31,17 +31,18 @@ object PerfMain {
     val t1 = System.currentTimeMillis()
 
     // generate maze
-    val maze = Maze.depthFirstMaze( model.faces )
-//    val maze = Maze.prim( model.faces)
-//    val maze = Maze.wilsonMaze( model.faces)
-//    val maze = Maze.randomTraversal( model.faces)
+    Maze.depthFirstMaze( model.faces, continuation = { maze =>
+  //    val maze = Maze.prim( model.faces)
+  //    val maze = Maze.wilsonMaze( model.faces)
+  //    val maze = Maze.randomTraversal( model.faces)
 
-    val mazeMetrics = maze.metrics
-    println( mazeMetrics._1.size, mazeMetrics._2 )
+      val mazeMetrics = maze.metrics
+      println( mazeMetrics._1.size, mazeMetrics._2 )
 
-    val t2 = System.currentTimeMillis()
+      val t2 = System.currentTimeMillis()
 
-    println( "cut time", ( t1 - t0 ) / 10 )
-    println( "maze time", t2 - t1 )
+      println( "cut time", ( t1 - t0 ) / 10 )
+      println( "maze time", t2 - t1 )
+    } )
   }
 }

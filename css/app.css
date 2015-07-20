@@ -45,8 +45,14 @@ canvas {
 }
 
 .ui-progressbar {
-    position: relative;
+    position: absolute;
+    left: 20%;
+    top: 0px;
+    right: 0px;
+    width: 60%;
+    z-index: 10001;
 }
+
 #progress-label {
     position: absolute;
     left: 40%;

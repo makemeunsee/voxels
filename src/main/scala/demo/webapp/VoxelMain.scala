@@ -102,7 +102,8 @@ object VoxelMain extends JSApp {
   // scala.js wants it...
   def main(): Unit = {}
 
-  def initDatGUI( jsCfg: js.Dynamic ): Unit = {
+  def initDatGUI( jsCfg: js.Dynamic
+                , continuator: js.Function1[js.Function0[_], _] ): Unit = {
 
     val general = datGUI.addFolder( "General" )
 
@@ -135,7 +136,26 @@ object VoxelMain extends JSApp {
     val mazeFolder = datGUI.addFolder( "Maze" )
     mazeFolder
       .addList( jsCfg, "Maze type", Config.mazeTypes )
-      .onChange { _: String => reloadMaze() }
+      .onChange
+        { s: String =>
+          val progressBar = JQuery( "#progressbar" )
+          val progressLabel = JQuery( "#progress-label" )
+          progressBar.show()
+          val size = model.faces.length
+          val step = size / 100
+          reloadMaze( { ( i, nextStep: ( () => _ ) ) =>
+            if ( i % step == 0 ) {
+              val v = 100*i/size
+              println(v)
+              progressBar.progressbar( "value", v )
+              progressLabel.text( s"Regenerating maze - $v %" )
+              continuator( nextStep )
+            } else
+              nextStep()
+          }, { _ =>
+            progressBar.hide()
+          } )
+        }
     mazeFolder
       .addBoolean( jsCfg, "Draw path" )
       .onChange { _: Boolean => scene.toggleMazePath() }
@@ -165,22 +185,32 @@ object VoxelMain extends JSApp {
     rnd = new Random( seed )
   }
 
-  private def reloadMaze(): Unit = {
-    genMaze()
-    applyMaze()
+  private def reloadMaze( progressHandler: ( Int, () => Unit ) => Unit = { ( _: Int, eval: ( () => Unit ) ) => eval() }
+                        , continuation: Maze[Int] => Unit ): Unit = {
+    genMazeStructure( progressHandler, { result =>
+      maze = result
+      genMazeMetrics()
+      applyMaze()
+      continuation( maze )
+    } )
   }
 
-  private def genMaze(): Unit = {
+  private def genMazeStructure[T]( progressHandler: ( Int, () => T ) => T
+                                 , continuation: Maze[Int] => T ): T = {
     // always use the original random to generate the maze => get the same mazes
-    val mazeRnd = new Random( seed )
+    implicit val rnd = new Random( seed )
     // generate maze
-    maze = config.`Maze type` match {
-      case Config.depthFirst =>   Maze.depthFirstMaze( model.faces )( mazeRnd )
-      case Config.rndTraversal => Maze.randomTraversal( model.faces )( mazeRnd )
-      case Config.prim =>         Maze.prim( model.faces )( mazeRnd )
-      case _ =>                   Maze.wilsonMaze( model.faces )( mazeRnd )
+    val mazeGenerator = config.`Maze type` match {
+      case Config.wilson       => Maze.wilsonMaze[T] _
+      case Config.rndTraversal => Maze.randomTraversal[T] _
+      case Config.prim         => Maze.prim[T] _
+      case _ =>                   Maze.depthFirstMaze[T] _
     }
+    mazeGenerator( model.faces, progressHandler, { result => maze = result ; continuation( result ) } )
     //    println( maze.toNiceString() )
+  }
+
+  private def genMazeMetrics(): Unit = {
     val mazeMetrics = maze.metrics
     depthMap = mazeMetrics._1
     depthMax = mazeMetrics._2
@@ -211,7 +241,7 @@ object VoxelMain extends JSApp {
 
     val colors: js.Function0[_] = () => {
       applyColors()
-      initDatGUI( jsCfg )
+      initDatGUI( jsCfg, continuator )
 
       progressBar.progressbar( "value", 100 )
       progressLabel.text( s"Loading... (color scheme) - 100 %" )
@@ -221,22 +251,38 @@ object VoxelMain extends JSApp {
 
     val intoScene: js.Function0[_] = () => {
       scene.addModel( model, maze, depthMap, depthMax )
-      progressBar.progressbar( "value", 97 )
-      progressLabel.text( s"Loading... (meshes) - 97 %" )
+      progressBar.progressbar( "value", 99 )
+      progressLabel.text( s"Loading... (meshes) - 99 %" )
       continuator( colors )
     }
 
-    val mazeGen: js.Function0[_] = () => {
-      genMaze()
-      progressBar.progressbar( "value", 92 )
-      progressLabel.text( s"Loading... (maze) - 92 %" )
+    val mazeMetricsGen: js.Function0[_] = () => {
+      genMazeMetrics()
+      progressBar.progressbar( "value", 95 )
+      progressLabel.text( s"Loading... (maze metrics) - 95 %" )
       continuator( intoScene )
     }
 
+    val mazeGen: js.Function0[_] = () => {
+      val size = model.faces.length
+      val step = size / 20
+      genMazeStructure( { ( i, nextStep: ( () => _ ) ) =>
+        if ( i % step == 0 ) {
+          val v = 75 + 20*i/size
+          progressBar.progressbar( "value", v )
+          progressLabel.text( s"Loading... (maze) - $v %" )
+          continuator( nextStep )
+        } else
+          nextStep()
+      }, { _ => mazeMetricsGen() } )
+    }
+
     val cuts: js.Function0[_] = () => {
+      val size = cutNormals.length
+      val step = size / 75
       model.cut( cutNormals, { ( i, nextCut ) =>
-        if ( i % 50 == 0 ) {
-          val v = 85*i/cutNormals.length
+        if ( i % step == 0 ) {
+          val v = 75*i/size
           progressBar.progressbar( "value", v )
           progressLabel.text( s"Loading... (generating cells) - $v %" )
           continuator( () => nextCut )
