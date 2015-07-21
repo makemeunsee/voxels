@@ -2,7 +2,6 @@ package demo
 
 import geometry.Normal3
 import geometry.voronoi.VoronoiModel.cubeModel
-import maze.Maze
 
 import scala.util.Random
 
@@ -12,7 +11,7 @@ import scala.util.Random
 object PerfMain {
   def main ( args: Array[String] ) {
     val rnd = new Random( 0 )
-    val cutCount = 10000
+    val cutCount = 1000000
 
     val cutNormals = ( 0 until cutCount ).map { _ =>
       val ( theta, phi ) = geometry.uniformToSphericCoords( rnd.nextDouble(), rnd.nextDouble() )
@@ -30,19 +29,21 @@ object PerfMain {
 
     val t1 = System.currentTimeMillis()
 
-    // generate maze
-    Maze.depthFirstMaze( rnd )( model.faces, continuation = { maze =>
-  //    val maze = Maze.prim( model.faces)
-  //    val maze = Maze.wilsonMaze( model.faces)
-  //    val maze = Maze.randomTraversal( model.faces)
+    println( "cut time", ( t1 - t0 ) / 10 )
 
-      val mazeMetrics = maze.metrics
-      println( mazeMetrics._1.size, mazeMetrics._2 )
-
-      val t2 = System.currentTimeMillis()
-
-      println( "cut time", ( t1 - t0 ) / 10 )
-      println( "maze time", t2 - t1 )
-    } )
+//    // generate maze
+//    Maze.depthFirstMaze( rnd )( model.faces, continuation = { maze =>
+//  //    val maze = Maze.prim( model.faces)
+//  //    val maze = Maze.wilsonMaze( model.faces)
+//  //    val maze = Maze.randomTraversal( model.faces)
+//
+//      val mazeMetrics = maze.metrics
+//      println( mazeMetrics._1.size, mazeMetrics._2 )
+//
+//      val t2 = System.currentTimeMillis()
+//
+//      println( "cut time", ( t1 - t0 ) / 10 )
+//      println( "maze time", t2 - t1 )
+//    } )
   }
 }
