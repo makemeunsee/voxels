@@ -73,7 +73,7 @@ object Config {
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
-                  |        "Draw cells": true,
+                  |        "Draw cells": false,
                   |        "Borders width": 0,
                   |        "Borders color": "#0d0d0d",
                   |        "Thickness": 0,
@@ -127,26 +127,6 @@ object Config {
                   |        "Color 1": "#000000"
                   |      }
                   |    },
-                  |    "deep": {
-                  |      "0": {
-                  |        "Show axes": false,
-                  |        "Background color": "#000000",
-                  |        "Downsampling": 0,
-                  |        "Explosion": 0,
-                  |        "Draw cells": true,
-                  |        "Borders width": 1.4776700735092163,
-                  |        "Borders color": "#1b1813",
-                  |        "Thickness": 8,
-                  |        "Draw path": false,
-                  |        "Path color": "#00ff00",
-                  |        "Maze depth scaling": -80,
-                  |        "Palette": "Less Angry rainbow",
-                  |        "Rainbow span": 100,
-                  |        "Reverse palette": false,
-                  |        "Color 0": "#000000",
-                  |        "Color 1": "#000000"
-                  |      }
-                  |    },
                   |    "bright": {
                   |      "0": {
                   |        "Show axes": false,
@@ -161,26 +141,6 @@ object Config {
                   |        "Path color": "#00ff00",
                   |        "Maze depth scaling": 0,
                   |        "Palette": "Uniform colors",
-                  |        "Rainbow span": 100,
-                  |        "Reverse palette": false,
-                  |        "Color 0": "#000000",
-                  |        "Color 1": "#000000"
-                  |      }
-                  |    },
-                  |    "path2": {
-                  |      "0": {
-                  |        "Show axes": false,
-                  |        "Background color": "#ffffff",
-                  |        "Downsampling": 0,
-                  |        "Explosion": 0,
-                  |        "Draw cells": false,
-                  |        "Borders width": 0,
-                  |        "Borders color": "#ffffff",
-                  |        "Thickness": 0,
-                  |        "Draw path": true,
-                  |        "Path color": "#000088",
-                  |        "Maze depth scaling": -65,
-                  |        "Palette": "Niccoli's rainbow",
                   |        "Rainbow span": 100,
                   |        "Reverse palette": false,
                   |        "Color 0": "#000000",
@@ -243,7 +203,7 @@ case class Config (
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
-  var `Count (!slow!)`: String = "100",
+  var `Count (!slow!)`: String = "5000",
 
   @(JSExport @field)
   var `Background color`: String = Colors.colorIntToJsString( Colors.BLACK ),
