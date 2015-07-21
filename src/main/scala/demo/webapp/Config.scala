@@ -243,28 +243,18 @@ case class Config (
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
-  var `Count (!slow!)`: String = "5000",
+  var `Count (!slow!)`: String = "100",
 
   @(JSExport @field)
-  var `Show axes`: Boolean = false,
-
-  @(JSExport @field) 
   var `Background color`: String = Colors.colorIntToJsString( Colors.BLACK ),
 
   // 0 <= downsampling <= 7
   @(JSExport @field) 
   var `Downsampling`: Int = 0,
 
-  // 0 <= explosion <= 100
-  @(JSExport @field) 
-  var `Explosion`: Int = 0,
-
 
   @(JSExport @field) 
   var `Draw cells`: Boolean = true,
-
-  @(JSExport @field) 
-  var `Thickness`: Float = 5f,
 
 
   // 0 <= bordersWidth <= 2
@@ -284,9 +274,6 @@ case class Config (
   @(JSExport @field) 
   var `Path color`: String = Colors.colorIntToJsString( Colors.GREEN ),
 
-  // -100 <= mazeDepthScale <= 100
-  @(JSExport @field) 
-  var `Maze depth scaling`: Int = 50,
 
   @(JSExport @field) 
   var `Palette`: String = Config.laRainbow,
@@ -311,19 +298,7 @@ case class Config (
 
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
 
-  def safeExplosionFactor: Float = {
-    val f = math.min( 100, math.max( 0, `Explosion` ) ).toFloat / 100
-    f*f*10f
-  }
-
   def safeBordersWidth = math.min( 2f, math.max( 0f, `Borders width` ) )
-
-  def safeCellThickness: Float =  {
-    val f = math.max( 0, math.min( 25, `Thickness` ) ) / 25
-    f * f
-  }
-
-  def mazeDepthFactor: Float = math.min( 100, math.max( -100, `Maze depth scaling` ) ).toFloat / 100
 
   def safeRainbowSpan: Float = {
     val f = math.max( 1f, math.min( 100f, `Rainbow span` ) ) / 100

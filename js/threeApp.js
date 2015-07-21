@@ -15,10 +15,6 @@ function appMain() {
 
     demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
                                       document.getElementById('shader-fs').innerHTML,
-                                      document.getElementById('shader-pick-vs').innerHTML,
-                                      document.getElementById('shader-pick-fs').innerHTML,
-                                      document.getElementById('shader-axis-vs').innerHTML,
-                                      document.getElementById('shader-axis-fs').innerHTML,
                                       document.getElementById('shader-maze-vs').innerHTML,
                                       document.getElementById('shader-maze-fs').innerHTML);
 
@@ -84,14 +80,6 @@ function appMain() {
                                      } );
 
     var mainContainer = $( "#main" )[0];
-
-    // pinch detection (and more)
-    var mc = new Hammer(mainContainer);
-    mc.get("pinch").set({ enable: true });
-
-    mc.on("pinch", function(ev) {
-        scalaObj.scene.zoom(ev.scale < 1 ? -1 : 1);
-    });
 
     var updateProjection = function(screenWidth, screenHeight) {
         scalaObj.scene.updateViewport( screenWidth, screenHeight );
@@ -181,20 +169,11 @@ function appMain() {
         }
     }
 
-    // mouse wheel -> zoom in / out
-    function onMouseWheel(event) {
-        scalaObj.scene.zoom( Math.max( -1, Math.min( 1, ( event.wheelDelta || -event.detail ) ) ) );
-    }
-
     var renderer = scalaObj.scene.renderer;
     var canvas = renderer.domElement;
 
     canvas.addEventListener( "mousedown", onMouseDown, false );
     canvas.addEventListener( "touchstart", onTouchStart, false );
-
-    canvas.addEventListener( "mousewheel", onMouseWheel, false );
-      // Firefox
-    canvas.addEventListener( "DOMMouseScroll", onMouseWheel, false );
 
     canvas.addEventListener( "dblclick", doubleClick, false );
 
@@ -237,8 +216,6 @@ function appMain() {
         main();
     }
 
-    var highlighted = 0;
-
     // canvas & webgl context code
 
     updateProjection(window.innerWidth, window.innerHeight);
@@ -267,16 +244,8 @@ function appMain() {
 
         stats.begin();
 
-        if ( clicked ) {
-
-            // pickRender
-            highlighted = scalaObj.scene.pickRender(mx,my);
-            scalaObj.faceInfo( highlighted );
-            clicked = false;
-        }
-
         // normal render
-        scalaObj.scene.render(highlighted);
+        scalaObj.scene.render();
 
         if (takeScreenshot) {
             var data = renderer.domElement.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');

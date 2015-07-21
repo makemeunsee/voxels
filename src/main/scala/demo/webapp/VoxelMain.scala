@@ -126,16 +126,11 @@ object VoxelMain extends JSApp {
           ()
       }
     general
-      .addBoolean( jsCfg, "Show axes" )
-      .onChange { _: Boolean => scene.toggleAxis() }
-    general
       .addColor( jsCfg, "Background color" )
       .onChange { a: String => scene.setBackground( Colors.jsStringToColor( a ) ) }
     general
       .addRange( jsCfg, "Downsampling", 0, 7 )
       .onChange { _: Float => scene.udpateDownsampling() }
-    general
-      .addRange( jsCfg, "Explosion", 0, 100 )
     general.open()
 
     val cells = datGUI.addFolder( "Cells" )
@@ -163,8 +158,6 @@ object VoxelMain extends JSApp {
       .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
     cells
       .addColor( jsCfg, "Borders color" )
-    cells
-      .addRange( jsCfg, "Thickness", 0, 25 )
     cells.open()
 
     val mazeFolder = datGUI.addFolder( "Maze" )
@@ -197,9 +190,6 @@ object VoxelMain extends JSApp {
       .onChange { _: Boolean => scene.toggleMazePath() }
     mazeFolder
       .addColor( jsCfg, "Path color" )
-    mazeFolder
-      .addRange( jsCfg, "Maze depth scaling", -100, 100 )
-      .onChange { v: Float => () }
     mazeFolder.open()
 
     val colors = datGUI.addFolder( "Coloring" )
@@ -259,12 +249,6 @@ object VoxelMain extends JSApp {
   }
 
   def applyMaze(): Unit = {
-    ThreeScene.withOffsetsAndSizes( model.faces )
-      .zipWithIndex
-      .foreach { case ( ( f, o, s ), id ) =>
-        scene.updateFaceDepth( o, s, depthMap( id ).toFloat / depthMax )
-      }
-
     scene.setMaze( model, maze, depthMax )
     applyColors()
   }
@@ -366,16 +350,6 @@ object VoxelMain extends JSApp {
     }
 
     prepare()
-  }
-
-  @JSExport
-  def faceInfo( id: Int ): Unit = {
-    val trueId = ThreeScene.revertColorCode( id )
-    model.faces.lift( trueId ).foreach { f =>
-      println( s"Face id: $trueId" )
-      println( s"Face depth: ${depthMap( trueId )}" )
-      println( s"Face neighbours: ${f.neighbours}" )
-    }
   }
 
   // ******************** coloring ********************

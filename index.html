@@ -1,46 +1,43 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
-        <link rel="icon" href="favicon.ico" />
-    
-        <title>Voronoi sphere</title>
-        <meta name="description" content="voronoi sphere">
-        <meta name="viewport" content="width=device-width">
-    
-        <link rel="stylesheet" href="css/app.css">
-        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/dot-luv/jquery-ui.min.css">
-        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
-        <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-    
-    </head>
-    <body>
-        <div id="main"></div>
-        <div id="progressbar"><div id="progress-label">Loading...</div></div>
-        <div id="dialog" title="Voronoi sphere">
-            <p>Drag to move the view.</p>
-            <p>Scroll / pinch to zoom.</p>
-            <p>Pick any face to highlight.</p>
-            <p>Double click / tap to hide UI.</p>
-        </div>
-        <div id="topbarLeft" class="gui">
-            <button id="showHelp">?</button>
-            <button id="fullscreen">fullscreen</button>
-            <button id="reset">reset</button>
-            <button id="screenshot">screenshot</button>
-        </div>
-        
-        <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
+<head>
+    <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="icon" href="favicon.ico" />
+
+    <title>Voronoi sphere</title>
+    <meta name="description" content="voronoi sphere">
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/dot-luv/jquery-ui.min.css">
+    <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+
+</head>
+<body>
+<div id="main"></div>
+<div id="progressbar"><div id="progress-label">Loading...</div></div>
+<div id="dialog" title="Voronoi sphere">
+    <p>Drag to move the view.</p>
+    <p>Scroll / pinch to zoom.</p>
+    <p>Double click / tap to hide UI.</p>
+</div>
+<div id="topbarLeft" class="gui">
+    <button id="showHelp">?</button>
+    <button id="fullscreen">fullscreen</button>
+    <button id="reset">reset</button>
+    <button id="screenshot">screenshot</button>
+</div>
+
+<script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
   #endif
 
-// uniform vec4 u_color;
-uniform vec3 u_borderColor;
+uniform vec4 u_borderColor;
 uniform float u_borderWidth;
 
-varying vec3 v_color;
+varying vec4 v_color;
 varying float v_centerFlag;
-varying float v_highlightFace;
 
 float edgeFactor(const float thickness, const float centerFlag)
 {
@@ -49,183 +46,77 @@ float edgeFactor(const float thickness, const float centerFlag)
 
 void main()
 {
-  vec3 col = v_color;
-  float c = 0.5+0.5*cos(3.0*6.28*v_centerFlag);
-// variant: thinner, sharper stripes
-//    if ( c > 0.85 ) {
-//      if ( v_highlightFace > 0.0 ) {
-//        col.r = 1.0;
-//        col.g = 0.2;
-//        col.b = 0.0;
-//      }
-//      else if ( v_highlightVoxel > 0.0 ) {
-//        col.r = 0.0;
-//        col.g = 0.0;
-//        col.b = 0.0;
-//      }
-//  }
-  if ( v_highlightFace > 0.0 ) {
-    col.r = c*col.r;
-    col.g = c*col.g;
-    col.b = c*col.b;
-  }
-  float f = edgeFactor(u_borderWidth, v_centerFlag);
-  gl_FragColor = vec4 (
-    mix(u_borderColor,
-      col,
-      f),
-    1.0
-  );
+  vec4 col = v_color;
+  // if ( v_color.a < 1.0) {
+  //   gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+  // } else {
+    float f = edgeFactor(u_borderWidth, v_centerFlag);
+    gl_FragColor = mix(u_borderColor, col, f);
+  // }
 }</script>
-        <script id="shader-vs" type="x-shader/x-vertex">#ifdef GL_ES
+<script id="shader-vs" type="x-shader/x-vertex">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
 #endif
 
 attribute float a_centerFlag;
-attribute float a_depth;
-attribute float a_topFace;
-attribute vec3 a_normal;
 attribute vec3 a_color;
-attribute float a_pickColor;
 
-uniform mat4 u_mvpMat;
-uniform float u_time;
-uniform float u_faceHighlightFlag;
-uniform float u_explosionFactor;
-uniform float u_depthScale;
-uniform float u_thickness;
+uniform mat4 u_mMat;
 
-varying vec3 v_color;
+varying vec4 v_color;
 varying float v_centerFlag;
-varying float v_highlightFace;
 
 void main()
 {
-  float t = 0.0;
-  if ( a_topFace > 0.0 ) {
-      t = u_thickness;
-  }
-  float d = a_depth * u_depthScale;
-  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor-t)*a_normal + position), 1.0);
-  v_color = a_color;
+  vec4 rotPos = u_mMat * vec4(position, 1.0);
+  gl_Position = vec4( atan( rotPos.x, rotPos.z ) / 3.14159265359, log( ( 1.0+rotPos.y ) / ( 1.0-rotPos.y ) ) / 12.5663706144, 0.0, 1.0);
+  // if (rotPos.z < 0.0) {
+  //   v_color = vec4(a_color, 0.0);
+  // } else {
+    v_color = vec4(a_color, 1.0);
+  // }
   v_centerFlag = a_centerFlag;
-  v_highlightFace = 0.0;
-  if ( u_faceHighlightFlag == a_pickColor ) {
-      v_highlightFace = 1.0;
-  }
 }</script>
-        <script id="shader-pick-fs" type="x-shader/x-fragment">#ifdef GL_ES
-#extension GL_OES_standard_derivatives : enable
-#endif
-
-varying vec3 v_color;
-
-void main()
-{
-  gl_FragColor = vec4 ( v_color, 1.0 );
-}</script>
-        <script id="shader-pick-vs" type="x-shader/x-vertex">#ifdef GL_ES
-#extension GL_OES_standard_derivatives : enable
-#endif
-
-attribute vec3 a_normal;
-attribute float a_depth;
-attribute float a_topFace;
-attribute float a_pickColor;
-
-uniform mat4 u_mvpMat;
-uniform float u_time;
-uniform float u_explosionFactor;
-uniform float u_depthScale;
-uniform float u_thickness;
-
-varying vec3 v_color;
-
-vec3 unpackColor(float f) {
-  vec3 color;
-  color.r = floor(f / 256.0 / 256.0);
-  color.g = floor((f - color.r * 256.0 * 256.0) / 256.0);
-  color.b = floor(f - color.r * 256.0 * 256.0 - color.g * 256.0);
-  // now we have a vec3 with the 3 components in range [0..255]. Let's normalize it!
-  return color / 255.0;
-}
-
-void main()
-{
-  float t = 0.0;
-  if ( a_topFace > 0.0 ) {
-      t = u_thickness;
-  }
-  float d = a_depth * u_depthScale;
-  gl_Position = u_mvpMat * vec4((1.0+d) * ((u_explosionFactor-t)*a_normal + position), 1.0);
-  v_color = unpackColor(a_pickColor);
-  // v_color = a_pickColor;
-}</script>
-        <script id="shader-axis-fs" type="x-shader/x-fragment">#ifdef GL_ES
-#extension GL_OES_standard_derivatives : enable
-#endif
-
-varying vec3 v_color;
-
-void main()
-{
-  gl_FragColor = vec4 ( v_color, 1.0 );
-}</script>
-        <script id="shader-axis-vs" type="x-shader/x-vertex">#ifdef GL_ES
-#extension GL_OES_standard_derivatives : enable
-#endif
-
-attribute vec3 a_color;
-
-uniform mat4 u_mvpMat;
-
-varying vec3 v_color;
-
-void main()
-{
-  gl_Position = u_mvpMat * vec4(position, 1.0);
-  v_color = a_color;
-}</script>
-        <script id="shader-maze-fs" type="x-shader/x-fragment">#ifdef GL_ES
+<script id="shader-maze-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
   #endif
 
 uniform vec3 u_color;
+varying float v_hidden;
 
 void main()
 {
-  gl_FragColor = vec4 (u_color, 1.0);
+  if (v_hidden > 0.0) {
+    gl_FragColor = vec4(0.0,0.0,0.0,0.0);
+  } else {
+    gl_FragColor = vec4 (u_color, 1.0);
+  }
 }</script>
-        <script id="shader-maze-vs" type="x-shader/x-vertex">#ifdef GL_ES
+<script id="shader-maze-vs" type="x-shader/x-vertex">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
 #endif
 
-attribute float a_depth0;
-attribute float a_depth1;
-attribute vec3 a_normal;
+uniform mat4 u_mMat;
 
-uniform mat4 u_mvpMat;
-uniform float u_time;
-uniform float u_explosionFactor;
-uniform float u_depthScale;
+varying float v_hidden;
 
 void main()
 {
-  float d = 0.0;
-  if ( u_depthScale > 0.0 ) {
-      d = a_depth1 * u_depthScale;
-  } else {
-      d = a_depth0 * u_depthScale;
-  }
-  gl_Position = u_mvpMat * vec4((1.0+d) * (u_explosionFactor*a_normal + position), 1.0);
+  vec4 rotPos = u_mMat * vec4(position, 1.0);
+  gl_Position = vec4( atan( rotPos.x / rotPos.z ) / 3.14159265359, log( ( 1.0+rotPos.y ) / ( 1.0-rotPos.y ) ) / 12.5663706144, 0.0, 1.0);
+  // if (rotPos.z < 0.0) {
+  //   v_hidden = 1.0;
+  // } else {
+    v_hidden = 0.0;
+  // }
 }</script>
-        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
-        <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
-        <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
-        <script type="text/javascript" src="js/lib/stats.min.js"></script>
-        <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
-        <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
-        <script type="text/javascript" src="target/scala-2.11/voronoi-sphere-opt.js"></script>
-        <script type="text/javascript" src="js/threeApp.js"></script>
-    </body>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
+<script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
+<script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
+<script type="text/javascript" src="js/lib/stats.min.js"></script>
+<script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+<script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
+<script type="text/javascript" src="target/scala-2.11/voronoi-sphere-opt.js"></script>
+<script type="text/javascript" src="js/threeApp.js"></script>
+</body>
 </html>

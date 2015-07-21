@@ -49,7 +49,7 @@ object ThreeScene {
   def withOffsetsAndSizes( faces: Iterable[Face] ): Seq[( Face, Int, Int )] = {
     faces.foldLeft( ( 0, Seq.empty[( Face, Int, Int )] ) ) { case ( ( offset, acc ), f ) =>
       // counting the centers which is automatically added to the meshes
-      val l = 2 * ( f.vertices.length + 1 )
+      val l = f.vertices.length + 1
       val newOffset = offset + l
       ( newOffset, ( f, offset, l ) +: acc )
     }._2.reverse
@@ -74,28 +74,19 @@ object ThreeScene {
 
   // ******************** mesh building functions ********************
 
-  private def makeWireFrameMesh( m: VoronoiModel ): ( Mesh, Mesh ) = {
+  private def makeMesh( m: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): Mesh = {
     val customUniforms = js.Dynamic.literal(
-      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
-      "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
+      "u_mMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
+      "u_borderColor" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 0, 0, 0, 1 ) ),
+      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1i", "value" -> 0 )
     )
+
+    val geom = new MyBufferGeometry()
 
     val attrs = js.Dynamic.literal(
       "a_color" -> js.Dynamic.literal(
         "type" -> "v3",
-        "value" -> new Array[Float]
-      ),
-      "a_normal" -> js.Dynamic.literal(
-        "type" -> "v3",
-        "value" -> new Array[Float]
-      ),
-      "a_pickColor" -> js.Dynamic.literal(
-        "type" -> "f",
         "value" -> new Array[Float]
       ),
       "a_centerFlag" -> js.Dynamic.literal(
@@ -109,155 +100,24 @@ object ThreeScene {
     shaderMaterial.uniforms = customUniforms
     shaderMaterial.vertexShader = Shaders.vertexShader
     shaderMaterial.fragmentShader = Shaders.fragmentShader
-    shaderMaterial.wireframe = true
-    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
-    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
-
-    val pickShaderMaterial = new ShaderMaterial
-    pickShaderMaterial.attributes = attrs
-    pickShaderMaterial.uniforms = customUniforms
-    pickShaderMaterial.vertexShader = Shaders.pickVertexShader
-    pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
-
-    val count = m.faces.map( _.vertices.length*3 ).sum
-    val indicesCount = m.faces.map( _.vertices.length*2 ).sum
-    val pickIndicesCount = m.faces.map( f => ( f.vertices.length - 2 )*3 ).sum
-
-    val vertices = new Float32Array( count )
-    val normals = new Float32Array( count )
-    val colors = new Float32Array( count )
-    val pickColors = new Float32Array( count / 3 )
-    val centerFlags = new Float32Array( count / 3 )
-    val indices = new Uint32Array( indicesCount )
-    val pickIndices = new Uint32Array( pickIndicesCount )
-    var offset = 0
-    var indicesOffset = 0
-    var pickIndicesOffset = 0
-
-    for ( i <- m.faces.indices ; f = m.faces( i ) ) {
-      val n = f.seed
-      val pickColor = colorCode( i )
-      val ( r, g, b ) = ( 1f, 1f, 1f )
-
-      val triOffset = offset*3
-      val vSize = f.vertices.length
-
-      for ( j <- 0 until vSize ) {
-        vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
-        vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
-        vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
-        normals.set( triOffset+3*j,   n.x.toFloat )
-        normals.set( triOffset+3*j+1, n.y.toFloat )
-        normals.set( triOffset+3*j+2, n.z.toFloat )
-        colors.set( triOffset+3*j,   r )
-        colors.set( triOffset+3*j+1, g )
-        colors.set( triOffset+3*j+2, b )
-        centerFlags.set( offset+j, 0f )
-        pickColors.set( offset+j, pickColor )
-        indices.set( indicesOffset+2*j,   offset+j )
-        indices.set( indicesOffset+2*j+1, offset+( j+1 )%vSize )
-        if ( j < vSize-1 ) {
-          pickIndices.set( pickIndicesOffset + 3 * j, offset )
-          pickIndices.set( pickIndicesOffset + 3 * j + 1, offset + j + 1 )
-          pickIndices.set( pickIndicesOffset + 3 * j + 2, offset + j + 2 )
-        }
-      }
-
-      offset = offset + vSize
-      indicesOffset = indicesOffset + vSize*2
-      pickIndicesOffset = pickIndicesOffset + ( vSize - 2 )*3
-    }
-
-    val geom = new MyBufferGeometry()
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
-    geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
-    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
-    geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
-    geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
-    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
-
-    val pickGeom = geom.clone()
-    pickGeom.addAttribute( "index", new BufferAttribute( pickIndices, 1 ) )
-
-    ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
-  }
-
-  private def makeMesh( m: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): ( Mesh, Mesh ) = {
-    val customUniforms = js.Dynamic.literal(
-      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
-      "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector4( 0, 0, 0, 1 ) ),
-      "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_thickness" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 )
-    )
-
-    val geom = new MyBufferGeometry()
-
-    val attrs = js.Dynamic.literal(
-      "a_color" -> js.Dynamic.literal(
-        "type" -> "v3",
-        "value" -> new Array[Float]
-      ),
-      "a_normal" -> js.Dynamic.literal(
-        "type" -> "v3",
-        "value" -> new Array[Float]
-      ),
-      "a_pickColor" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      ),
-      "a_centerFlag" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      ),
-      "a_depth" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      ),
-      "a_topFace" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      )
-    )
-
-    val shaderMaterial = new ShaderMaterial
-    shaderMaterial.attributes = attrs
-    shaderMaterial.uniforms = customUniforms
-    shaderMaterial.vertexShader = Shaders.vertexShader
-    shaderMaterial.fragmentShader = Shaders.fragmentShader
-
-    val pickShaderMaterial = new ShaderMaterial
-    pickShaderMaterial.attributes = attrs
-    pickShaderMaterial.uniforms = customUniforms
-    pickShaderMaterial.vertexShader = Shaders.pickVertexShader
-    pickShaderMaterial.fragmentShader = Shaders.pickFragmentShader
+    shaderMaterial.transparent = true
 
     // 0 = cullback
+    // 1 = cullfront
+    // 2 = cullnone
     shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "side" )( 0 )
-    pickShaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "side" )( 0 )
 
-    val count = 2*m.faces.map( _.vertices.length*3+3 ).sum
-    val indicesCount = m.faces.map( _.vertices.length*12 ).sum
+    val count = m.faces.map( _.vertices.length*3+3 ).sum
+    val indicesCount = m.faces.map( _.vertices.length*3 ).sum
 
     val vertices = new Float32Array( count )
-    val normals = new Float32Array( count )
     val colors = new Float32Array( count )
-    val pickColors = new Float32Array( count / 3 )
     val centerFlags = new Float32Array( count / 3 )
-    val depths = new Float32Array( count / 3 )
-    val topFlags = new Float32Array( count / 3 )
     val indices = new Uint32Array( indicesCount )
     var offset = 0
     var indicesOffset = 0
 
     for ( i <- m.faces.indices ; f = m.faces( i ) ) {
-      val n = f.seed
-      val uniformD = depthsMap( i ).toFloat / depthMax
-
-      val pickColor = colorCode( i )
       val ( r, g, b ) = ( 1f, 1f, 1f )
       val ( cr, cg, cb ) = ( r, g, b )
 
@@ -270,95 +130,36 @@ object ThreeScene {
         vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
         vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
         vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
-        vertices.set( triOffset+3*(j+vSize),   f.vertices( j ).x.toFloat )
-        vertices.set( triOffset+3*(j+vSize)+1, f.vertices( j ).y.toFloat )
-        vertices.set( triOffset+3*(j+vSize)+2, f.vertices( j ).z.toFloat )
-        normals.set( triOffset+3*j,   n.x.toFloat )
-        normals.set( triOffset+3*j+1, n.y.toFloat )
-        normals.set( triOffset+3*j+2, n.z.toFloat )
-        normals.set( triOffset+3*(j+vSize),   n.x.toFloat )
-        normals.set( triOffset+3*(j+vSize)+1, n.y.toFloat )
-        normals.set( triOffset+3*(j+vSize)+2, n.z.toFloat )
         colors.set( triOffset+3*j,   r )
         colors.set( triOffset+3*j+1, g )
         colors.set( triOffset+3*j+2, b )
-        colors.set( triOffset+3*(j+vSize),   r )
-        colors.set( triOffset+3*(j+vSize)+1, g )
-        colors.set( triOffset+3*(j+vSize)+2, b )
-        centerFlags.set( offset+j,   0f )
-        centerFlags.set( offset+j+vSize, 0f )
-        depths.set( offset+j,       uniformD )
-        depths.set( offset+j+vSize, uniformD )
-        pickColors.set( offset+j,       pickColor )
-        pickColors.set( offset+j+vSize, pickColor )
-        topFlags.set( offset+j,       1f )
-        topFlags.set( offset+j+vSize, 0f )
-
-        // bottom triangle
-        indices.set( indicesOffset+12*j,   offset+2*vSize )
-        indices.set( indicesOffset+12*j+1, offset+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+2, offset+j )
-
-        // top triangle
-        indices.set( indicesOffset+12*j+3, offset+2*vSize+1 )
-        indices.set( indicesOffset+12*j+4, offset+vSize+j )
-        indices.set( indicesOffset+12*j+5, offset+vSize+( j+1 )%vSize )
-
-        // side triangle 1
-        indices.set( indicesOffset+12*j+6, offset+j )
-        indices.set( indicesOffset+12*j+7, offset+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+8, offset+vSize+j )
-
-        // side triangle 2
-        indices.set( indicesOffset+12*j+9,  offset+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+10, offset+vSize+( j+1 )%vSize )
-        indices.set( indicesOffset+12*j+11, offset+vSize+j )
+        centerFlags.set( offset+j, 0f )
+        indices.set( indicesOffset+3*j,   offset+vSize )
+        indices.set( indicesOffset+3*j+1, offset+j )
+        indices.set( indicesOffset+3*j+2, offset+( j+1 )%vSize )
       }
 
       val c = f.barycenter
 
       // centers, one per face
-      vertices.set( triOffset+6*vSize,   c.x.toFloat )
-      vertices.set( triOffset+6*vSize+1, c.y.toFloat )
-      vertices.set( triOffset+6*vSize+2, c.z.toFloat )
-      vertices.set( triOffset+6*vSize+3, c.x.toFloat )
-      vertices.set( triOffset+6*vSize+4, c.y.toFloat )
-      vertices.set( triOffset+6*vSize+5, c.z.toFloat )
-      normals.set( triOffset+6*vSize,   n.x.toFloat )
-      normals.set( triOffset+6*vSize+1, n.y.toFloat )
-      normals.set( triOffset+6*vSize+2, n.z.toFloat )
-      normals.set( triOffset+6*vSize+3, n.x.toFloat )
-      normals.set( triOffset+6*vSize+4, n.y.toFloat )
-      normals.set( triOffset+6*vSize+5, n.z.toFloat )
-      colors.set( triOffset+6*vSize,   cr )
-      colors.set( triOffset+6*vSize+1, cg )
-      colors.set( triOffset+6*vSize+2, cb )
-      colors.set( triOffset+6*vSize+3, cr )
-      colors.set( triOffset+6*vSize+4, cg )
-      colors.set( triOffset+6*vSize+5, cb )
-      centerFlags.set( offset+2*vSize,   1f )
-      centerFlags.set( offset+2*vSize+1, 1f )
-      depths.set( offset+2*vSize,   uniformD )
-      depths.set( offset+2*vSize+1, uniformD )
-      pickColors.set( offset+2*vSize,   pickColor )
-      pickColors.set( offset+2*vSize+1, pickColor )
-      topFlags.set( offset+2*vSize,   1f )
-      topFlags.set( offset+2*vSize+1, 0f )
+      vertices.set( triOffset+3*vSize,   c.x.toFloat )
+      vertices.set( triOffset+3*vSize+1, c.y.toFloat )
+      vertices.set( triOffset+3*vSize+2, c.z.toFloat )
+      colors.set( triOffset+3*vSize,   cr )
+      colors.set( triOffset+3*vSize+1, cg )
+      colors.set( triOffset+3*vSize+2, cb )
+      centerFlags.set( offset+vSize, 1f )
 
-      offset = offset + 2 * ( vSize + 1 )
-      indicesOffset = indicesOffset + vSize*12
+      offset = offset + vSize + 1
+      indicesOffset = indicesOffset + vSize*3
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
-    geom.addAttribute( "a_depth", new BufferAttribute( depths, 1 ) )
-    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
-    geom.addAttribute( "a_pickColor", new BufferAttribute( pickColors, 1 ) )
-    geom.addAttribute( "a_topFace", new BufferAttribute( topFlags, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
-    ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( geom, pickShaderMaterial, "pickMesh" ) )
+    assembleMesh( geom, shaderMaterial, "baseMesh" )
   }
 
   private def junction( face0: Face, face1: Face ): geometry.Vector3 = {
@@ -372,29 +173,13 @@ object ThreeScene {
 
   private def makeMazeMesh( m: VoronoiModel, flatMaze: Map[( Int, Int ), Set[( Int, Int )]], depthMax: Int ): Mesh = {
     val customUniforms = js.Dynamic.literal(
-      "u_time" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
-      "u_explosionFactor" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
-      "u_depthScale" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
+      "u_mMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_color" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector3() )
     )
 
     val geom = new MyBufferGeometry()
 
-    val attrs = js.Dynamic.literal(
-      "a_normal" -> js.Dynamic.literal(
-        "type" -> "v3",
-        "value" -> new Array[Float]
-      ),
-      "a_depth0" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      ),
-      "a_depth1" -> js.Dynamic.literal(
-        "type" -> "f",
-        "value" -> new Array[Float]
-      )
-    )
+    val attrs = js.Dynamic.literal()
 
     val shaderMaterial = new ShaderMaterial
     shaderMaterial.attributes = attrs
@@ -429,30 +214,18 @@ object ThreeScene {
     }
 
     val vertices = new Float32Array( count )
-    val normals = new Float32Array( count )
-    val depths0 = new Float32Array( count / 3 )
-    val depths1 = new Float32Array( count / 3 )
     val indices = new Uint32Array( indicesCount )
 
     var indicesOffset = 0
 
     for ( ( node, ( d, id, children ) ) <- mazeWithIndices ) {
       val f = m.faces( node )
-      val n = f.seed
-      val uniformD = d.toFloat / depthMax
 
       // face center point
       val bary = f.barycenter * 1.001
       vertices.set( id*3,   bary.x.toFloat )
       vertices.set( id*3+1, bary.y.toFloat )
       vertices.set( id*3+2, bary.z.toFloat )
-
-      normals.set( id*3,   n.x.toFloat )
-      normals.set( id*3+1, n.y.toFloat )
-      normals.set( id*3+2, n.z.toFloat )
-
-      depths0.set( id, uniformD )
-      depths1.set( id, uniformD )
 
       for( ( child, childD, relationId ) <- children ) {
         val ( _, childId, _ ) = mazeWithIndices( child )
@@ -462,13 +235,6 @@ object ThreeScene {
         vertices.set( relationId*3,   j.x.toFloat )
         vertices.set( relationId*3+1, j.y.toFloat )
         vertices.set( relationId*3+2, j.z.toFloat )
-
-        normals.set( relationId*3,   n.x.toFloat )
-        normals.set( relationId*3+1, n.y.toFloat )
-        normals.set( relationId*3+2, n.z.toFloat )
-
-        depths0.set( relationId, uniformD )
-        depths1.set( relationId, childD.toFloat / depthMax )
 
         indices.set( indicesOffset, id )
         indices.set( indicesOffset+1, relationId )
@@ -480,107 +246,9 @@ object ThreeScene {
     }
 
     geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
-    geom.addAttribute( "a_depth0", new BufferAttribute( depths0, 1 ) )
-    geom.addAttribute( "a_depth1", new BufferAttribute( depths1, 1 ) )
-    geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
     assembleMesh( geom, shaderMaterial, "mazeMesh" )
-  }
-
-  private def makeAxisMesh: Mesh = {
-    val customUniforms = js.Dynamic.literal(
-      "u_mvpMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() )
-    )
-
-    val geom = new MyBufferGeometry()
-
-    val attrs = js.Dynamic.literal(
-      "a_color" -> js.Dynamic.literal(
-        "type" -> "v3",
-        "value" -> new Array[Float]
-      )
-    )
-
-    val shaderMaterial = new ShaderMaterial
-    shaderMaterial.attributes = attrs
-    shaderMaterial.uniforms = customUniforms
-    shaderMaterial.vertexShader = Shaders.axisVertexShader
-    shaderMaterial.fragmentShader = Shaders.axisFragmentShader
-    shaderMaterial.wireframe = true
-
-    val count = 18
-    val indicesCount = 9
-
-    val vertices = new Float32Array( count )
-    val colors = new Float32Array( count )
-    val indices = new Uint32Array( indicesCount )
-
-    // 0
-    vertices.set( 0, 0f )
-    vertices.set( 1, 0f )
-    vertices.set( 2, 0f )
-    // 1
-    vertices.set( 3, 3f )
-    vertices.set( 4, 0f )
-    vertices.set( 5, 0f )
-    // 2
-    vertices.set( 6, 0f )
-    vertices.set( 7, 0f )
-    vertices.set( 8, 0f )
-    // 3
-    vertices.set( 9, 0f )
-    vertices.set( 10, 3f )
-    vertices.set( 11, 0f )
-    // 4
-    vertices.set( 12, 0f )
-    vertices.set( 13, 0f )
-    vertices.set( 14, 3f )
-    // 5
-    vertices.set( 15, 0f )
-    vertices.set( 16, 0f )
-    vertices.set( 17, 0f )
-
-    // 0
-    colors.set( 0, 1f )
-    colors.set( 1, 0f )
-    colors.set( 2, 0f )
-    // 1
-    colors.set( 3, 1f )
-    colors.set( 4, 0f )
-    colors.set( 5, 0f )
-    // 2
-    colors.set( 6, 0f )
-    colors.set( 7, 1f )
-    colors.set( 8, 0f )
-    // 3
-    colors.set( 9, 0f )
-    colors.set( 10, 1f )
-    colors.set( 11, 0f )
-    // 4
-    colors.set( 12, 0f )
-    colors.set( 13, 0f )
-    colors.set( 14, 1f )
-    // 5
-    colors.set( 15, 0f )
-    colors.set( 16, 0f )
-    colors.set( 17, 1f )
-
-    indices.set( 0, 0 )
-    indices.set( 1, 1 )
-    indices.set( 2, 0 )
-    indices.set( 3, 2 )
-    indices.set( 4, 3 )
-    indices.set( 5, 2 )
-    indices.set( 6, 4 )
-    indices.set( 7, 5 )
-    indices.set( 8, 4 )
-
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
-    geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
-    geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
-
-    assembleMesh( geom, shaderMaterial, "axisMesh" )
   }
 
   private def assembleMesh( geometry: Geometry, material: Material, name: String ): Mesh = {
@@ -602,7 +270,6 @@ class ThreeScene( cfg: Config ) {
   // dummy cam as projections are handled manually
   private val dummyCam = new Camera
   private val scene = new Scene
-  private val pickScene = new Scene
   private val rtScene = new Scene
 
   @JSExport
@@ -614,21 +281,7 @@ class ThreeScene( cfg: Config ) {
 
   // ******************** view management ********************
 
-  private val zoomMax = 16
-  private val zoomMin = 0.0625
-  private val zoomSpeed = 1.05
-  private var zoom = 0.7d
-
-  @JSExport
-  def zoom( delta: Double ): Unit = {
-    zoom = Math.min( Math.max( zoom * Math.pow( zoomSpeed, delta ), zoomMin ), zoomMax )
-    updateMVP()
-  }
-
-  private var projMat = Matrix4.unit
-  private val viewMat = Matrix4.unit
   private var modelMat = Matrix4.naiveRotMat( 0.5, 0.3 )
-  private var mvp = Matrix4.unit
 
   private var innerWidth: Int = 0
   private var innerHeight: Int = 0
@@ -638,51 +291,30 @@ class ThreeScene( cfg: Config ) {
     println( "viewport", width, height )
     innerWidth = width
     innerHeight = height
-    projMat = Matrix4.orthoMatrixFromScreen( width, height, 1 )
-    updateMVP()
 
     adjustTexturing( innerWidth, innerHeight )
   }
 
   @JSExport
   def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    val speed = 1f / 500f / zoom / ( 1f + cfg.safeExplosionFactor )
+    val speed = 1f / 500f
     modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
-    updateMVP()
-  }
-
-  private def updateMVP(): Unit = {
-    mvp = projMat * Matrix4.zoomMatrix( zoom ) * viewMat * modelMat
-  }
-
-  // ******************** axis management ********************
-
-  private lazy val axisMesh: Mesh = makeAxisMesh
-
-  def toggleAxis(): Unit = {
-    if ( cfg.`Show axes` )
-      rtScene.add( axisMesh )
-    else
-      rtScene.remove( axisMesh )
   }
 
   // ******************** mesh management ********************
 
-  private var meshes: Option[( Mesh, Mesh )] = None
+  private var mesh: Option[Mesh] = None
   private var mazeMesh: Option[Mesh] = None
 
   def setModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
-    meshes.foreach { case ( oldM, oldPm ) =>
+    mesh.foreach { case oldM =>
       scene.remove( oldM )
-      pickScene.remove( oldPm )
       oldM.geometry.dispose()
-      oldPm.geometry.dispose()
     }
-    val ( m, pm ) = makeMesh( model, depthsMap, depthMax )
-    meshes = Some( m, pm )
+    val m = makeMesh( model, depthsMap, depthMax )
+    mesh = Some( m )
     if ( cfg.`Draw cells` ) {
       scene.add( m )
-      pickScene.add( pm )
     }
     setMaze( model, maze, depthMax )
   }
@@ -736,9 +368,9 @@ class ThreeScene( cfg: Config ) {
 
   def toggleCells(): Unit = {
     if ( cfg.`Draw cells` )
-      meshes.foreach { case ( m, pm ) => scene.add( m ) ; pickScene.add( pm ) }
+      mesh.foreach { scene.add }
     else
-      meshes.foreach { case ( m, pm ) => scene.remove( m ) ; pickScene.remove( pm ) }
+      mesh.foreach { scene.remove }
   }
 
   def setBackground( color: Int ): Unit = {
@@ -769,31 +401,13 @@ class ThreeScene( cfg: Config ) {
     renderingTexture = makeTexture( w / downsampling, h / downsampling )
   }
 
-  def updateFaceDepth( faceOffset: Int
-                     , faceSize: Int
-                     , uniformDepth: Float ): Unit = {
-    for ( ( mesh, _ ) <- meshes ) {
-      val attrs = mesh
-        .geometry.asInstanceOf[MyBufferGeometry]
-        .attributes
-      val attr = attrs
-        .asInstanceOf[scala.scalajs.js.Dynamic]
-        .selectDynamic( "a_depth" )
-      val data = attr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
-      for ( i <- 0 until faceSize )
-        data.update( faceOffset + i, uniformDepth )
-
-      attr.updateDynamic( "needsUpdate" )( true )
-    }
-  }
-
   def updateFaceColor( faceOffset: Int
                      , faceSize: Int
                      , color: ( Float, Float, Float )
                      , centerColor: ( Float, Float, Float ) ): Unit = {
 
-    for ( ( mesh, _ ) <- meshes ) {
-      val attrs = mesh
+    for ( m <- mesh ) {
+      val attrs = m
         .geometry.asInstanceOf[MyBufferGeometry]
         .attributes
       val colorAttr = attrs
@@ -801,15 +415,12 @@ class ThreeScene( cfg: Config ) {
         .selectDynamic( "a_color" )
       val colorData = colorAttr.selectDynamic( "array" ).asInstanceOf[Array[Float]]
       // apply color until face center offset
-      ( 0 until faceSize-2 ).foreach { i =>
+      ( 0 until faceSize-1 ).foreach { i =>
         colorData.update( 3*faceOffset+3*i,   color._1 )
         colorData.update( 3*faceOffset+3*i+1, color._2 )
         colorData.update( 3*faceOffset+3*i+2, color._3 )
       }
       // apply specific color at face center offset
-      colorData.update( 3*faceOffset+3*faceSize-6, centerColor._1 )
-      colorData.update( 3*faceOffset+3*faceSize-5, centerColor._2 )
-      colorData.update( 3*faceOffset+3*faceSize-4, centerColor._3 )
       colorData.update( 3*faceOffset+3*faceSize-3, centerColor._1 )
       colorData.update( 3*faceOffset+3*faceSize-2, centerColor._2 )
       colorData.update( 3*faceOffset+3*faceSize-1, centerColor._3 )
@@ -825,55 +436,22 @@ class ThreeScene( cfg: Config ) {
       .updateDynamic( "value" )( value )
   }
 
-  private val pixels = new Uint8Array( 4 )
-
   @JSExport
-  def pickRender( mouseX: Int, mouseY: Int ): Int = {
-    if ( cfg.`Draw cells` ) {
-      for ( ( _, m ) <- meshes ) {
-        val updateThis = updateMeshMaterialValue( m ) _
-        updateThis( "u_time", 0f )
-        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-        updateThis( "u_depthScale", cfg.mazeDepthFactor )
-        updateThis( "u_thickness", cfg.safeCellThickness )
-        updateThis( "u_mvpMat", mvp )
-      }
-      renderer.render( pickScene, dummyCam )
-      import js.DynamicImplicits._
-      val gl = renderer.getContext().asInstanceOf[js.Dynamic]
-      gl.readPixels( mouseX, innerHeight - mouseY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels )
-      256 * 256 * pixels( 0 ) + 256 * pixels( 1 ) + pixels( 2 )
-    } else
-      0
-  }
-
-  @JSExport
-  def render( highlighted: Int ): Unit = {
+  def render(): Unit = {
     if ( cfg.`Draw cells` )
-      for ( ( m, _ ) <- meshes ) {
+      for ( m <- mesh ) {
         val updateThis = updateMeshMaterialValue( m ) _
-        updateThis( "u_time", 0f )
-        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-        updateThis( "u_depthScale", cfg.mazeDepthFactor )
-        updateThis( "u_thickness", cfg.safeCellThickness )
-        updateThis( "u_mvpMat", mvp )
+        updateThis( "u_mMat", modelMat )
         updateThis( "u_borderWidth", cfg.safeBordersWidth )
         import demo.Colors.jsStringToFloats
         val ( r, g, b ): ( Float, Float, Float ) = cfg.`Borders color`
-        updateThis( "u_borderColor", new org.denigma.threejs.Vector3( r, g, b ) )
-        updateThis( "u_faceHighlightFlag", highlighted.toFloat )
+        updateThis( "u_borderColor", new org.denigma.threejs.Vector4( r, g, b, 1f ) )
       }
-
-    if ( cfg.`Show axes` )
-      updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
 
     if ( cfg.`Draw path` )
       for( mm <- mazeMesh ) {
         val updateThis = updateMeshMaterialValue( mm ) _
-        updateThis( "u_time", 0f )
-        updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
-        updateThis( "u_depthScale", cfg.mazeDepthFactor )
-        updateThis( "u_mvpMat", mvp )
+        updateThis( "u_mMat", modelMat )
         import demo.Colors.jsStringToFloats
         val ( r, g, b ): ( Float, Float, Float ) = cfg.`Path color`
         updateThis( "u_color", new org.denigma.threejs.Vector3( r, g, b ) )
