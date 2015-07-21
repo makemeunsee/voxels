@@ -69,4 +69,6 @@ object Colors {
   val cubeHelixRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, -240, 0.5f, 1, 300, 0.5f, 0 ) ) _
 
   val matteoNiccoliRainbow = cyclicInterpolation( cubeHelixInterpolationFct( 1, 300, 5f/12, 0.1f, 60, 25f/24, 0.9f ) ) _
+
+  val grayscale = cyclicInterpolation { t => ( t, t, t ) } _
 }

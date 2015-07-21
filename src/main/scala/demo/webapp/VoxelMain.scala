@@ -30,6 +30,7 @@ object VoxelMain extends JSApp {
   private val datGUI = new DatGUI( js.Dynamic.literal( "load" -> JSON.parse( Config.presets ), "preset" -> "Default" ) )
   private var cutCount = config.safeCutCount
   private var seed: Long = 0
+  private var mazeType: String = config.`Maze type`
   private implicit var iRnd = new Random( 0 )
   initRnd( config.`Seed (!slow!)` )
 
@@ -87,6 +88,9 @@ object VoxelMain extends JSApp {
 
       case Config.laRainbow =>
         rainbowControllers( Colors.lessAngryRainbow )
+
+      case Config.grayscale =>
+        rainbowControllers( Colors.grayscale )
 
       case _ =>
         Seq.empty
@@ -166,24 +170,27 @@ object VoxelMain extends JSApp {
     val mazeFolder = datGUI.addFolder( "Maze" )
     mazeFolder
       .addList( jsCfg, "Maze type", Config.mazeTypes )
-      .onChange
-        { s: String =>
-          val progressBar = JQuery( "#progressbar" )
-          val progressLabel = JQuery( "#progress-label" )
-          progressBar.show()
-          val size = model.faces.length
-          val step = size / 100
-          reloadMaze( { ( i, nextStep: ( () => _ ) ) =>
-            if ( i % step == 0 ) {
-              val v = 100*i/size
-              progressBar.progressbar( "value", v )
-              progressLabel.text( s"Regenerating maze - $v %" )
-              continuator( nextStep )
-            } else
-              nextStep()
-          }, { _ =>
-            progressBar.hide()
-          } )
+      .onFinishChange
+        { _: String =>
+          if ( mazeType != config.`Maze type` ) {
+            mazeType = config.`Maze type`
+            val progressBar = JQuery( "#progressbar" )
+            val progressLabel = JQuery( "#progress-label" )
+            progressBar.show()
+            val size = model.faces.length
+            val step = size / 100
+            reloadMaze( { ( i, nextStep: ( () => _ ) ) =>
+              if ( i % step == 0 ) {
+                val v = 100*i/size
+                progressBar.progressbar( "value", v )
+                progressLabel.text( s"Regenerating maze - $v %" )
+                continuator( nextStep )
+              } else
+                nextStep()
+            }, { _ =>
+              progressBar.hide()
+            } )
+          }
         }
     mazeFolder
       .addBoolean( jsCfg, "Draw path" )
@@ -394,6 +401,9 @@ object VoxelMain extends JSApp {
 
       case Config.laRainbow =>
         rainbow( config.`Reverse palette` )( Colors.lessAngryRainbow )
+
+      case Config.grayscale =>
+        rainbow( config.`Reverse palette` )( Colors.grayscale )
 
       case _ =>
         ()

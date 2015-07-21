@@ -21,6 +21,7 @@ object Config {
   val chRainbow = "Cubehelix rainbow"
   val niRainbow = "Niccoli's rainbow"
   val laRainbow = "Less Angry rainbow"
+  val grayscale = "Grayscale"
   val colorings: js.Array[String] =
     Array( uniforms
          , randoms
@@ -28,6 +29,7 @@ object Config {
          , chRainbow
          , niRainbow
          , laRainbow
+         , grayscale
          ).toJSArray
 
   val wilson = "Wilson's"
@@ -184,6 +186,25 @@ object Config {
                   |        "Color 0": "#000000",
                   |        "Color 1": "#000000"
                   |      }
+                  |    },
+                  |    "heightmap": {
+                  |      "0": {
+                  |        "Show axes": false,
+                  |        "Background color": "#000000",
+                  |        "Downsampling": 0,
+                  |        "Explosion": 0,
+                  |        "Draw cells": true,
+                  |        "Borders width": 0,
+                  |        "Borders color": "#000000",
+                  |        "Thickness": 0,
+                  |        "Maze type": "Prim's",
+                  |        "Draw path": false,
+                  |        "Path color": "#00ff00",
+                  |        "Maze depth scaling": 0,
+                  |        "Palette": "Grayscale",
+                  |        "Rainbow span": 50,
+                  |        "Reverse palette": false
+                  |      }
                   |    }
                   |  },
                   |  "folders": {
@@ -222,7 +243,7 @@ case class Config (
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
-  var `Count (!slow!)`: String = "2000",
+  var `Count (!slow!)`: String = "5000",
 
   @(JSExport @field)
   var `Show axes`: Boolean = false,
