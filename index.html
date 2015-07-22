@@ -1,36 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
-    <link rel="icon" href="favicon.ico" />
+    <head>
+        <meta charset="utf-8" name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+        <link rel="icon" href="favicon.ico" />
 
-    <title>Voronoi sphere</title>
-    <meta name="description" content="voronoi sphere, spherical projection">
-    <meta name="viewport" content="width=device-width">
+        <title>Voronoi sphere</title>
+        <meta name="description" content="voronoi sphere, spherical projection">
+        <meta name="viewport" content="width=device-width">
 
-    <link rel="stylesheet" href="css/app.css">
-    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/dot-luv/jquery-ui.min.css">
-    <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="css/app.css">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/dot-luv/jquery-ui.min.css">
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
 
-</head>
-<body>
-<div id="main"></div>
-<div id="progressbar"><div id="progress-label">Loading...</div></div>
-<div id="dialog" title="Voronoi sphere - Spherical projection">
-    <p>Drag to move the view.</p>
-    <p>Scroll / pinch to zoom.</p>
-    <p>Double click / tap to hide UI.</p>
-</div>
-<div id="topbarLeft" class="gui">
-    <button id="showHelp">?</button>
-    <button id="fullscreen">fullscreen</button>
-    <button id="reset">reset</button>
-    <button id="screenshot">screenshot</button>
-    <button id="megaText">mega texture export</button>
-</div>
+    </head>
+    <body>
+        <div id="main"></div>
+        <div id="progressbar"><div id="progress-label">Loading...</div></div>
+        <div id="dialog" title="Voronoi sphere - Spherical projection">
+            <p>Drag to move the view.</p>
+            <p>Scroll / pinch to zoom.</p>
+            <p>Double click / tap to hide UI.</p>
+        </div>
+        <div id="topbarLeft" class="gui">
+            <button id="showHelp">?</button>
+            <button id="fullscreen">fullscreen</button>
+            <button id="reset">reset</button>
+            <button id="screenshot">screenshot</button>
+            <button id="megaText">mega texture export</button>
+        </div>
 
-<script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
+        <script id="shader-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
   #endif
 
@@ -59,8 +59,8 @@ void main()
     gl_FragColor = mix(u_borderColor, col, f);
   }
 }
-</script>
-<script id="shader-vs" type="x-shader/x-vertex">#ifdef GL_ES
+        </script>
+        <script id="shader-vs" type="x-shader/x-vertex">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
 #endif
 
@@ -93,8 +93,8 @@ void main()
     v_hemi1 = 0.0; // front quadrant
   }
 }
-</script>
-<script id="shader-maze-fs" type="x-shader/x-fragment">#ifdef GL_ES
+        </script>
+        <script id="shader-maze-fs" type="x-shader/x-fragment">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
   #endif
 
@@ -112,8 +112,8 @@ void main()
     gl_FragColor = vec4 (u_color, 1.0);
   }
 }
-</script>
-<script id="shader-maze-vs" type="x-shader/x-vertex">#ifdef GL_ES
+        </script>
+        <script id="shader-maze-vs" type="x-shader/x-vertex">#ifdef GL_ES
 #extension GL_OES_standard_derivatives : enable
 #endif
 
@@ -138,14 +138,14 @@ void main()
     v_hemi1 = 0.0; // front quadrant
   }
 }
-</script>
-<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
-<script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
-<script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
-<script type="text/javascript" src="js/lib/stats.min.js"></script>
-<script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
-<script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
-<script type="text/javascript" src="target/scala-2.11/voronoi-sphere-opt.js"></script>
-<script type="text/javascript" src="js/threeApp.js"></script>
-</body>
+        </script>
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
+        <script type="text/javascript" src="js/lib/threex.windowresize.js"></script>
+        <script type="text/javascript" src="js/lib/THREEx.FullScreen.js"></script>
+        <script type="text/javascript" src="js/lib/stats.min.js"></script>
+        <script type="text/javascript" src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+        <script type="text/javascript" src="js/lib/dat.gui.min.js"></script>
+        <script type="text/javascript" src="target/scala-2.11/voronoi-sphere-opt.js"></script>
+        <script type="text/javascript" src="js/threeApp.js"></script>
+    </body>
 </html>
