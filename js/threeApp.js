@@ -70,6 +70,13 @@ function appMain() {
     $("#screenshot").unbind("click");
     $("#screenshot").click(screenshot);
 
+    var exportToMegaText = false;
+    function megaExport() {
+        exportToMegaText = true;
+    }
+    $("#megaText").unbind("click");
+    $("#megaText").click(megaExport);
+
     var toggleFullscreen = THREEx.FullScreen.toggleFct();
     $("#fullscreen").unbind("click");
     $("#fullscreen").click(toggleFullscreen);
@@ -244,16 +251,33 @@ function appMain() {
 
         stats.begin();
 
-        // normal render
-        scalaObj.scene.render();
-
         if (takeScreenshot) {
-            var data = renderer.domElement.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+            scalaObj.scene.renderNoTexture();
+            var data = canvas.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');
             var evt = document.createEvent('MouseEvents');
             evt.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
             $("<a href='"+data+"' download='screenshot.png'/>")[0].dispatchEvent(evt);
             takeScreenshot = false;
+        } else if (exportToMegaText) {
+            var oldWidth = canvas.width;
+            var oldHeight = canvas.height;
+            var gl = renderer.getContext();
+            var maxSize = gl.getParameter( gl.MAX_TEXTURE_SIZE );
+            renderer.setSize( maxSize, maxSize );
+
+            scalaObj.scene.renderNoTexture();
+
+            var data = canvas.toDataURL("image/png").replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+            var evt = document.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+            $("<a href='"+data+"' download='megatexture.png'/>")[0].dispatchEvent(evt);
+            exportToMegaText = false;
+
+            renderer.setSize( oldWidth, oldHeight );
         }
+
+        // normal render
+        scalaObj.scene.render();
 
         stats.end();
 

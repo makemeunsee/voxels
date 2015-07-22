@@ -398,6 +398,7 @@ class ThreeScene( cfg: Config ) {
 
   private def adjustTexturing( w: Int, h: Int ): Unit = {
     val downsampling = cfg.safeDownsamplingFactor
+    renderingTexture.dispose()
     renderingTexture = makeTexture( w / downsampling, h / downsampling )
   }
 
@@ -437,7 +438,18 @@ class ThreeScene( cfg: Config ) {
   }
 
   @JSExport
+  def renderNoTexture(): Unit = {
+    renderToTexture( None )
+  }
+
+  @JSExport
   def render(): Unit = {
+    renderToTexture( Some( renderingTexture ) )
+    updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
+    renderer.render( rtScene, dummyCam )
+  }
+
+  private def renderToTexture( texture: Option[WebGLRenderTarget] ): Unit = {
     if ( cfg.`Draw cells` )
       for ( m <- mesh ) {
         val updateThis = updateMeshMaterialValue( m ) _
@@ -458,8 +470,10 @@ class ThreeScene( cfg: Config ) {
       }
 
     renderer.clearColor()
-    renderer.render( scene, dummyCam, renderingTexture )
-    updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
-    renderer.render( rtScene, dummyCam )
+    texture match {
+      case Some( t ) => renderer.render( scene, dummyCam, t )
+      case None      => renderer.render( scene, dummyCam )
+    }
+
   }
 }
