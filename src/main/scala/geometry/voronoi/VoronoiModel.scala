@@ -206,6 +206,8 @@ trait VoronoiModel {
   def cut( ns: Seq[Normal3]
          , progressHandler: ( Int, => Unit ) => Unit = ( i, fct ) => fct
          , continuation: () => _ = () => () ): Unit
+  // mutates the original!
+  def cutNoContinuation( ns: Seq[Normal3] ): Unit
 }
 
 import geometry.voronoi.VoronoiModel._
@@ -273,6 +275,18 @@ class VoronoiModelImpl( var faces: Array[Face] ) extends VoronoiModel {
         continuation()
     }
     cutting( 0 )
+  }
+
+  def cutNoContinuation( ns: Seq[Normal3] ): Unit = {
+    val fL = faces.length
+    val nL = ns.length
+    val newFaces: Array[Face] = Array.fill( fL + nL )( null: Face )
+    Array.copy( faces, 0, newFaces, 0, fL )
+    // create a model, copy of the original, with a face array of the proper length
+    faces =  newFaces
+    // do cuts -> for each cut, update the existing faces and add a new face in the faces array
+    for( i <- 0 until nL )
+      cut( ns( i ), i + fL )
   }
 
   // find all the faces cut at the normal n, returns all the faces with the cut applied

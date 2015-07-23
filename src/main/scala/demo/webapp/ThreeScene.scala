@@ -8,7 +8,7 @@ import org.denigma.threejs._
 import scala.scalajs.js
 import scala.scalajs.js.Array
 import scala.scalajs.js.annotation.{JSExport, JSName}
-import scala.scalajs.js.typedarray.{Float32Array, Uint32Array, Uint8Array}
+import scala.scalajs.js.typedarray.{Float32Array, Uint32Array}
 
 /**
  * Created by markus on 17/06/2015.
@@ -74,7 +74,7 @@ object ThreeScene {
 
   // ******************** mesh building functions ********************
 
-  private def makeMesh( m: VoronoiModel, depthsMap: Map[Int, Int], depthMax: Int ): Mesh = {
+  private def makeMesh( m: VoronoiModel ): Mesh = {
     val customUniforms = js.Dynamic.literal(
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
@@ -171,7 +171,7 @@ object ThreeScene {
     }
   }
 
-  private def makeMazeMesh( m: VoronoiModel, flatMaze: Map[( Int, Int ), Set[( Int, Int )]], depthMax: Int ): Mesh = {
+  private def makeMazeMesh( m: VoronoiModel, flatMaze: Map[( Int, Int ), Set[( Int, Int )]] ): Mesh = {
     val customUniforms = js.Dynamic.literal(
       "u_mMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
       "u_color" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector3() )
@@ -306,26 +306,26 @@ class ThreeScene( cfg: Config ) {
   private var mesh: Option[Mesh] = None
   private var mazeMesh: Option[Mesh] = None
 
-  def setModel( model: VoronoiModel, maze: Maze[Int], depthsMap: Map[Int, Int], depthMax: Int ): Unit = {
+  def setModel( model: VoronoiModel, maze: Maze[Int] ): Unit = {
     mesh.foreach { case oldM =>
       scene.remove( oldM )
       oldM.geometry.dispose()
     }
-    val m = makeMesh( model, depthsMap, depthMax )
+    val m = makeMesh( model )
     mesh = Some( m )
     if ( cfg.`Draw cells` ) {
       scene.add( m )
     }
     setCellsShader( cfg.`Projection` )
-    setMaze( model, maze, depthMax )
+    setMaze( model, maze )
   }
 
-  def setMaze( model: VoronoiModel, maze: Maze[Int], depthMax: Int ): Unit = {
+  def setMaze( model: VoronoiModel, maze: Maze[Int] ): Unit = {
     mazeMesh.foreach { m =>
       scene.remove( m )
       m.geometry.dispose()
     }
-    val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
+    val mm = makeMazeMesh( model, maze.childrenMap )
     mazeMesh = Some( mm )
     setMazeShader( cfg.`Projection` )
     if ( cfg.`Draw path` )
@@ -360,6 +360,14 @@ class ThreeScene( cfg: Config ) {
   }
 
   // ******************** special effects ********************
+
+  val maxTextureSize: Int = {
+    val gl = renderer.getContext().asInstanceOf[scala.scalajs.js.Dynamic]
+    gl.getParameter( gl.MAX_TEXTURE_SIZE ).asInstanceOf[Int]
+  }
+
+  @JSExport
+  def megaTextureSize(): Int = math.min( maxTextureSize, math.max( 2048, cfg.`Mega texture` ) )
 
   private def setCellsShader( str: String ): Unit = {
     mesh.foreach { m =>

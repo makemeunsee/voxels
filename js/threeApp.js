@@ -256,9 +256,9 @@ function appMain() {
         } else if (exportToMegaText) {
             var oldWidth = canvas.width;
             var oldHeight = canvas.height;
-            var gl = renderer.getContext();
-            var maxSize = gl.getParameter( gl.MAX_TEXTURE_SIZE );
-            renderer.setSize( maxSize, maxSize );
+            var size = scalaObj.scene.megaTextureSize();
+
+            renderer.setSize( size, size );
 
             scalaObj.scene.renderNoTexture();
 

@@ -22,7 +22,6 @@ object JQuery extends js.Object {
 object VoxelMain extends JSApp {
 
   private var model: VoronoiModel = VoronoiModel.cubeModel
-  private var maze: Maze[Int] = Maze.empty( -1 )
   private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
 
@@ -46,7 +45,7 @@ object VoxelMain extends JSApp {
                                 ( implicit colorParams: DatGUI
                                 , jsCfg: js.Dynamic
                                 , paletteController: DatController[String] ): Seq[DatController[_]] = {
-    val spanController = colorParams.addRange( jsCfg, "Rainbow span", 1f, 100f )
+    val spanController = colorParams.addRange( jsCfg, "Rainbow span", 1f, 100f ).step( 1 )
     val reverseController = colorParams.addBoolean( jsCfg, "Reverse palette" )
     val newControllers = Seq( spanController, reverseController )
     spanController.onChange{ _: Float => rainbow( config.`Reverse palette` )( rainbowFct ) }
@@ -119,6 +118,9 @@ object VoxelMain extends JSApp {
       .onFinishChange ( scene.setShader _ )
 
     general
+      .addRange( jsCfg, "Mega texture", Config.minSupportedTextureSize, scene.maxTextureSize ).step( Config.minSupportedTextureSize )
+
+    general
       .addString( jsCfg, "Seed (!slow!)" )
       .onFinishChange { str: String =>
         if ( initRnd( str ) ) {
@@ -133,7 +135,7 @@ object VoxelMain extends JSApp {
       .addColor( jsCfg, "Background color" )
       .onChange { a: String => scene.setBackground( Colors.jsStringToColor( a ) ) }
     general
-      .addRange( jsCfg, "Downsampling", 0, 7 )
+      .addRange( jsCfg, "Downsampling", 0, 7 ).step( 1 )
       .onChange { _: Float => scene.udpateDownsampling() }
     general.open()
 
@@ -159,7 +161,7 @@ object VoxelMain extends JSApp {
         }
       }
     cells
-      .addRange( jsCfg, "Borders width", 0, 2, 0.1f )
+      .addRange( jsCfg, "Borders width", 0, 2 ).step( 0.1f )
     cells
       .addColor( jsCfg, "Borders color" )
     cells.open()
@@ -224,10 +226,9 @@ object VoxelMain extends JSApp {
   private def reloadMaze( progressHandler: ( Int, () => Unit ) => Unit = { ( _: Int, eval: ( () => Unit ) ) => eval() }
                         , continuation: Maze[Int] => Unit ): Unit = {
     genMazeStructure( progressHandler, { result =>
-      maze = result
-      genMazeMetrics()
-      applyMaze()
-      continuation( maze )
+      genMazeMetrics( result )
+      applyMaze( result )
+      continuation( result )
     } )
   }
 
@@ -239,27 +240,27 @@ object VoxelMain extends JSApp {
     val mazeGenerator = config.`Maze type` match {
       case Config.wilson       => Maze.wilsonMaze[T] _
       case Config.rndTraversal => Maze.randomTraversal[T] _
-      case Config.prim         => Maze.prim[T] _
-      case _ =>                   Maze.depthFirstMaze[T] _
+      case Config.depthFirst   => Maze.depthFirstMaze[T] _
+      case _ =>                   Maze.prim[T] _
     }
-    mazeGenerator( rnd )( model.faces, progressHandler, { result => maze = result ; continuation( result ) } )
+    mazeGenerator( rnd )( model.faces, progressHandler, continuation )
     //    println( maze.toNiceString() )
   }
 
-  private def genMazeMetrics(): Unit = {
+  private def genMazeMetrics( maze: Maze[Int] ): Unit = {
     val mazeMetrics = maze.metrics
     depthMap = mazeMetrics._1
     depthMax = mazeMetrics._2
   }
 
-  def applyMaze(): Unit = {
-    scene.setMaze( model, maze, depthMax )
+  def applyMaze( maze: Maze[Int] ): Unit = {
+    scene.setMaze( model, maze )
     applyColors()
   }
 
   @JSExport
   def loadModel( uiToggler: js.Function1[Boolean, _]
-               , continuator: js.Function1[js.Function0[_], _]
+               , frameHandler: js.Function1[js.Function0[_], _]
                , continuation: js.Function0[_]
                , initDatGUI: Boolean = true  ): Unit = {
 
@@ -283,7 +284,7 @@ object VoxelMain extends JSApp {
     val colors: js.Function0[_] = () => {
       applyColors()
       if ( initDatGUI )
-        setupDatGUI( jsCfg, uiToggler, continuator, continuation )
+        setupDatGUI( jsCfg, uiToggler, frameHandler, continuation )
 
       progressBar.progressbar( "value", 100 )
       progressLabel.text( s"Loading... (color scheme) - 100 %" )
@@ -291,22 +292,22 @@ object VoxelMain extends JSApp {
       progressBar.hide()
       uiToggler( true )
 
-      continuator( continuation )
+      frameHandler( continuation )
     }
 
-    val intoScene: js.Function0[_] = () => {
-      scene.setModel( model, maze, depthMap, depthMax )
+    val intoScene: Maze[Int] => js.Function0[_] = { maze: Maze[Int] => () => {
+      scene.setModel( model, maze )
       progressBar.progressbar( "value", 99 )
       progressLabel.text( s"Loading... (meshes) - 99 %" )
-      continuator( colors )
-    }
+      frameHandler( colors )
+    } }
 
-    val mazeMetricsGen: js.Function0[_] = () => {
-      genMazeMetrics()
+    val mazeMetricsGen: Maze[Int] => js.Function0[_] =  { maze: Maze[Int] => () => {
+      genMazeMetrics( maze )
       progressBar.progressbar( "value", 95 )
       progressLabel.text( s"Loading... (maze metrics) - 95 %" )
-      continuator( intoScene )
-    }
+      frameHandler( intoScene( maze ) )
+    } }
 
     val mazeGen: js.Function0[_] = () => {
       val size = model.faces.length
@@ -316,13 +317,16 @@ object VoxelMain extends JSApp {
           val v = 75 + 20*i/size
           progressBar.progressbar( "value", v )
           progressLabel.text( s"Loading... (maze) - $v %" )
-          continuator( nextStep )
+          frameHandler( nextStep )
         } else
           nextStep()
-      }, { _ => mazeMetricsGen() } )
+      }, { maze => mazeMetricsGen( maze )() } )
     }
 
     val cuts: js.Function0[_] = () => {
+//      model.cutNoContinuation( cutNormals )
+//      mazeGen()
+
       val size = cutNormals.length
       val step = size / 75
       model.cut( cutNormals, { ( i, nextCut ) =>
@@ -330,7 +334,7 @@ object VoxelMain extends JSApp {
           val v = 75*i/size
           progressBar.progressbar( "value", v )
           progressLabel.text( s"Loading... (generating cells) - $v %" )
-          continuator( () => nextCut )
+          frameHandler( () => nextCut )
         } else
           nextCut
       }, mazeGen )
@@ -350,7 +354,7 @@ object VoxelMain extends JSApp {
       progressBar.progressbar( "value", 0 )
       progressLabel.text( "Loading... (cuts) - 0 %" )
 
-      continuator( cuts )
+      frameHandler( cuts )
     }
 
     prepare()
@@ -415,7 +419,7 @@ object VoxelMain extends JSApp {
     ThreeScene.withOffsetsAndSizes( model.faces )
       .zipWithIndex
       .foreach { case ( ( f, o, s ), id ) =>
-        val d = depthMap( id )
+        val d = depthMap.getOrElse( id, 0 )
         val col = color( ( id, d ) )
         val cCol = centerColor match {
           case Some( fct ) =>

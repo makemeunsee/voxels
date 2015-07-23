@@ -11,4 +11,6 @@ class DatController[T] {
   def onChange( callback: js.Function1[ T, Unit ] ): DatController[T] = js.native
   def onFinishChange( callback: js.Function1[ T, Unit ] ): DatController[T] = js.native
   def listen(): js.Any = js.native
+
+  def step( step: Float ): DatController[Float] = js.native
 }

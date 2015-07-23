@@ -15,6 +15,8 @@ import scala.util.Try
  */
 object Config {
 
+  val minSupportedTextureSize: Int = 2048
+
   val uniforms = "Uniform colors"
   val randoms = "Random colors"
   val randoms2 = "Random colors (flat)"
@@ -208,6 +210,9 @@ case class Config (
   var `Projection`: String = Config.hammerAitoff,
 
   @(JSExport @field)
+  var `Mega texture`: Int = 2048,
+
+  @(JSExport @field)
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
@@ -262,7 +267,7 @@ case class Config (
   def safeCutCount: Int = cutCount.getOrElse( 994 )
 
   def cutCount: Try[Int] =
-    Try( math.min( 10000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
+    Try( math.min( 20000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
 
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
 
