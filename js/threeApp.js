@@ -13,11 +13,6 @@ function appMain() {
 
     var scalaObj = demo.webapp.VoxelMain();
 
-    demo.webapp.Shaders().loadShaders(document.getElementById('shader-vs').innerHTML,
-                                      document.getElementById('shader-fs').innerHTML,
-                                      document.getElementById('shader-maze-vs').innerHTML,
-                                      document.getElementById('shader-maze-fs').innerHTML);
-
     // help dialog
     $(function() {
         $( "#dialog" ).dialog({

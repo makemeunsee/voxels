@@ -115,6 +115,10 @@ object VoxelMain extends JSApp {
     val general = datGUI.addFolder( "General" )
 
     general
+      .addList( jsCfg, "Projection", Config.projections )
+      .onFinishChange ( scene.setShader _ )
+
+    general
       .addString( jsCfg, "Seed (!slow!)" )
       .onFinishChange { str: String =>
         if ( initRnd( str ) ) {

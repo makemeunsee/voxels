@@ -43,6 +43,11 @@ object Config {
          , rndTraversal
          ).toJSArray
 
+  val spherical = "Spherical"
+  val hammerAitoff = "Hammer-Aitoff"
+  val projections: js.Array[String] =
+    Array( spherical, hammerAitoff ).toJSArray
+
   val presets = """{
                   |  "preset": "path2",
                   |  "closed": false,
@@ -198,6 +203,9 @@ object Config {
 }
 
 case class Config (
+
+  @(JSExport @field)
+  var `Projection`: String = Config.hammerAitoff,
 
   @(JSExport @field)
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,

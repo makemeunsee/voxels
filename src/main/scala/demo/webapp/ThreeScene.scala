@@ -78,7 +78,7 @@ object ThreeScene {
     val customUniforms = js.Dynamic.literal(
       "u_borderWidth" -> js.Dynamic.literal( "type" -> "1f", "value" -> 0 ),
       "u_mMat" -> js.Dynamic.literal( "type" -> "m4", "value" -> new org.denigma.threejs.Matrix4() ),
-      "u_borderColor" -> js.Dynamic.literal( "type" -> "v4", "value" -> new Vector4( 0, 0, 0, 1 ) ),
+      "u_borderColor" -> js.Dynamic.literal( "type" -> "v3", "value" -> new Vector3( 0, 0, 0 ) ),
       "u_faceHighlightFlag" -> js.Dynamic.literal( "type" -> "1i", "value" -> 0 )
     )
 
@@ -98,8 +98,8 @@ object ThreeScene {
     val shaderMaterial = new ShaderMaterial
     shaderMaterial.attributes = attrs
     shaderMaterial.uniforms = customUniforms
-    shaderMaterial.vertexShader = Shaders.vertexShader
-    shaderMaterial.fragmentShader = Shaders.fragmentShader
+    shaderMaterial.vertexShader = Shaders.cells_vertex_hammer_aitoff
+    shaderMaterial.fragmentShader = Shaders.cells_fragment_projs
     shaderMaterial.transparent = true
 
     // 0 = cullback
@@ -184,8 +184,8 @@ object ThreeScene {
     val shaderMaterial = new ShaderMaterial
     shaderMaterial.attributes = attrs
     shaderMaterial.uniforms = customUniforms
-    shaderMaterial.vertexShader = Shaders.mazeVertexShader
-    shaderMaterial.fragmentShader = Shaders.mazeFragmentShader
+    shaderMaterial.vertexShader = Shaders.maze_vertex_hammer_aitoff
+    shaderMaterial.fragmentShader = Shaders.maze_fragment_projs
     shaderMaterial.wireframe = true
     // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
     //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
@@ -316,6 +316,7 @@ class ThreeScene( cfg: Config ) {
     if ( cfg.`Draw cells` ) {
       scene.add( m )
     }
+    setCellsShader( cfg.`Projection` )
     setMaze( model, maze, depthMax )
   }
 
@@ -326,6 +327,7 @@ class ThreeScene( cfg: Config ) {
     }
     val mm = makeMazeMesh( model, maze.childrenMap, depthMax )
     mazeMesh = Some( mm )
+    setMazeShader( cfg.`Projection` )
     if ( cfg.`Draw path` )
       scene.add( mm )
   }
@@ -358,6 +360,37 @@ class ThreeScene( cfg: Config ) {
   }
 
   // ******************** special effects ********************
+
+  private def setCellsShader( str: String ): Unit = {
+    mesh.foreach { m =>
+      val shader = str match {
+        case Config.hammerAitoff =>
+          Shaders.cells_vertex_hammer_aitoff
+        case _ =>
+          Shaders.cells_vertex_spherical
+      }
+      m.material.asInstanceOf[ShaderMaterial].vertexShader = shader
+      m.material.needsUpdate = true
+    }
+  }
+
+  private def setMazeShader( str: String ): Unit = {
+    mazeMesh.foreach { mm =>
+      val shader = str match {
+        case Config.hammerAitoff =>
+          Shaders.maze_vertex_hammer_aitoff
+        case _ =>
+          Shaders.maze_vertex_spherical
+      }
+      mm.material.asInstanceOf[ShaderMaterial].vertexShader = shader
+      mm.material.needsUpdate = true
+    }
+  }
+
+  def setShader( str: String ): Unit = {
+    setCellsShader( str )
+    setMazeShader( str )
+  }
 
   def toggleMazePath(): Unit = {
     if ( cfg.`Draw path` )
@@ -457,7 +490,7 @@ class ThreeScene( cfg: Config ) {
         updateThis( "u_borderWidth", cfg.safeBordersWidth )
         import demo.Colors.jsStringToFloats
         val ( r, g, b ): ( Float, Float, Float ) = cfg.`Borders color`
-        updateThis( "u_borderColor", new org.denigma.threejs.Vector4( r, g, b, 1f ) )
+        updateThis( "u_borderColor", new org.denigma.threejs.Vector3( r, g, b ) )
       }
 
     if ( cfg.`Draw path` )
