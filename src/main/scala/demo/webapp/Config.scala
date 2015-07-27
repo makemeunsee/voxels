@@ -307,7 +307,7 @@ case class Config (
   def safeCutCount: Int = cutCount.getOrElse( 994 )
 
   def cutCount: Try[Int] =
-    Try( math.min( 10000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
+    Try( math.min( 200000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
 
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
 

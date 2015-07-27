@@ -29,47 +29,49 @@ object Maze {
       childrenMap( newRem, newAcc )
   }
 
-  private def depthFirstMaze0[T]( visited: Set[Int], acc: Seq[Maze[Int]], parents: Seq[( Int, Int )])
-                                ( implicit faces: Array[Face]
-                                , rnd: Random
-                                , progressHandler: ( Int, () => T ) => T
-                                , continuation: Maze[Int] => T ): T = parents match {
-    case Nil =>
-      continuation( acc.head )
-    case ( id, depth ) :: rParents =>
-      val explorable = faces( id ).neighbours.diff( visited ).toArray
-      if ( explorable.isEmpty ) {
-        val newAcc = acc match {
-          case Nil =>
-            Seq( ImmutableMaze( id, depth, Seq.empty ) )
-          case _   =>
-            val ( tails, parallelBranches ) = acc.partition( m => m.depth == depth+1 )
-            tails match {
-              case Nil =>
-                ImmutableMaze( id, depth, Seq.empty ) +: acc
-              case _ =>
-                ImmutableMaze( id, depth, tails ) +: parallelBranches
-            }
-        }
-        depthFirstMaze0( visited, newAcc, rParents )
-      } else {
-        val l = explorable.length
-        val newId = rnd.nextInt( l )
-        val j = explorable( newId )
-        val newVisited = visited + j
-        progressHandler( newVisited.size, () => depthFirstMaze0( newVisited, acc, ( j, depth+1 ) +: ( id, depth ) +: rParents ) )
-      }
-  }
+
   // randomized depth first traversal
-  def depthFirstMaze[T]( rnd: Random )
-                       ( faces: Array[Face]
-                       , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
+  def depthFirstMaze[T]( rnd: Random
+                       , faces: Array[Face]
+                       , progressHandler: ( Int, Int, => T ) => T
                        , continuation: Maze[Int] => T ): T = {
+
     if ( faces.isEmpty )
       continuation( empty( -1 ) )
     else {
+
       val id0 = rnd.nextInt( faces.length )
-      depthFirstMaze0( Set( id0 ), Seq.empty, Seq( ( id0, 0 ) ) )( faces, rnd, progressHandler, continuation )
+      var visited = Set( id0 )
+
+      def depthFirstMaze0( recStep: Int, acc: Seq[Maze[Int]], parents: Seq[( Int, Int )]): T = parents match {
+        case Nil =>
+          continuation( acc.head )
+        case ( id, depth ) :: rParents =>
+          val explorable = faces( id ).neighbours.diff( visited ).toArray
+          if ( explorable.isEmpty ) {
+            val newAcc = acc match {
+              case Nil =>
+                Seq( ImmutableMaze( id, depth, Seq.empty ) )
+              case _   =>
+                val ( tails, parallelBranches ) = acc.partition( m => m.depth == depth+1 )
+                tails match {
+                  case Nil =>
+                    ImmutableMaze( id, depth, Seq.empty ) +: acc
+                  case _ =>
+                    ImmutableMaze( id, depth, tails ) +: parallelBranches
+                }
+            }
+            progressHandler( recStep+1, visited.size, depthFirstMaze0( recStep+1, newAcc, rParents ) )
+          } else {
+            val l = explorable.length
+            val newId = rnd.nextInt( l )
+            val j = explorable( newId )
+            visited = visited + j
+            progressHandler( recStep+1, visited.size, depthFirstMaze0( recStep+1, acc, ( j, depth+1 ) +: ( id, depth ) +: rParents ) )
+          }
+      }
+
+      depthFirstMaze0( 0, Seq.empty, Seq( ( id0, 0 ) ) )
     }
   }
 
@@ -104,7 +106,7 @@ object Maze {
 
   private def wilsonMazeRec[T]( faces: Array[Face], visited: Set[Int], notVisited: Set[Int], maze: Maze[Int] )
                               ( implicit rnd: Random
-                              , progressHandler: ( Int, () => T ) => T
+                              , progressHandler: ( Int, Int, => T ) => T
                               , continuation: Maze[Int] => T ): T = {
     if ( notVisited.isEmpty )
       continuation( maze )
@@ -112,81 +114,57 @@ object Maze {
       val nextCell = notVisited.head
       val newPath = randomWalk( faces, visited, Seq( nextCell ) )
       val newVisited = visited ++ newPath
-      progressHandler( newVisited.size, () => wilsonMazeRec( faces, visited ++ newPath, notVisited -- newPath, maze.plug( newPath ) ) )
+      val progress = newVisited.size
+      progressHandler( progress, progress, wilsonMazeRec( faces, visited ++ newPath, notVisited -- newPath, maze.plug( newPath ) ) )
     }
   }
 
-  def wilsonMaze[T]( rnd: Random )
-                   ( faces: Array[Face]
-                   , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
+  def wilsonMaze[T]( rnd: Random
+                   , faces: Array[Face]
+                   , progressHandler: ( Int, Int, => T ) => T
                    , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
-    progressHandler( 0, () => wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, new MutableMaze( first ) ) ( rnd, progressHandler, continuation ) )
+    progressHandler( 0, 0, wilsonMazeRec( faces, Set( first ), ( 0 until l ).toSet - first, new MutableMaze( first ) ) ( rnd, progressHandler, continuation ) )
   }
 
-  private def randomTraversalRec[T]( faces: Array[Face], visited: Set[Int], options: mutable.Buffer[( Int, Int )], maze: Maze[Int] )
-                                   ( implicit rnd: Random
-                                   , progressHandler: ( Int, () => T ) => T
-                                   , continuation: Maze[Int] => T ): T = {
-    if ( options.isEmpty )
-      continuation( maze )
-    else {
-      val l = options.size
-      val i = rnd.nextInt( l )
-      val ( from, to ) = options( i )
-      options( i ) = options.last
-      options.remove( l - 1 )
-      if ( visited.contains( to ) )
-        randomTraversalRec( faces, visited, options, maze )
-      else {
-        val newMaze = maze.plug( Seq( from, to ) )
-        ( faces( to ).neighbours - from ).foreach { n =>
-          options += ( ( to, n ) )
-        }
-        val newVisited = visited + to
-        progressHandler( newVisited.size, () => randomTraversalRec( faces, newVisited, options, newMaze ) )
-      }
-    }
-  }
-
-  def randomTraversal[T]( rnd: Random )
-                        ( faces: Array[Face]
-                        , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
+  def randomTraversal[T]( rnd: Random
+                        , faces: Array[Face]
+                        , progressHandler: ( Int, Int, => T ) => T
                         , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
-    randomTraversalRec( faces
-                      , Set( first )
-                      , faces( first ).neighbours.map( ( first, _ ) ).toBuffer, new MutableMaze( first ) )(
-                        rnd
-                      , progressHandler
-                      , continuation )
-  }
+    var visited = Set( first )
+    val maze = new MutableMaze( first )
 
-  private def primRec[T]( faces: Array[Face], visited: Set[Int], heap: mutable.PriorityQueue[( Int, ( Int, Int ) )], maze: Maze[Int] )
-                        ( implicit rnd: Random
-                        , progressHandler: ( Int, () => T ) => T
-                        , continuation: Maze[Int] => T ): T = {
-    if ( heap.isEmpty )
-      continuation( maze )
-    else {
-      val ( _, ( from, to ) ) = heap.dequeue()
-      if ( visited.contains( to ) )
-        primRec( faces, visited, heap, maze )
+    def randomTraversalRec( recStep: Int, options: mutable.Buffer[( Int, Int )] ): T = {
+      if ( options.isEmpty )
+        continuation( maze )
       else {
-        ( faces( to ).neighbours - from ).foreach { n =>
-          heap.enqueue( ( rnd.nextInt(), ( to, n ) ) )
+        val l = options.size
+        val i = rnd.nextInt( l )
+        val ( from, to ) = options( i )
+        options( i ) = options.last
+        options.remove( l - 1 )
+        if ( visited.contains( to ) )
+          progressHandler( recStep+1, visited.size, randomTraversalRec( recStep+1, options ) )
+        else {
+          maze.plug( Seq( from, to ) )
+          ( faces( to ).neighbours - from ).foreach { n =>
+            options += ( ( to, n ) )
+          }
+          visited = visited + to
+          progressHandler( recStep+1, visited.size, randomTraversalRec( recStep+1, options ) )
         }
-        val newVisited = visited + to
-        progressHandler( newVisited.size, () => primRec( faces, newVisited, heap, maze.plug( Seq( from, to ) ) ) )
       }
     }
+
+    randomTraversalRec( 0, faces( first ).neighbours.map( ( first, _ ) ).toBuffer )
   }
 
-  def prim[T]( rnd: Random )
-             ( faces: Array[Face]
-             , progressHandler: ( Int, () => T ) => T = { ( _: Int, eval: ( () => T ) ) => eval() }
+  def prim[T]( rnd: Random
+             , faces: Array[Face]
+             , progressHandler: ( Int, Int, => T ) => T
              , continuation: Maze[Int] => T ): T = {
     val l = faces.length
     val first = rnd.nextInt( l )
@@ -195,7 +173,26 @@ object Maze {
     faces( first ).neighbours.foreach { to =>
       heap.enqueue( ( rnd.nextInt(), ( first, to ) ) )
     }
-    primRec( faces, Set( first ), heap, new MutableMaze( first ) )( rnd, progressHandler, continuation )
+    val maze = new MutableMaze( first )
+
+    def primRec( recStep: Int, actualProgress: Int, visited: Set[Int] ): T = {
+      if ( heap.isEmpty )
+        continuation( maze )
+      else {
+        val ( _, ( from, to ) ) = heap.dequeue()
+        if ( visited.contains( to ) )
+          primRec( recStep+1, actualProgress, visited )
+        else {
+          ( faces( to ).neighbours - from ).foreach { n =>
+            heap.enqueue( ( rnd.nextInt(), ( to, n ) ) )
+          }
+          maze.plug( Seq( from, to ) )
+          progressHandler( recStep+1, actualProgress+1, primRec( recStep+1, actualProgress+1, visited + to ) )
+        }
+      }
+    }
+
+    primRec( 0, 1, Set( first ) )
   }
 }
 
