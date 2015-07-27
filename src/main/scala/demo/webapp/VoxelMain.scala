@@ -106,6 +106,9 @@ object VoxelMain extends JSApp {
   // scala.js wants it...
   def main(): Unit = {}
 
+  // magic number... more than 400 and "too much recursion" errors occur on firefox
+  private val step: Int = 400
+
   def setupDatGUI( jsCfg: js.Dynamic
                  , uiToggler: js.Function1[Boolean, _]
                  , continuator: js.Function1[js.Function0[_], _]
@@ -171,21 +174,21 @@ object VoxelMain extends JSApp {
       .addList( jsCfg, "Maze type", Config.mazeTypes )
       .onFinishChange
         { _: String =>
+          val size = model.faces.length
+          val vStep = math.min( step, size / 100 )
           if ( mazeType != config.`Maze type` ) {
             mazeType = config.`Maze type`
             val progressBar = JQuery( "#progressbar" )
             val progressLabel = JQuery( "#progress-label" )
             progressBar.show()
-            val size = model.faces.length
-            val step = size / 100
-            reloadMaze( { ( i, nextStep: ( () => _ ) ) =>
-              if ( i % step == 0 ) {
-                val v = 100*i/size
+            reloadMaze( { ( recStep, actualProgress, nextStep ) =>
+              if ( recStep % vStep == 0 ) {
+                val v = 100*actualProgress/size
                 progressBar.progressbar( "value", v )
                 progressLabel.text( s"Regenerating maze - $v %" )
-                continuator( nextStep )
+                continuator( () => nextStep )
               } else
-                nextStep()
+                nextStep
             }, { _ =>
               progressBar.hide()
             } )
@@ -223,7 +226,7 @@ object VoxelMain extends JSApp {
       false
   }
 
-  private def reloadMaze( progressHandler: ( Int, () => Unit ) => Unit = { ( _: Int, eval: ( () => Unit ) ) => eval() }
+  private def reloadMaze( progressHandler: ( Int, Int, => Unit ) => Unit
                         , continuation: Maze[Int] => Unit ): Unit = {
     genMazeStructure( progressHandler, { result =>
       genMazeMetrics( result )
@@ -232,18 +235,17 @@ object VoxelMain extends JSApp {
     } )
   }
 
-  private def genMazeStructure[T]( progressHandler: ( Int, () => T ) => T
-                                 , continuation: Maze[Int] => T ): T = {
+  private def genMazeStructure( progressHandler: ( Int, Int, => Unit ) => Unit
+                              , continuation: Maze[Int] => Unit ): Unit = {
     // always use the original random to generate the maze => get the same mazes
-    val rnd = new Random( seed )
     // generate maze
     val mazeGenerator = config.`Maze type` match {
-      case Config.wilson       => Maze.wilsonMaze[T] _
-      case Config.rndTraversal => Maze.randomTraversal[T] _
-      case Config.depthFirst   => Maze.depthFirstMaze[T] _
-      case _ =>                   Maze.prim[T] _
+      case Config.wilson       => Maze.wilsonMaze[Unit] _
+      case Config.rndTraversal => Maze.randomTraversal[Unit] _
+      case Config.depthFirst   => Maze.depthFirstMaze[Unit] _
+      case _ =>                   Maze.prim[Unit] _
     }
-    mazeGenerator( rnd )( model.faces, progressHandler, continuation )
+    mazeGenerator( new Random( seed ), model.faces, progressHandler, continuation )
     //    println( maze.toNiceString() )
   }
 
@@ -311,26 +313,23 @@ object VoxelMain extends JSApp {
 
     val mazeGen: js.Function0[_] = () => {
       val size = model.faces.length
-      val step = size / 20
-      genMazeStructure( { ( i, nextStep: ( () => _ ) ) =>
-        if ( i % step == 0 ) {
-          val v = 75 + 20*i/size
+      val vStep = math.min( step, size / 20 )
+      genMazeStructure( { ( recStep, actualProgress, nextStep ) =>
+        if ( recStep % vStep == 0 ) {
+          val v = 75 + 20*actualProgress/size
           progressBar.progressbar( "value", v )
           progressLabel.text( s"Loading... (maze) - $v %" )
-          frameHandler( nextStep )
+          frameHandler( () => nextStep )
         } else
-          nextStep()
+          nextStep
       }, { maze => mazeMetricsGen( maze )() } )
     }
 
     val cuts: js.Function0[_] = () => {
-//      model.cutNoContinuation( cutNormals )
-//      mazeGen()
-
       val size = cutNormals.length
-      val step = size / 75
+      val vStep = math.min( step, size / 75 )
       model.cut( cutNormals, { ( i, nextCut ) =>
-        if ( i % step == 0 ) {
+        if ( i % vStep == 0 ) {
           val v = 75*i/size
           progressBar.progressbar( "value", v )
           progressLabel.text( s"Loading... (generating cells) - $v %" )

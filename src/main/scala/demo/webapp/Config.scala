@@ -134,6 +134,26 @@ object Config {
                   |        "Color 1": "#000000"
                   |      }
                   |    },
+                  |    "deep": {
+                  |      "0": {
+                  |        "Show axes": false,
+                  |        "Background color": "#000000",
+                  |        "Downsampling": 0,
+                  |        "Explosion": 0,
+                  |        "Draw cells": true,
+                  |        "Borders width": 1.4776700735092163,
+                  |        "Borders color": "#1b1813",
+                  |        "Thickness": 8,
+                  |        "Draw path": false,
+                  |        "Path color": "#00ff00",
+                  |        "Maze depth scaling": -80,
+                  |        "Palette": "Less Angry rainbow",
+                  |        "Rainbow span": 100,
+                  |        "Reverse palette": false,
+                  |        "Color 0": "#000000",
+                  |        "Color 1": "#000000"
+                  |      }
+                  |    },
                   |    "bright": {
                   |      "0": {
                   |        "Show axes": false,
@@ -148,6 +168,26 @@ object Config {
                   |        "Path color": "#00ff00",
                   |        "Maze depth scaling": 0,
                   |        "Palette": "Uniform colors",
+                  |        "Rainbow span": 100,
+                  |        "Reverse palette": false,
+                  |        "Color 0": "#000000",
+                  |        "Color 1": "#000000"
+                  |      }
+                  |    },
+                  |    "path2": {
+                  |      "0": {
+                  |        "Show axes": false,
+                  |        "Background color": "#ffffff",
+                  |        "Downsampling": 0,
+                  |        "Explosion": 0,
+                  |        "Draw cells": false,
+                  |        "Borders width": 0,
+                  |        "Borders color": "#ffffff",
+                  |        "Thickness": 0,
+                  |        "Draw path": true,
+                  |        "Path color": "#000088",
+                  |        "Maze depth scaling": -65,
+                  |        "Palette": "Niccoli's rainbow",
                   |        "Rainbow span": 100,
                   |        "Reverse palette": false,
                   |        "Color 0": "#000000",
@@ -219,16 +259,24 @@ case class Config (
   var `Count (!slow!)`: String = "5000",
 
   @(JSExport @field)
+  var `Show axes`: Boolean = false,
+
+  @(JSExport @field) 
   var `Background color`: String = Colors.colorIntToJsString( Colors.BLACK ),
 
   // 0 <= downsampling <= 7
   @(JSExport @field) 
   var `Downsampling`: Int = 0,
 
+  // 0 <= explosion <= 100
+  @(JSExport @field) 
+  var `Explosion`: Int = 0,
 
   @(JSExport @field) 
   var `Draw cells`: Boolean = true,
 
+  @(JSExport @field) 
+  var `Thickness`: Float = 5f,
 
   // 0 <= bordersWidth <= 2
   @(JSExport @field) 
@@ -246,7 +294,6 @@ case class Config (
 
   @(JSExport @field) 
   var `Path color`: String = Colors.colorIntToJsString( Colors.GREEN ),
-
 
   @(JSExport @field) 
   var `Palette`: String = Config.laRainbow,
@@ -267,7 +314,7 @@ case class Config (
   def safeCutCount: Int = cutCount.getOrElse( 994 )
 
   def cutCount: Try[Int] =
-    Try( math.min( 20000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
+    Try( math.min( 200000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
 
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
 
