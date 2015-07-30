@@ -47,8 +47,11 @@ object Config {
 
   val spherical = "Spherical"
   val hammerAitoff = "Hammer-Aitoff"
+  val equirectangular = "Equirectangular"
+  val winkelTripel = "Winkel tripel"
+  val cassini = "Cassini"
   val projections: js.Array[String] =
-    Array( spherical, hammerAitoff ).toJSArray
+    Array( spherical, hammerAitoff, equirectangular, winkelTripel, cassini ).toJSArray
 
   val presets = """{
                   |  "preset": "path2",

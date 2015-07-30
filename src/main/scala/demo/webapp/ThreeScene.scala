@@ -372,6 +372,12 @@ class ThreeScene( cfg: Config ) {
   private def setCellsShader( str: String ): Unit = {
     mesh.foreach { m =>
       val shader = str match {
+        case Config.cassini =>
+          Shaders.cells_vertex_cassini
+        case Config.winkelTripel =>
+          Shaders.cells_vertex_winkeltripel
+        case Config.equirectangular =>
+          Shaders.cells_vertex_equirectangular
         case Config.hammerAitoff =>
           Shaders.cells_vertex_hammer_aitoff
         case _ =>
@@ -385,6 +391,12 @@ class ThreeScene( cfg: Config ) {
   private def setMazeShader( str: String ): Unit = {
     mazeMesh.foreach { mm =>
       val shader = str match {
+        case Config.cassini =>
+          Shaders.maze_vertex_cassini
+        case Config.winkelTripel =>
+          Shaders.maze_vertex_winkeltripel
+        case Config.equirectangular =>
+          Shaders.maze_vertex_equirectangular
         case Config.hammerAitoff =>
           Shaders.maze_vertex_hammer_aitoff
         case _ =>

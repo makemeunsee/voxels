@@ -54,6 +54,46 @@ object Shaders {
       |}
     """.stripMargin.replace( "@@@color@@@", _ )
 
+  // ***************** Cassini projection *****************
+
+  private val body_vertex_cassini: String =
+    """float x = asin( cos( lati ) * sin( longi ) ) / 1.57079632679;
+      |float y = atan( tan( lati ), cos( longi ) ) / 3.14159265359;
+      |gl_Position = vec4( x, y, 0.0, 1.0);
+    """.stripMargin
+
+  private val hemispheres_vertex_cassini: String =
+    """vec4 rotPos = u_mMat * vec4(position, 1.0);
+      |float lati = 1.57079632679 - acos( rotPos.y );
+      |float longi = atan( rotPos.x, rotPos.z );
+      |if (lati > 0.0) {
+      |  v_hemi0 = 1.0; // north hemisphere
+      |} else {
+      |  v_hemi0 = 0.0; // south hemisphere
+      |}
+      |if (abs(longi) > 1.57079632679) {
+      |  v_hemi1 = 1.0; // back quadrant
+      |} else {
+      |  v_hemi1 = 0.0; // front quadrant
+      |}
+    """.stripMargin
+
+  // ***************** Winkel-Tripel projection *****************
+
+  private val body_vertex_winkeltripel: String =
+    """float lati = 1.57079632679 - acos( rotPos.y );
+      |float cPhi1 = 0.96592582623; // cos( 15° )
+      |float alpha = acos( cos( lati ) * cos( longi / 2.0 ) );
+      |gl_Position = vec4( 0.5 * ( longi * cPhi1 + 2.0 * cos( lati ) * sin( longi/2.0 ) * alpha / sin( alpha ) ) / 3.14159265359, 0.5 * ( lati + sin( lati ) * alpha / sin( alpha ) ) / 1.57079632679, 0.0, 1.0);
+    """.stripMargin
+
+  // ***************** Equirectangular  projection *****************
+
+  private val body_vertex_equirectangular: String =
+    """float lati = acos( rotPos.y );
+      |gl_Position = vec4( longi / 3.14159265359, 2.0 * ( -lati / 3.14159265359 + 0.5 ), 0.0, 1.0);
+    """.stripMargin
+
   // ***************** Hammer-Aitoff projection *****************
 
   private val body_vertex_hammer_aitoff: String =
@@ -90,7 +130,7 @@ object Shaders {
     List( body_fragment_projs( "mix(u_borderColor, v_color, edgeFactor(u_borderWidth, v_centerFlag))" ) )
   )
 
-  private def cells_vertex_projs( str: String ) = assembleShaderProgram(
+  private def cells_vertex_projs( str: String, defaultHemisphere: String = body_vertex_projs ) = assembleShaderProgram(
     List(
       """attribute float a_centerFlag;
         |attribute vec3 a_color;
@@ -101,7 +141,7 @@ object Shaders {
       header_vertex_projs
     ),
     List(
-      body_vertex_projs,
+      defaultHemisphere,
       str,
       """v_color = a_color;
         |v_centerFlag = a_centerFlag;
@@ -109,9 +149,15 @@ object Shaders {
     )
   )
 
-  val cells_vertex_spherical = cells_vertex_projs( body_vertex_spherical )
+  val cells_vertex_spherical: String = cells_vertex_projs( body_vertex_spherical )
 
-  val cells_vertex_hammer_aitoff = cells_vertex_projs( body_vertex_hammer_aitoff )
+  val cells_vertex_hammer_aitoff: String = cells_vertex_projs( body_vertex_hammer_aitoff )
+
+  val cells_vertex_equirectangular: String = cells_vertex_projs( body_vertex_equirectangular )
+
+  val cells_vertex_winkeltripel: String = cells_vertex_projs( body_vertex_winkeltripel )
+
+  val cells_vertex_cassini: String = cells_vertex_projs( body_vertex_cassini, hemispheres_vertex_cassini )
 
   val maze_fragment_projs = assembleShaderProgram(
     List(
@@ -120,7 +166,7 @@ object Shaders {
     List( body_fragment_projs( "u_color" ) )
   )
 
-  private def maze_vertex_projs( str: String ): String = assembleShaderProgram(
+  private def maze_vertex_projs( str: String, defaultHemisphere: String = body_vertex_projs ): String = assembleShaderProgram(
     List(
       """attribute float a_centerFlag;
         |attribute vec3 a_color;
@@ -131,7 +177,7 @@ object Shaders {
       header_vertex_projs
     ),
     List(
-      body_vertex_projs,
+      defaultHemisphere,
       str
     )
   )
@@ -139,4 +185,10 @@ object Shaders {
   val maze_vertex_spherical: String = maze_vertex_projs( body_vertex_spherical )
 
   val maze_vertex_hammer_aitoff: String = maze_vertex_projs( body_vertex_hammer_aitoff )
+
+  val maze_vertex_equirectangular: String = maze_vertex_projs( body_vertex_equirectangular )
+
+  val maze_vertex_winkeltripel: String = maze_vertex_projs( body_vertex_winkeltripel )
+
+  val maze_vertex_cassini: String = maze_vertex_projs( body_vertex_cassini, hemispheres_vertex_cassini )
 }
