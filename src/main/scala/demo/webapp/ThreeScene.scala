@@ -19,10 +19,12 @@ object ThreeScene {
   private val textureH = 128
 
   @JSName( "THREE.PlaneBufferGeometry" )
+  @js.native
   class PlaneBufferGeometry( width: Float, height: Float ) extends Geometry
 
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName( "THREE.BufferGeometry" )
+  @js.native
   class MyBufferGeometry extends Geometry {
     override def clone(): MyBufferGeometry = js.native
     var attributes: js.Array[BufferAttribute] = js.native
@@ -41,6 +43,8 @@ object ThreeScene {
     def reorderBuffers( indexBuffer: Double, indexMap: js.Array[Double], vertexCount: Double ): Unit = js.native
   }
 
+  @JSName( "whocares" )
+  @js.native
   object ReadableWebGLRendererParameters extends WebGLRendererParameters {
     preserveDrawingBuffer = false
   }
@@ -281,7 +285,7 @@ class ThreeScene( cfg: Config ) {
 
   // ******************** view management ********************
 
-  private var modelMat = Matrix4.naiveRotMat( 0.5, 0.3 )
+  private var modelMat = Matrix4.unit
 
   private var innerWidth: Int = 0
   private var innerHeight: Int = 0
@@ -295,9 +299,10 @@ class ThreeScene( cfg: Config ) {
     adjustTexturing( innerWidth, innerHeight )
   }
 
+  private val speed = 1f / 500f
+
   @JSExport
   def rotateView( deltaX: Int, deltaY: Int ): Unit = {
-    val speed = 1f / 500f
     modelMat = Matrix4.naiveRotMat( deltaX * speed, deltaY * speed ) * modelMat
   }
 

@@ -15,6 +15,7 @@ import scala.scalajs.js.{JSON, JSApp}
 import scala.util.{Failure, Success, Random}
 
 @JSName("jQuery")
+@js.native
 object JQuery extends js.Object {
   def apply(x: String): js.Dynamic = js.native
 }
