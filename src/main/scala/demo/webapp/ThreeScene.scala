@@ -131,9 +131,10 @@ object ThreeScene {
       // edge vertices
 
       for ( j <- 0 until vSize ) {
-        vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat )
-        vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat )
-        vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat )
+        val norm = f.vertices( j ).norm.toFloat
+        vertices.set( triOffset+3*j,   f.vertices( j ).x.toFloat / norm )
+        vertices.set( triOffset+3*j+1, f.vertices( j ).y.toFloat / norm )
+        vertices.set( triOffset+3*j+2, f.vertices( j ).z.toFloat / norm )
         colors.set( triOffset+3*j,   r )
         colors.set( triOffset+3*j+1, g )
         colors.set( triOffset+3*j+2, b )
@@ -144,11 +145,12 @@ object ThreeScene {
       }
 
       val c = f.barycenter
+      val centerNorm = c.norm.toFloat
 
       // centers, one per face
-      vertices.set( triOffset+3*vSize,   c.x.toFloat )
-      vertices.set( triOffset+3*vSize+1, c.y.toFloat )
-      vertices.set( triOffset+3*vSize+2, c.z.toFloat )
+      vertices.set( triOffset+3*vSize,   c.x.toFloat / centerNorm )
+      vertices.set( triOffset+3*vSize+1, c.y.toFloat / centerNorm )
+      vertices.set( triOffset+3*vSize+2, c.z.toFloat / centerNorm )
       colors.set( triOffset+3*vSize,   cr )
       colors.set( triOffset+3*vSize+1, cg )
       colors.set( triOffset+3*vSize+2, cb )
