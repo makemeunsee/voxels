@@ -27,7 +27,7 @@ object Shaders {
 
   private val body_vertex_projs: String =
     """vec4 rotPos = u_mMat * vec4(position, 1.0);
-      |float longi = atan( clamp( rotPos.x ), clamp( rotPos.z ) );
+      |float longi = atan( rotPos.x, rotPos.z );
       |if (longi > 0.0) {
       |  v_hemi0 = 1.0; // east quadrant
       |} else {
@@ -70,8 +70,8 @@ object Shaders {
 
   private val hemispheres_vertex_cassini: String =
     """vec4 rotPos = u_mMat * vec4(position, 1.0);
-      |float lati = 1.57079632679 - acos( clamp( rotPos.y ) );
-      |float longi = atan( clamp( rotPos.x ), clamp( rotPos.z ) );
+      |float lati = 1.57079632679 - acos( rotPos.y );
+      |float longi = atan( rotPos.x, rotPos.z );
       |if (lati > 0.0) {
       |  v_hemi0 = 1.0; // north hemisphere
       |} else {
@@ -86,8 +86,8 @@ object Shaders {
 
   private val hemispheres_vertex_spinningTop: String =
     """vec4 rotPos = u_mMat * vec4(position, 1.0);
-      |float lati = 1.57079632679 - acos( clamp( rotPos.y ) );
-      |float longi = clamp(rotPos.x);
+      |float lati = 1.57079632679 - acos( rotPos.y );
+      |float longi = rotPos.x;
       |if (lati > 0.0) {
       |  v_hemi0 = 1.0; // north hemisphere
       |} else {
@@ -103,7 +103,7 @@ object Shaders {
   // ***************** Winkel-Tripel projection *****************
 
   private val body_vertex_winkeltripel: String =
-    """float lati = 1.57079632679 - acos( clamp( rotPos.y ) );
+    """float lati = 1.57079632679 - acos( rotPos.y );
       |float cPhi1 = 0.96592582623; // cos( 15° )
       |float alpha = acos( cos( lati ) * cos( longi / 2.0 ) );
       |gl_Position = vec4( 0.5 * ( longi * cPhi1 + 2.0 * cos( lati ) * sin( longi/2.0 ) * alpha / sin( alpha ) ) / 3.14159265359, 0.5 * ( lati + sin( lati ) * alpha / sin( alpha ) ) / 1.57079632679, 0.0, 1.0);
@@ -112,14 +112,14 @@ object Shaders {
   // ***************** Equirectangular  projection *****************
 
   private val body_vertex_equirectangular: String =
-    """float lati = acos( clamp( rotPos.y ) );
+    """float lati = acos( rotPos.y );
       |gl_Position = vec4( longi / 3.14159265359, 2.0 * ( -lati / 3.14159265359 + 0.5 ), 0.0, 1.0);
     """.stripMargin
 
   // ***************** Hammer-Aitoff projection *****************
 
   private val body_vertex_hammer_aitoff: String =
-    """float lati = acos( clamp( rotPos.y ) );
+    """float lati = acos( rotPos.y );
       |float z = sqrt( 1.0 + sin( lati ) * cos( longi / 2.0 ) );
       |gl_Position = vec4( ( sin( lati ) * sin( longi / 2.0 ) ) / z, cos( lati ) / z, 0.0, 1.0);
     """.stripMargin
@@ -127,16 +127,12 @@ object Shaders {
   // ***************** Spherical projection *****************
 
   private val body_vertex_spherical: String =
-    "gl_Position = vec4( longi / 3.14159265359, log( ( 1.0+clamp( rotPos.y ) ) / ( 1.0-clamp( rotPos.y ) ) ) / 12.5663706144, 0.0, 1.0);"
+    "gl_Position = vec4( longi / 3.14159265359, log( ( 1.0+rotPos.y ) / ( 1.0-rotPos.y ) ) / 12.5663706144, 0.0, 1.0);"
 
   // ***************** programs *****************
 
   private def assembleShaderProgram( headers: List[String], bodyParts: List[String] ): String = {
     s"""${ ( header_common :: headers ).mkString( "\n" ) }
-       |float clamp(float v){
-       |  return min( 1.0, max( -1.0, v ) );
-       |}
-       |
        |void main(){
        |  ${ bodyParts.mkString( "\n" ) }
        |}"""
