@@ -50,8 +50,10 @@ object Config {
   val equirectangular = "Equirectangular"
   val winkelTripel = "Winkel tripel"
   val cassini = "Cassini"
+  val rhombus = "Rhombus"
+  val spinningTop = "Spinning top"
   val projections: js.Array[String] =
-    Array( spherical, hammerAitoff, equirectangular, winkelTripel, cassini ).toJSArray
+    Array( spherical, hammerAitoff, equirectangular, winkelTripel, cassini, rhombus, spinningTop ).toJSArray
 
   val presets = """{
                   |  "preset": "path2",

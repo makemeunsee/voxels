@@ -385,6 +385,10 @@ class ThreeScene( cfg: Config ) {
           Shaders.cells_vertex_equirectangular
         case Config.hammerAitoff =>
           Shaders.cells_vertex_hammer_aitoff
+        case Config.rhombus =>
+          Shaders.cells_vertex_rhombus
+        case Config.spinningTop =>
+          Shaders.cells_vertex_spinningTop
         case _ =>
           Shaders.cells_vertex_spherical
       }
@@ -404,6 +408,10 @@ class ThreeScene( cfg: Config ) {
           Shaders.maze_vertex_equirectangular
         case Config.hammerAitoff =>
           Shaders.maze_vertex_hammer_aitoff
+        case Config.rhombus =>
+          Shaders.maze_vertex_rhombus
+        case Config.spinningTop =>
+          Shaders.maze_vertex_spinningTop
         case _ =>
           Shaders.maze_vertex_spherical
       }
