@@ -412,7 +412,8 @@ object ThreeScene {
     // there are as many vertices as node, plus 1 for each relation (the junction point)
     val count = 3*( relations + size )
     // there 2 segments = 4 indices for each relation
-    val indicesCount = 4 * relations
+    // 6 indices: ugly workaround, see https://github.com/mrdoob/three.js/issues/7338
+    val indicesCount = 6 * relations
 
     val id: ( () => Int ) = {
       var counter = 0
@@ -474,9 +475,11 @@ object ThreeScene {
         indices.set( indicesOffset, id )
         indices.set( indicesOffset+1, relationId )
         indices.set( indicesOffset+2, relationId )
-        indices.set( indicesOffset+3, childId )
+        indices.set( indicesOffset+3, relationId )
+        indices.set( indicesOffset+4, relationId )
+        indices.set( indicesOffset+5, childId )
 
-        indicesOffset += 4
+        indicesOffset += 6
       }
     }
 
