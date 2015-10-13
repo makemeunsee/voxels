@@ -44,7 +44,7 @@ object Config {
          ).toJSArray
 
   val presets = """{
-                  |  "preset": "path2",
+                  |  "preset": "Default",
                   |  "closed": false,
                   |  "remembered": {
                   |    "Default": {
@@ -56,10 +56,10 @@ object Config {
                   |        "Draw cells": true,
                   |        "Borders width": 1,
                   |        "Borders color": "#181111",
-                  |        "Thickness": 4,
+                  |        "Thickness": 5,
                   |        "Draw path": false,
                   |        "Path color": "#00ff00",
-                  |        "Maze depth scaling": 20,
+                  |        "Maze depth scaling": 50,
                   |        "Palette": "Less Angry rainbow",
                   |        "Rainbow span": 100,
                   |        "Reverse palette": false,
@@ -243,7 +243,7 @@ case class Config (
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
-  var `Count (!slow!)`: String = "5000",
+  var `Count (!slow!)`: String = "2500",
 
   @(JSExport @field)
   var `Show axes`: Boolean = false,
@@ -284,6 +284,9 @@ case class Config (
   @(JSExport @field) 
   var `Path color`: String = Colors.colorIntToJsString( Colors.GREEN ),
 
+  @(JSExport @field)
+  var `Path width`: Int = 1,
+
   // -100 <= mazeDepthScale <= 100
   @(JSExport @field) 
   var `Maze depth scaling`: Int = 50,
@@ -315,6 +318,8 @@ case class Config (
     val f = math.min( 100, math.max( 0, `Explosion` ) ).toFloat / 100
     f*f*10f
   }
+
+  def safePathWidth = math.min( 10, math.max( 1, `Path width` ) )
 
   def safeBordersWidth = math.min( 2f, math.max( 0f, `Borders width` ) )
 

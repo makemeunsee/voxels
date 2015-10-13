@@ -15,6 +15,7 @@ import scala.scalajs.js.{JSON, JSApp}
 import scala.util.{Failure, Success, Random}
 
 @JSName("jQuery")
+@js.native
 object JQuery extends js.Object {
   def apply(x: String): js.Dynamic = js.native
 }
@@ -22,7 +23,6 @@ object JQuery extends js.Object {
 object VoxelMain extends JSApp {
 
   private var model: VoronoiModel = VoronoiModel.cubeModel
-  private var maze: Maze[Int] = Maze.empty( -1 )
   private var depthMap: Map[Int, Int] = Map.empty
   private var depthMax = 0
 
@@ -198,6 +198,8 @@ object VoxelMain extends JSApp {
     mazeFolder
       .addBoolean( jsCfg, "Draw path" )
       .onChange { _: Boolean => scene.toggleMazePath() }
+    mazeFolder
+      .addRange( jsCfg, "Path width", 1, 10 )
     mazeFolder
       .addColor( jsCfg, "Path color" )
     mazeFolder

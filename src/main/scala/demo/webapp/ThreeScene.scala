@@ -19,10 +19,12 @@ object ThreeScene {
   private val textureH = 128
 
   @JSName( "THREE.PlaneBufferGeometry" )
+  @js.native
   class PlaneBufferGeometry( width: Float, height: Float ) extends Geometry
 
   // BufferGeometry from org.denigma.threejs does not extends Geometry, has to be redefined
   @JSName( "THREE.BufferGeometry" )
+  @js.native
   class MyBufferGeometry extends Geometry {
     override def clone(): MyBufferGeometry = js.native
     var attributes: js.Array[BufferAttribute] = js.native
@@ -41,6 +43,8 @@ object ThreeScene {
     def reorderBuffers( indexBuffer: Double, indexMap: js.Array[Double], vertexCount: Double ): Unit = js.native
   }
 
+  @JSName( "whocares" )
+  @js.native
   object ReadableWebGLRendererParameters extends WebGLRendererParameters {
     preserveDrawingBuffer = false
   }
@@ -110,8 +114,6 @@ object ThreeScene {
     shaderMaterial.vertexShader = Shaders.vertexShader
     shaderMaterial.fragmentShader = Shaders.fragmentShader
     shaderMaterial.wireframe = true
-    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
-    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
 
     val pickShaderMaterial = new ShaderMaterial
     pickShaderMaterial.attributes = attrs
@@ -402,8 +404,6 @@ object ThreeScene {
     shaderMaterial.vertexShader = Shaders.mazeVertexShader
     shaderMaterial.fragmentShader = Shaders.mazeFragmentShader
     shaderMaterial.wireframe = true
-    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
-    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
 
     val size = flatMaze.size
     // each maze node has 1 parent, except the root of the maze
@@ -422,8 +422,8 @@ object ThreeScene {
     }
 
     // assign an indice to each node and each relation
-    val mazeWithIndices = flatMaze.map { case ( p, children ) =>
-      ( p._1, ( p._2, id(), children.map { case child =>
+    val mazeWithIndices = flatMaze.map { case ( ( nodeId, nodeDepth), children ) =>
+      ( nodeId, ( nodeDepth, id(), children.map { case child =>
         ( child._1, child._2, id() )
       } ) )
     }
@@ -436,10 +436,10 @@ object ThreeScene {
 
     var indicesOffset = 0
 
-    for ( ( node, ( d, id, children ) ) <- mazeWithIndices ) {
+    for ( ( node, ( depth, id, children ) ) <- mazeWithIndices ) {
       val f = m.faces( node )
       val n = f.seed
-      val uniformD = d.toFloat / depthMax
+      val uniformD = depth.toFloat / depthMax
 
       // face center point
       val bary = f.barycenter * 1.001
@@ -819,10 +819,15 @@ class ThreeScene( cfg: Config ) {
 
   // ******************** rendering ********************
 
-  private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
+  private def updateMeshUniform( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
     mesh.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic]
       .selectDynamic( field )
       .updateDynamic( "value" )( value )
+  }
+
+  private def updateMeshMaterial( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
+    mesh.material.asInstanceOf[ShaderMaterial].asInstanceOf[scala.scalajs.js.Dynamic]
+      .updateDynamic( field )( value )
   }
 
   private val pixels = new Uint8Array( 4 )
@@ -831,7 +836,7 @@ class ThreeScene( cfg: Config ) {
   def pickRender( mouseX: Int, mouseY: Int ): Int = {
     if ( cfg.`Draw cells` ) {
       for ( ( _, m ) <- meshes ) {
-        val updateThis = updateMeshMaterialValue( m ) _
+        val updateThis = updateMeshUniform( m ) _
         updateThis( "u_time", 0f )
         updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
         updateThis( "u_depthScale", cfg.mazeDepthFactor )
@@ -851,7 +856,7 @@ class ThreeScene( cfg: Config ) {
   def render( highlighted: Int ): Unit = {
     if ( cfg.`Draw cells` )
       for ( ( m, _ ) <- meshes ) {
-        val updateThis = updateMeshMaterialValue( m ) _
+        val updateThis = updateMeshUniform( m ) _
         updateThis( "u_time", 0f )
         updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
         updateThis( "u_depthScale", cfg.mazeDepthFactor )
@@ -865,15 +870,16 @@ class ThreeScene( cfg: Config ) {
       }
 
     if ( cfg.`Show axes` )
-      updateMeshMaterialValue( axisMesh )( "u_mvpMat", mvp )
+      updateMeshUniform( axisMesh )( "u_mvpMat", mvp )
 
     if ( cfg.`Draw path` )
       for( mm <- mazeMesh ) {
-        val updateThis = updateMeshMaterialValue( mm ) _
+        val updateThis = updateMeshUniform( mm ) _
         updateThis( "u_time", 0f )
         updateThis( "u_explosionFactor", cfg.safeExplosionFactor )
         updateThis( "u_depthScale", cfg.mazeDepthFactor )
         updateThis( "u_mvpMat", mvp )
+        updateMeshMaterial( mm )( "wireframeLinewidth", cfg.safePathWidth )
         import demo.Colors.jsStringToFloats
         val ( r, g, b ): ( Float, Float, Float ) = cfg.`Path color`
         updateThis( "u_color", new org.denigma.threejs.Vector3( r, g, b ) )
@@ -881,7 +887,7 @@ class ThreeScene( cfg: Config ) {
 
     renderer.clearColor()
     renderer.render( scene, dummyCam, renderingTexture )
-    updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
+    updateMeshUniform( screenMesh )( "texture", renderingTexture )
     renderer.render( rtScene, dummyCam )
   }
 }
