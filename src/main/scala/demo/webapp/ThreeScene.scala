@@ -30,6 +30,7 @@ object ThreeScene {
     var attributes: js.Array[BufferAttribute] = js.native
     var drawcalls: js.Any = js.native
     var offsets: js.Any = js.native
+    def setIndex( attribute: BufferAttribute ): js.Dynamic = js.native
     def addAttribute( name: String, attribute: BufferAttribute ): js.Dynamic = js.native
     def addAttribute( name: String, array: js.Any, itemSize: Double ): js.Dynamic = js.native
     def getAttribute( name: String ): js.Dynamic = js.native
@@ -160,7 +161,7 @@ object ThreeScene {
       indicesOffset = indicesOffset + vSize*3
     }
 
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
@@ -193,8 +194,6 @@ object ThreeScene {
     shaderMaterial.vertexShader = Shaders.maze_vertex_hammer_aitoff
     shaderMaterial.fragmentShader = Shaders.maze_fragment_projs
     shaderMaterial.wireframe = true
-    // useless until acceptance and release of https://github.com/mrdoob/three.js/pull/6778
-    //    shaderMaterial.asInstanceOf[js.Dynamic].updateDynamic( "wireframeLinewidth" )( 3f )
 
     val size = flatMaze.size
     // each maze node has 1 parent, except the root of the maze
@@ -202,7 +201,8 @@ object ThreeScene {
     // there are as many vertices as node, plus 1 for each relation (the junction point)
     val count = 3*( relations + size )
     // there 2 segments = 4 indices for each relation
-    val indicesCount = 4 * relations
+    // 6 indices: ugly workaround, see https://github.com/mrdoob/three.js/issues/7338
+    val indicesCount = 6 * relations
 
     val id: ( () => Int ) = {
       var counter = 0
@@ -213,8 +213,8 @@ object ThreeScene {
     }
 
     // assign an indice to each node and each relation
-    val mazeWithIndices = flatMaze.map { case ( p, children ) =>
-      ( p._1, ( p._2, id(), children.map { case child =>
+    val mazeWithIndices = flatMaze.map { case ( ( nodeId, nodeDepth), children ) =>
+      ( nodeId, ( nodeDepth, id(), children.map { case child =>
         ( child._1, child._2, id() )
       } ) )
     }
@@ -224,34 +224,38 @@ object ThreeScene {
 
     var indicesOffset = 0
 
-    for ( ( node, ( d, id, children ) ) <- mazeWithIndices ) {
+    for ( ( node, ( depth, id, children ) ) <- mazeWithIndices ) {
       val f = m.faces( node )
 
       // face center point
-      val bary = f.barycenter * 1.001
-      vertices.set( id*3,   bary.x.toFloat )
-      vertices.set( id*3+1, bary.y.toFloat )
-      vertices.set( id*3+2, bary.z.toFloat )
+      val bary = f.barycenter
+      val baryNorm = bary.norm.toFloat
+      vertices.set( id*3,   bary.x.toFloat / baryNorm )
+      vertices.set( id*3+1, bary.y.toFloat / baryNorm )
+      vertices.set( id*3+2, bary.z.toFloat / baryNorm )
 
       for( ( child, childD, relationId ) <- children ) {
         val ( _, childId, _ ) = mazeWithIndices( child )
 
         // junction point
-        val j = junction( f, m.faces( child ) ) * 1.001
-        vertices.set( relationId*3,   j.x.toFloat )
-        vertices.set( relationId*3+1, j.y.toFloat )
-        vertices.set( relationId*3+2, j.z.toFloat )
+        val j = junction( f, m.faces( child ) )
+        val norm = j.norm.toFloat
+        vertices.set( relationId*3,   j.x.toFloat / norm )
+        vertices.set( relationId*3+1, j.y.toFloat / norm )
+        vertices.set( relationId*3+2, j.z.toFloat / norm )
 
         indices.set( indicesOffset, id )
         indices.set( indicesOffset+1, relationId )
         indices.set( indicesOffset+2, relationId )
-        indices.set( indicesOffset+3, childId )
+        indices.set( indicesOffset+3, relationId )
+        indices.set( indicesOffset+4, relationId )
+        indices.set( indicesOffset+5, childId )
 
-        indicesOffset += 4
+        indicesOffset += 6
       }
     }
 
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
     assembleMesh( geom, shaderMaterial, "mazeMesh" )
@@ -499,10 +503,15 @@ class ThreeScene( cfg: Config ) {
 
   // ******************** rendering ********************
 
-  private def updateMeshMaterialValue( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
+  private def updateMeshUniform( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
     mesh.material.asInstanceOf[ShaderMaterial].uniforms.asInstanceOf[scala.scalajs.js.Dynamic]
       .selectDynamic( field )
       .updateDynamic( "value" )( value )
+  }
+
+  private def updateMeshMaterial( mesh: Mesh ) ( field: String, value: js.Any ): Unit = {
+    mesh.material.asInstanceOf[ShaderMaterial].asInstanceOf[scala.scalajs.js.Dynamic]
+      .updateDynamic( field )( value )
   }
 
   @JSExport
@@ -513,14 +522,14 @@ class ThreeScene( cfg: Config ) {
   @JSExport
   def render(): Unit = {
     renderToTexture( Some( renderingTexture ) )
-    updateMeshMaterialValue( screenMesh )( "texture", renderingTexture )
+    updateMeshUniform( screenMesh )( "texture", renderingTexture )
     renderer.render( rtScene, dummyCam )
   }
 
   private def renderToTexture( texture: Option[WebGLRenderTarget] ): Unit = {
     if ( cfg.`Draw cells` )
       for ( m <- mesh ) {
-        val updateThis = updateMeshMaterialValue( m ) _
+        val updateThis = updateMeshUniform( m ) _
         updateThis( "u_mMat", modelMat )
         updateThis( "u_borderWidth", cfg.safeBordersWidth )
         import demo.Colors.jsStringToFloats
@@ -530,8 +539,9 @@ class ThreeScene( cfg: Config ) {
 
     if ( cfg.`Draw path` )
       for( mm <- mazeMesh ) {
-        val updateThis = updateMeshMaterialValue( mm ) _
+        val updateThis = updateMeshUniform( mm ) _
         updateThis( "u_mMat", modelMat )
+        updateMeshMaterial( mm )( "wireframeLinewidth", cfg.safePathWidth )
         import demo.Colors.jsStringToFloats
         val ( r, g, b ): ( Float, Float, Float ) = cfg.`Path color`
         updateThis( "u_color", new org.denigma.threejs.Vector3( r, g, b ) )

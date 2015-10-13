@@ -199,6 +199,8 @@ object VoxelMain extends JSApp {
       .addBoolean( jsCfg, "Draw path" )
       .onChange { _: Boolean => scene.toggleMazePath() }
     mazeFolder
+      .addRange( jsCfg, "Path width", 1, 10 )
+    mazeFolder
       .addColor( jsCfg, "Path color" )
     mazeFolder.open()
 

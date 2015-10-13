@@ -88,16 +88,6 @@ object Shaders {
     """vec4 rotPos = u_mMat * vec4(position, 1.0);
       |float lati = 1.57079632679 - acos( rotPos.y );
       |float longi = rotPos.x;
-      |if (lati > 0.0) {
-      |  v_hemi0 = 1.0; // north hemisphere
-      |} else {
-      |  v_hemi0 = 0.0; // south hemisphere
-      |}
-      |if (abs(longi) > 1.57079632679) {
-      |  v_hemi1 = 1.0; // back quadrant
-      |} else {
-      |  v_hemi1 = 0.0; // front quadrant
-      |}
     """.stripMargin
 
   // ***************** Winkel-Tripel projection *****************

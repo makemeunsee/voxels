@@ -56,7 +56,7 @@ object Config {
     Array( spherical, hammerAitoff, equirectangular, winkelTripel, cassini, rhombus, spinningTop ).toJSArray
 
   val presets = """{
-                  |  "preset": "path2",
+                  |  "preset": "Default",
                   |  "closed": false,
                   |  "remembered": {
                   |    "Default": {
@@ -85,7 +85,7 @@ object Config {
                   |        "Background color": "#000000",
                   |        "Downsampling": 0,
                   |        "Explosion": 0,
-                  |        "Draw cells": false,
+                  |        "Draw cells": true,
                   |        "Borders width": 0,
                   |        "Borders color": "#0d0d0d",
                   |        "Thickness": 0,
@@ -261,7 +261,7 @@ case class Config (
   var `Seed (!slow!)`: String = System.currentTimeMillis().toString,
 
   @(JSExport @field)
-  var `Count (!slow!)`: String = "5000",
+  var `Count (!slow!)`: String = "2500",
 
   @(JSExport @field)
   var `Show axes`: Boolean = false,
@@ -300,7 +300,10 @@ case class Config (
   @(JSExport @field) 
   var `Path color`: String = Colors.colorIntToJsString( Colors.GREEN ),
 
-  @(JSExport @field) 
+  @(JSExport @field)
+  var `Path width`: Int = 1,
+
+  @(JSExport @field)
   var `Palette`: String = Config.laRainbow,
 
   @(JSExport @field) 
@@ -322,6 +325,8 @@ case class Config (
     Try( math.min( 200000, math.max( 0, Integer.parseInt( `Count (!slow!)` )-6 ) ) )
 
   def safeDownsamplingFactor = math.pow( 2, math.max( 0, math.min( 7, `Downsampling` ) ) ).toInt
+
+  def safePathWidth = math.min( 10, math.max( 1, `Path width` ) )
 
   def safeBordersWidth = math.min( 2f, math.max( 0f, `Borders width` ) )
 
