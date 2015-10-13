@@ -30,6 +30,7 @@ object ThreeScene {
     var attributes: js.Array[BufferAttribute] = js.native
     var drawcalls: js.Any = js.native
     var offsets: js.Any = js.native
+    def setIndex( attribute: BufferAttribute ): js.Dynamic = js.native
     def addAttribute( name: String, attribute: BufferAttribute ): js.Dynamic = js.native
     def addAttribute( name: String, array: js.Any, itemSize: Double ): js.Dynamic = js.native
     def getAttribute( name: String ): js.Dynamic = js.native
@@ -171,7 +172,7 @@ object ThreeScene {
     }
 
     val geom = new MyBufferGeometry()
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
@@ -179,7 +180,7 @@ object ThreeScene {
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
     val pickGeom = geom.clone()
-    pickGeom.addAttribute( "index", new BufferAttribute( pickIndices, 1 ) )
+    pickGeom.setIndex( new BufferAttribute( pickIndices, 1 ) )
 
     ( assembleMesh( geom, shaderMaterial, "baseMesh" ), assembleMesh( pickGeom, pickShaderMaterial, "pickMesh" ) )
   }
@@ -351,7 +352,7 @@ object ThreeScene {
       indicesOffset = indicesOffset + vSize*12
     }
 
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_centerFlag", new BufferAttribute( centerFlags, 1 ) )
     geom.addAttribute( "a_depth", new BufferAttribute( depths, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
@@ -479,7 +480,7 @@ object ThreeScene {
       }
     }
 
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_depth0", new BufferAttribute( depths0, 1 ) )
     geom.addAttribute( "a_depth1", new BufferAttribute( depths1, 1 ) )
     geom.addAttribute( "a_normal", new BufferAttribute( normals, 3 ) )
@@ -576,7 +577,7 @@ object ThreeScene {
     indices.set( 7, 5 )
     indices.set( 8, 4 )
 
-    geom.addAttribute( "index", new BufferAttribute( indices, 1 ) )
+    geom.setIndex( new BufferAttribute( indices, 1 ) )
     geom.addAttribute( "a_color", new BufferAttribute( colors, 3 ) )
     geom.addAttribute( "position", new BufferAttribute( vertices, 3 ) )
 
