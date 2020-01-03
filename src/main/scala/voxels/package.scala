@@ -20,6 +20,7 @@ package object voxels {
     TrigonalTrapezohedron ::
     SquareCupola ::
     RhombicPrism ::
+    DodecahedronShard ::
     Nil ++
     List( 3, 5, 6, 8 ).map( RegularPrism ) ++ // 4-prism = cube
     List( 4, 5, 6, 8 ).map( AntiPrism ) ++ // 3-antiprism = octahedron

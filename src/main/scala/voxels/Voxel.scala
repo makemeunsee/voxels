@@ -21,6 +21,8 @@ object Voxel {
   sealed trait FaceType
   case class RegularPolygon( sides: Int ) extends FaceType
   case object StdRhombus extends FaceType
+  case object DDCSFace extends FaceType
+  case object DDCSSide extends FaceType
 }
 
 import Voxel._
