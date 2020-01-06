@@ -31,9 +31,6 @@ object DodecahedronShard extends VoxelStandard {
 
   val facesStructure =
     List(
-      // ( List(2,6,7,4,1), RegularPolygon( 5 ), List( 0 ) ),
-      // ( List(3,8,2,1,0), RegularPolygon( 5 ), List( 0 ) ),
-      // ( List(4,9,5,0,1), RegularPolygon( 5 ), List( 0 ) ),
       ( List(13,14,15), RegularPolygon( 3 ), List( 0 ) ), // MNO
       ( List( 1 , 10 , 13, 11 ), DDCSFace, List ( 0 ) ), // BIMJ
       ( List( 1 , 11 , 15, 12 ), DDCSFace, List ( 0 ) ), // BJOK

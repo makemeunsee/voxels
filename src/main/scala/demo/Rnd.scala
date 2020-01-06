@@ -8,5 +8,5 @@ import scala.util.Random
 object Rnd {
   private val rnd = new Random
 
-  def rndInt(): Int = rnd.nextInt()
+  def nextInt(n: Int): Int = rnd.nextInt(n)
 }

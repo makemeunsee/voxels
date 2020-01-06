@@ -8,6 +8,7 @@ object VoxelAction {
   val dockPattern = "D([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)".r
   val deletePattern = "Z([0-9]+)".r
   val centerOnPattern = "C([0-9]+)".r
+  val colorFace = "CF([0-9]+)-([0-9]+)-([A-F0-9]{6})".r
 }
 
 sealed trait VoxelAction {
@@ -33,4 +34,8 @@ case class Delete( voxelId: Int ) extends VoxelAction {
 
 case class CenterOn( voxelId: Int ) extends VoxelAction {
   def toCode = s"C$voxelId"
+}
+
+case class ColorFace( voxelId: Int, faceId: Int, color: String ) extends VoxelAction {
+  def toCode = s"CF$voxelId-$faceId-$color".toUpperCase
 }

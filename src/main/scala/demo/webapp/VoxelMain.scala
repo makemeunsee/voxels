@@ -77,42 +77,47 @@ object VoxelMain extends JSApp {
   // ******************** voxel and face selection management ********************
 
   // what's currently selected
-  private var selectedVoxel: Int = -1
-  private var selectedFace: Int = -1
+  private var selectedFaces: Seq[(Int, Int)] = Seq.empty[(Int,Int)]
   // what can be docked to the selection ( voxelStd id, face id, rotation step )
   private var dockingOptions = Seq.empty[( Int,Int,Int )]
   // which id was last docked
   private var lastDockedId: Int = -1
 
   @JSExport
-  def selectFace( colorCode: Int ): Dictionary[String] = {
+  def selectFace( colorCode: Int ): Dictionary[String] = selectFace(colorCode, true)
+
+  @JSExport
+  def addFaceToSelection( colorCode: Int ): Dictionary[String] = selectFace(colorCode, false)
+
+  private def selectFace( colorCode: Int, clear: Boolean ): Dictionary[String] = {
     val ( vId, fId ) = ThreeScene.revertColorCode( colorCode )
+    println(s"Selected voxel $vId, face $fId")
+    if (clear) {
+      selectedFaces = Seq((vId, fId))
+    } else {
+      selectedFaces = (vId, fId) +: selectedFaces
+    }
     dockingOptions = listDockingOptions( vId, fId )
-    selectedVoxel = vId
-    selectedFace = fId
     val selection = {
       for ( v <- voxels.lift( vId )
            ; f <- v.faces.lift( fId ) ) yield {
         ( vId
         , fId
         , f.faceType.toString
-        , v.colors( fId )._1
-        , v.colors( fId )._2 )
+        , v.colors( fId ) )
       }
-    }.getOrElse( ( -1, -1, "", -1, -1 ) )
+    }.getOrElse( ( -1, -1, "", -1 ) )
     Map( ( "voxelId", selection._1.toString )
        , ( "faceId", selection._2.toString )
        , ( "faceInfo", selection._3 )
        , ( "faceColor", "%06x".format( selection._4 ) )
-       , ( "faceCenterColor", "%06x".format( selection._5 ) )
        )
       .toJSDictionary
   }
 
   @JSExport
   def clearSelection(): Unit = {
-    selectedVoxel = -1
-    selectedFace = -1
+    selectedFaces = Seq.empty[( Int,Int )]
     dockingOptions = Seq.empty
     lastDockedId = -1
   }
@@ -130,17 +135,21 @@ object VoxelMain extends JSApp {
     .toJSDictionary
 
   private def listDockingOptions( voxelId: Int, faceId: Int ): Seq[( Int,Int,Int )] = {
-    voxels
-      .lift( voxelId )
-      .flatMap( _.faces.lift( faceId ) )
-      .fold( Seq.empty[( Int,Int,Int )] ) { f =>
-        val faceType = f.faceType
-        standards
-          .flatMap { case ( stdId, std ) =>
-            std
-              .uniquePositionings
-              .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
-        }.toSeq
+    if (selectedFaces.length != 1) {
+      Seq.empty
+    } else {
+      voxels
+        .lift( voxelId )
+        .flatMap( _.faces.lift( faceId ) )
+        .fold( Seq.empty[( Int,Int,Int )] ) { f =>
+          val faceType = f.faceType
+          standards
+            .flatMap { case ( stdId, std ) =>
+              std
+                .uniquePositionings
+                .collect { case ( fId, fType, rot ) if fType == faceType => ( stdId, fId, rot ) }
+          }.toSeq
+      }
     }
   }
   
@@ -152,7 +161,10 @@ object VoxelMain extends JSApp {
     val fId = dockingOptions( dockingID )._2
     val rot = dockingOptions( dockingID )._3
 
-    dockVoxel( newVId, fId, rot, selectedVoxel, selectedFace )
+    if (selectedFaces.length == 1) {
+      val (selectedVoxel, selectedFace) = selectedFaces(0)
+      dockVoxel( newVId, fId, rot, selectedVoxel, selectedFace )
+    }
   }
 
   private def dockVoxel( stdId: Int, faceId: Int, rot: Int, onVoxelId: Int, onFaceId: Int ): Unit = {
@@ -209,7 +221,12 @@ object VoxelMain extends JSApp {
   }
 
   @JSExport
-  def deleteSelected(): Unit = delete( selectedVoxel )
+  def deleteSelected(): Unit = {
+    if (selectedFaces.length == 1) {
+      val (selectedVoxel, _) = selectedFaces(0)
+      delete( selectedVoxel )
+    }
+  }
 
   private def delete( id: Int ): Unit = {
     if ( voxels.size > 1 ) {
@@ -228,9 +245,9 @@ object VoxelMain extends JSApp {
 
   private implicit var rndColors = true
 
-  private def colorsForStd( std: VoxelStandard ): Seq[( Int, Int )] = {
-    if ( rndColors ) ( 0 until std.faceCount ).map( _ => ( Colors.rndColor(), Colors.rndColor() ) )
-    else ( 0 until std.faceCount ).map( _ => ( Colors.WHITE, Colors.WHITE ) )
+  private def colorsForStd( std: VoxelStandard ): Seq[Int] = {
+    if ( rndColors ) ( 0 until std.faceCount ).map( _ => Colors.rndColor() )
+    else ( 0 until std.faceCount ).map( _ => Colors.WHITE )
   }
 
   @JSExport
@@ -246,49 +263,45 @@ object VoxelMain extends JSApp {
   }
 
   private def rndColor( voxelId: Int ): Unit = {
-    colorVoxel( voxelId, Colors.rndColor, Colors.rndColor )
+    colorVoxel( voxelId, Colors.rndColor )
   }
 
   private def whiteColor( voxelId: Int ): Unit = {
-    colorVoxel( voxelId, () => Colors.WHITE, () => Colors.WHITE )
+    colorVoxel( voxelId, () => Colors.WHITE )
   }
 
-  private def colorVoxel( voxelId: Int, color: () => Int, centerColor: () => Int ): Unit = {
+  private def colorVoxel( voxelId: Int, color: () => Int ): Unit = {
     import Colors.intColorToFloatsColors
     voxels.lift( voxelId ).foreach { voxel =>
-      var newColors = List.empty[( Int, Int )]
+      var newColors = List.empty[Int]
       ThreeScene.withOffsetsAndSizes( voxel.faces )
         .foreach { case ( _, o, s ) =>
         val col = color()
-        val cCol = centerColor()
-        newColors = ( col, cCol ) :: newColors
-        scene.colorFace( voxelId, o, s, col, cCol )
+        newColors = col :: newColors
+        scene.colorFace( voxelId, o, s, col )
       }
       voxels = voxels.updated( voxelId, voxel.copy( colors = newColors.reverse ) )
     }
   }
 
-  private def colorFace( voxelId: Int, faceId: Int, color: Option[Int] = None, centerColor: Option[Int] = None ): Unit = {
+  private def colorFace( voxelId: Int, faceId: Int, color: Option[Int] = None ): Unit = {
     import Colors.intColorToFloatsColors
     voxels.lift( voxelId ).foreach { voxel =>
       ThreeScene.withOffsetsAndSizes( voxel.faces ).lift( faceId ).foreach { case ( f, o, s ) =>
         val defCols = voxel.colors( faceId )
-        val col = color.getOrElse( defCols._1 )
-        val cCol = centerColor.getOrElse( defCols._2 )
-        scene.colorFace( voxelId, o, s, col, cCol )
-        voxels = voxels.updated( voxelId, voxel.copy( colors = voxel.colors.updated( faceId, ( col, cCol ) ) ) )
+        val col = color.getOrElse( defCols )
+        scene.colorFace( voxelId, o, s, col )
+        voxels = voxels.updated( voxelId, voxel.copy( colors = voxel.colors.updated( faceId, col ) ) )
       }
     }
   }
 
   @JSExport
   def changeFaceColor( color: String ): Unit = {
-    colorFace( selectedVoxel, selectedFace, Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
-  }
-
-  @JSExport
-  def changeFaceCenterColor( color: String ): Unit = {
-    colorFace( selectedVoxel, selectedFace, centerColor = Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
+    selectedFaces.foreach { case (selectedVoxel, selectedFace) =>
+      colorFace( selectedVoxel, selectedFace, Some( Integer.parseInt( color.substring( 1 ), 16 ) ) )
+      voxelActionsStack = ColorFace( selectedVoxel, selectedFace, color.substring(1) ) :: voxelActionsStack
+    }
   }
 
   // ******************** load/save voxel constructions ********************
@@ -309,7 +322,10 @@ object VoxelMain extends JSApp {
         centerViewOn( c.toInt )
       case VoxelAction.dockPattern( c0, c1, c2, c3, c4 ) =>
         dockVoxel( c0.toInt, c1.toInt, c2.toInt, c3.toInt, c4.toInt )
-      case _ => ()
+      case VoxelAction.colorFace( c0, c1, s ) =>
+        selectedFaces = Seq((c0.toInt, c1.toInt))
+        changeFaceColor(s"#$s")
+      case x => println(s"unrecognized param: $x")
     }
     id
   }

@@ -13,7 +13,13 @@ object Colors {
     ( r, g, b )
   }
 
-  def rndColor(): Int = Rnd.rndInt() & WHITE
+  def rndColor(): Int = PRIMARIES(Rnd.nextInt(4))
 
   val WHITE = 0xFFFFFF
+  val RED = 0xFF0000
+  val GREEN = 0x00FF00
+  val YELLOW = 0xFFFF00
+  val BLUE = 0x0000FF
+
+  val PRIMARIES = Seq(RED, GREEN, YELLOW, BLUE)
 }

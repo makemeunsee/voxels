@@ -237,10 +237,9 @@ class ThreeScene {
         val Vec3( nx, ny, nz ) = f.normal
         val Vec3( cx, cy, cz ) = f.center
         val pickColor = colorCode( vId, fId )
-        val ( col, cCol ) = v.colors.lift( fId ).getOrElse( ( Colors.WHITE, Colors.WHITE ) )
+        val col = v.colors.lift( fId ).getOrElse( Colors.WHITE )
         val ( r, g, b ) = Colors.intColorToFloatsColors( col )
-        val ( cr, cg, cb ) = Colors.intColorToFloatsColors( cCol )
-
+        
         val triOffset = offset*3
         val vSize = f.vertices.length
 
@@ -266,9 +265,9 @@ class ThreeScene {
         normals.set( triOffset+3*vSize,   nx.toFloat )
         normals.set( triOffset+3*vSize+1, ny.toFloat )
         normals.set( triOffset+3*vSize+2, nz.toFloat )
-        colors.set( triOffset+3*vSize,   cr )
-        colors.set( triOffset+3*vSize+1, cg )
-        colors.set( triOffset+3*vSize+2, cb )
+        colors.set( triOffset+3*vSize,   r )
+        colors.set( triOffset+3*vSize+1, g )
+        colors.set( triOffset+3*vSize+2, b )
         centerFlags.set( offset+vSize, 1f )
         pickColors.set( offset+vSize, pickColor )
 
@@ -396,8 +395,7 @@ class ThreeScene {
   def colorFace( voxelId: Int
                , faceOffset: Int
                , faceSize: Int
-               , color: ( Float, Float, Float )
-               , centerColor: ( Float, Float, Float ) ): Unit = {
+               , color: ( Float, Float, Float ) ): Unit = {
     val mesh = meshes( voxelId )._1
     val attrs = mesh
       .geometry.asInstanceOf[MyBufferGeometry]
@@ -413,9 +411,9 @@ class ThreeScene {
       colorData.update( 3*faceOffset+3*i+2, color._3 )
     }
     // apply specific color at face center offset
-    colorData.update( 3*faceOffset+3*faceSize-3, centerColor._1 )
-    colorData.update( 3*faceOffset+3*faceSize-2, centerColor._2 )
-    colorData.update( 3*faceOffset+3*faceSize-1, centerColor._3 )
+    colorData.update( 3*faceOffset+3*faceSize-3, color._1 )
+    colorData.update( 3*faceOffset+3*faceSize-2, color._2 )
+    colorData.update( 3*faceOffset+3*faceSize-1, color._3 )
     colorAttr.updateDynamic( "needsUpdate" )( true )
   }
 

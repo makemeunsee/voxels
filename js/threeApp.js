@@ -190,19 +190,21 @@ function appMain() {
         $( "#leftColumn" ).show();
     })();
 
-    var faceSelected = false;
+    var dockable = false;
+    var facesSelected = false;
     function loadDockingOptions( options, selectedVoxel, faceInfo ) {
         var menu0 = $( "#menu0" );
         var menu1 = $( "#menu1" );
         menu0.empty();
         menu1.empty();
-        faceSelected = false;
+        facesSelected = selectedVoxel != -1;
+        dockable = false;
         menu0.append('<li id="li" class="ui-widget-header">Voxel: '+selectedVoxel+'</li>');
         menu1.append('<li id="li" class="ui-widget-header">&#xA0</li>');
         var i = 0;
         for (var prop in options) {
             if (options.hasOwnProperty(prop)) {
-                faceSelected = true;
+                dockable = true;
                 var menu = i%2==0 ? menu0 : menu1;
                 menu.append('<li id="li-'+prop+'" class="ui-menu-item">'+options[prop]+'</li>');
                 i++;
@@ -228,14 +230,19 @@ function appMain() {
             }
         );
 
-        if (faceSelected) {
+        if (dockable) {
             $( "#leftColumn" ).show();
             $( "#rightColumn" ).show();
-            $("#centerView").click(
+            $( "#centerView" ).show();
+            $( "#centerView" ).click(
                 function() {
                     scalaObj.centerViewOn(selectedVoxel);
                 }
             );
+        } else if (facesSelected) {
+            $( "#rightColumn" ).show();
+            $( "#leftColumn" ).hide();
+            $( "#centerView" ).hide();
         } else {
             $( "#leftColumn" ).hide();
             $( "#rightColumn" ).hide();
@@ -245,20 +252,12 @@ function appMain() {
     $("#color").change(function() {
         scalaObj.changeFaceColor($("#color").prop("value"));
     });
-    $("#centerColor").change(function() {
-        scalaObj.changeFaceCenterColor($("#centerColor").prop("value"));
-    });
 
     function loadColors(selection) {
         var color = selection.faceColor;
-        var centerColor = selection.faceCenterColor;
         if (color !== -1) {
             $("#color").attr("value", "#"+color);
             $("#color").prop("value", "#"+color);
-        }
-        if (centerColor !== -1) {
-            $("#centerColor").attr("value", "#"+centerColor);
-            $("#centerColor").prop("value", "#"+centerColor);
         }
     }
 
@@ -310,6 +309,7 @@ function appMain() {
     }
 
     var clicked = false;
+    var shiftPressed = false;
     var dragging = false;
 
     // only react to left clicks
@@ -357,6 +357,7 @@ function appMain() {
         canvas.removeEventListener( "mousemove", onMouseMove, false );
         canvas.removeEventListener( "touchmove", onTouchMove, false );
         clicked = !dragging;
+        shiftPressed = event.shiftKey;
         dragging = false;
     }
 
@@ -484,7 +485,7 @@ function appMain() {
             if ( voxelId != -1 ) {
                 // pickRender
                 highlighted = scalaObj.scene.pickRender(mx,my);
-                var selection = scalaObj.selectFace(highlighted);
+                var selection = shiftPressed ? scalaObj.addFaceToSelection(highlighted) : scalaObj.selectFace(highlighted);
                 loadColors(selection);
                 var options = scalaObj.showDockingOptions();
                 loadDockingOptions(options, parseInt(selection.voxelId), selection.faceInfo);
